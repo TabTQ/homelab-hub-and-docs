@@ -1,0 +1,20 @@
+server:
+  port: ${DOCS_PUBLIC_PORT:3011}
+  error:
+    include-stacktrace: never
+    include-message: never
+    whitelabel:
+      enabled: false
+docs:
+  snapshot:
+    dir: ${DOCS_SNAPSHOT_DIR:./snapshot}
+spring:
+  main:
+    banner-mode: off
+  web:
+    resources:
+      # The SPA's files are served by DocsPublicController for known hosts only.
+      add-mappings: false
+logging:
+  level:
+    root: INFO

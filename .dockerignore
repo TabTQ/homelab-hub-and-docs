@@ -1,0 +1,3 @@
+*
+!hub-internal/target/*.jar
+!hub-public/target/*.jar

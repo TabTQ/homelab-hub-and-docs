@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs page: mockups</title>
+<style>
+/* Same tokens as the app (direction "A Signal"). Fonts fall back to system fonts in this mockup. */
+:root {
+  --bg: #e8ecef; --surface: #f6f8f9; --surface2: #dde3e8; --ink: #13202b; --muted: #54626f; --line: #c4cdd5;
+  --accent: #c2410c; --accent-ink: #ffffff; --accent-soft: #f6dccf;
+  --ok: #237a3b; --warn: #b45309; --bad: #b42323; --info: #1d5fa8;
+  --ok-soft: #dcefe1; --warn-soft: #f8e9d3; --bad-soft: #f6dada; --info-soft: #dae6f4;
+  --code-bg: #13202b; --code-ink: #e4eaee;
+  --radius: 4px; --radius-lg: 6px;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f171d; --surface: #172129; --surface2: #202c36; --ink: #e4eaee; --muted: #93a1ad; --line: #2c3944;
+    --accent: #ff8a4c; --accent-ink: #1a0e07; --accent-soft: #3a2418; --ok: #4cc46f; --warn: #f0a040; --bad: #ff6b6b; --info: #6ea8ff;
+    --ok-soft: #173222; --warn-soft: #3a2a14; --bad-soft: #3a1a1a; --info-soft: #172a44; --code-bg: #0a1015; --code-ink: #e4eaee; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f171d; --surface: #172129; --surface2: #202c36; --ink: #e4eaee; --muted: #93a1ad; --line: #2c3944;
+  --accent: #ff8a4c; --accent-ink: #1a0e07; --accent-soft: #3a2418; --ok: #4cc46f; --warn: #f0a040; --bad: #ff6b6b; --info: #6ea8ff;
+  --ok-soft: #173222; --warn-soft: #3a2a14; --bad-soft: #3a1a1a; --info-soft: #172a44; --code-bg: #0a1015; --code-ink: #e4eaee; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent); }
+.mono { font-family: var(--f-mono); }
+.muted { color: var(--muted); }
+.grow { flex: 1; }
+
+/* ---- mockup chrome ---- */
+.chrome { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chrome h1 { font: 700 15px var(--f-display); margin: 0 12px 0 0; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 6px 12px; font-size: 13px; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 18px 16px 60px; }
+.panel { display: none; } .panel.on { display: block; }
+.notes { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-lg); padding: 12px 16px; margin: 0 0 18px; font-size: 14px; }
+.notes b { font-family: var(--f-display); }
+.notes ul { margin: 6px 0 0; padding-left: 20px; }
+.stage { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.stage > div { min-width: 0; max-width: 100%; }
+.caption { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+
+/* ---- app look ---- */
+.app { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; width: 100%; }
+.bar { display: flex; gap: 6px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg); flex-wrap: wrap; }
+.brand { font: 700 15px var(--f-display); display: flex; gap: 8px; align-items: center; margin-right: 10px; }
+.brand i { width: 12px; height: 12px; background: var(--accent); display: inline-block; }
+.nav a { padding: 5px 10px; border-radius: var(--radius); font-size: 14px; color: var(--muted); text-decoration: none; }
+.nav a.on { background: var(--surface2); color: var(--ink); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 12px; font-size: 14px; white-space: nowrap; }
+.btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.btn.danger { color: var(--bad); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.pill { font: 500 10.5px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 2px; background: var(--surface2); color: var(--muted); white-space: nowrap; }
+.pill.pub { background: var(--ok-soft); color: var(--ok); }
+.pill.draft { background: var(--warn-soft); color: var(--warn); }
+.pill.kapp { background: var(--info-soft); color: var(--info); }
+.hint { font-size: 12.5px; color: var(--muted); }
+.field { margin: 12px 0; }
+.field > label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 14px; }
+.field input[type=text], .field select, .field textarea, .field input[type=number] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); background: var(--bg); border-radius: var(--radius); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.banner { border: 1px solid var(--line); border-left: 4px solid var(--warn); background: var(--surface); padding: 8px 12px; border-radius: var(--radius); font-size: 14px; margin-bottom: 12px; }
+.banner.ok { border-left-color: var(--ok); } .banner.bad { border-left-color: var(--bad); } .banner.info { border-left-color: var(--info); }
+
+/* docs layout */
+.docs { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 720px; }
+.side { border-right: 1px solid var(--line); background: var(--surface); padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.side .search { width: 100%; padding: 7px 10px; border: 1px solid var(--line); background: var(--bg); border-radius: var(--radius); font-size: 14px; }
+.tree { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.tree ul { list-style: none; margin: 0; padding-left: 14px; border-left: 1px solid var(--line); margin-left: 9px; }
+.node { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: var(--radius); cursor: pointer; position: relative; }
+.node:hover { background: var(--surface2); }
+.node.on { background: var(--ink); color: var(--bg); }
+.node.on .dot { border-color: var(--bg); }
+.node .tw { width: 14px; text-align: center; color: var(--muted); font-size: 11px; flex: none; }
+.node .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
+.dot.pub { background: var(--ok); border-color: var(--ok); }
+.dot.draft { background: var(--warn); border-color: var(--warn); }
+.node .kind { font: 500 9.5px var(--f-mono); color: var(--info); }
+.node.on .kind { color: var(--bg); }
+.node.drop-before::before { content: ""; position: absolute; left: 0; right: 0; top: -2px; height: 2px; background: var(--accent); }
+.node.drop-into { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.node.ghost { opacity: .45; }
+.legend { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 8px; margin-top: auto; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.ctx { position: absolute; left: 190px; top: 260px; width: 210px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 4px; z-index: 3; font-size: 14px; }
+.ctx div { padding: 6px 10px; border-radius: var(--radius); } .ctx div:hover { background: var(--surface2); }
+.ctx hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+
+.main { padding: 16px 28px 40px; min-width: 0; }
+.crumbs { font-size: 13px; color: var(--muted); }
+.crumbs a { color: var(--muted); text-decoration: none; } .crumbs a:hover { text-decoration: underline; }
+.pagehead { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin: 6px 0 4px; }
+.pagehead h1 { font: 700 30px/1.15 var(--f-display); margin: 0; flex: 1; min-width: 240px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+
+/* rendered content */
+.doc { max-width: 820px; }
+.doc h2 { font: 700 21px/1.25 var(--f-display); margin: 26px 0 8px; }
+.doc h3 { font: 600 17px var(--f-display); margin: 20px 0 6px; }
+.doc p { margin: 8px 0; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 10px 0; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+.doc th { background: var(--surface2); font-weight: 600; }
+.doc code { font-family: var(--f-mono); font-size: 13px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; }
+.codeblock { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-lg); margin: 10px 0; overflow: hidden; }
+.codeblock .ch { display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: #93a1ad; padding: 6px 12px; border-bottom: 1px solid #2c3944; }
+.codeblock pre { margin: 0; padding: 12px; overflow-x: auto; font: 13px/1.5 var(--f-mono); }
+.k { color: #ff8a4c; } .s { color: #7fd18f; } .c { color: #7d8b97; } .n { color: #6ea8ff; }
+.callout { border-left: 4px solid var(--info); background: var(--info-soft); padding: 10px 14px; border-radius: var(--radius); margin: 12px 0; font-size: 14.5px; }
+.callout b { font-family: var(--f-display); }
+.callout.warn { border-color: var(--warn); background: var(--warn-soft); } .callout.tip { border-color: var(--ok); background: var(--ok-soft); } .callout.danger { border-color: var(--bad); background: var(--bad-soft); }
+figure { margin: 12px 0; }
+figure .img { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
+details { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); margin: 10px 0; }
+details summary { padding: 8px 12px; cursor: pointer; font-weight: 600; }
+details > div { padding: 0 12px 10px; }
+.attach { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: 8px 12px; margin: 10px 0; max-width: 420px; }
+.attach .ic { width: 34px; height: 40px; border-radius: 3px; background: var(--bad-soft); color: var(--bad); display: grid; place-items: center; font: 700 10px var(--f-mono); }
+.embed { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; margin: 12px 0; background: var(--surface); }
+.embed .eh .pill { flex: none; }
+.embed .eh { display: flex; gap: 8px; align-items: center; padding: 6px 10px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.embed iframe { width: 100%; border: 0; display: block; background: var(--bg); }
+.toc { position: sticky; top: 70px; font-size: 13px; border-left: 2px solid var(--line); padding-left: 12px; }
+.toc a { display: block; color: var(--muted); text-decoration: none; padding: 2px 0; } .toc a.on { color: var(--ink); font-weight: 600; }
+.withtoc { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 28px; }
+.xlink { color: var(--accent); text-decoration: underline; text-decoration-style: dotted; }
+
+/* editor */
+.edbar { position: sticky; top: 0; z-index: 2; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-lg); padding: 6px; margin-bottom: 14px; }
+.edbar .tb { border: 1px solid transparent; background: transparent; border-radius: var(--radius); padding: 4px 8px; font-size: 13px; min-width: 30px; }
+.edbar .tb:hover, .edbar .tb.on { background: var(--surface2); border-color: var(--line); }
+.edbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.editing .blk { position: relative; border-radius: var(--radius); }
+.editing .blk:hover { outline: 1px dashed var(--line); outline-offset: 4px; }
+.editing .blk:hover::before { content: "⋮⋮"; position: absolute; left: -26px; top: 2px; color: var(--muted); font-size: 13px; letter-spacing: -2px; cursor: grab; }
+.titlein { font: 700 30px/1.15 var(--f-display); border: 0; background: transparent; width: 100%; padding: 0; outline: none; margin: 4px 0 12px; }
+.caret { display: inline-block; width: 2px; height: 1.1em; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.slash { position: absolute; left: 20px; top: 30px; width: 300px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: 0 14px 40px rgba(0,0,0,.3); padding: 6px; z-index: 4; }
+.slash .q { font: 500 11px var(--f-mono); color: var(--muted); padding: 4px 8px; text-transform: uppercase; letter-spacing: .06em; }
+.slash .it { display: flex; gap: 10px; padding: 6px 8px; border-radius: var(--radius); align-items: center; }
+.slash .it.on { background: var(--surface2); }
+.slash .it .ico { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: var(--radius); display: grid; place-items: center; font: 600 12px var(--f-mono); background: var(--bg); flex: none; }
+.slash .it small { display: block; color: var(--muted); font-size: 12px; }
+.tabletools { display: inline-flex; gap: 4px; background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 3px 4px; font-size: 12px; margin-bottom: 4px; }
+.tabletools span { padding: 2px 6px; border-radius: 3px; } .tabletools span:hover { background: rgba(255,255,255,.15); }
+.dropzone { border: 2px dashed var(--accent); background: var(--accent-soft); border-radius: var(--radius-lg); padding: 18px; text-align: center; color: var(--accent); font-weight: 500; margin: 10px 0; }
+.mermaid-edit { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; margin: 10px 0; }
+.mermaid-edit textarea { border: 0; border-right: 1px solid var(--line); background: var(--code-bg); color: var(--code-ink); font: 12.5px/1.5 var(--f-mono); padding: 10px; resize: none; min-height: 180px; }
+.mermaid-edit .pv { background: var(--surface); display: grid; place-items: center; padding: 8px; }
+.savebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 18px; }
+
+/* dialogs */
+.modal-wrap { position: relative; min-height: 760px; }
+.modal-wrap .scrim { position: absolute; inset: 0; background: rgba(8,10,16,.5); }
+.dialog { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); width: min(620px, 94%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: 0 20px 60px rgba(0,0,0,.35); padding: 18px 20px; z-index: 2; }
+.dialog h3 { margin: 0 0 4px; font: 700 20px var(--f-display); }
+.dialog .acts { display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.hostin { display: flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.hostin input { border: 0 !important; flex: 1; min-width: 80px; padding: 8px 10px; background: transparent; font-family: var(--f-mono); }
+.hostin select { border: 0; border-left: 1px solid var(--line); background: var(--surface2); padding: 0 8px; font-family: var(--f-mono); }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.check:last-child { border-bottom: 0; }
+.check .m { width: 18px; flex: none; font-weight: 700; }
+.check .m.ok { color: var(--ok); } .check .m.w { color: var(--warn); } .check .m.b { color: var(--bad); }
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.switch i { width: 38px; height: 22px; border-radius: 11px; background: var(--surface2); border: 1px solid var(--line); position: relative; display: inline-block; }
+.switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: left .15s; }
+.switch[aria-checked="true"] i { background: var(--ok); border-color: var(--ok); }
+.switch[aria-checked="true"] i::after { left: 18px; background: #fff; }
+
+/* webapp settings */
+.cols2 { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--ink); border-radius: var(--radius-lg); padding: 14px; }
+.card + .card { margin-top: 14px; }
+.card h4 { margin: 0 0 8px; font: 700 15px var(--f-display); }
+.upload { border: 2px dashed var(--line); border-radius: var(--radius-lg); padding: 16px; text-align: center; font-size: 14px; color: var(--muted); background: var(--bg); }
+.bundles { width: 100%; border-collapse: collapse; font-size: 13px; }
+.bundles td, .bundles th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.bundles th { font: 500 10.5px var(--f-mono); text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+.files { font: 12.5px/1.7 var(--f-mono); color: var(--muted); }
+.cb { display: flex; gap: 8px; align-items: center; font-size: 14px; padding: 3px 0; }
+.previewbox { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+.previewbox .ph { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.previewbox iframe { width: 100%; height: 470px; border: 0; display: block; }
+
+/* history */
+.hist { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; }
+.ver { padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 14px; cursor: pointer; }
+.ver.on { background: var(--surface2); }
+.ver .w { font-size: 12.5px; color: var(--muted); }
+.diff { font-size: 14.5px; }
+.diff .del { background: var(--bad-soft); text-decoration: line-through; color: var(--bad); }
+.diff .ins { background: var(--ok-soft); color: var(--ok); text-decoration: none; }
+.diff .blockchg { border-left: 3px solid var(--warn); padding-left: 10px; margin: 8px 0; }
+
+/* public */
+.browser { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg); width: 100%; }
+.browser .url { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--surface2); border-bottom: 1px solid var(--line); font: 13px var(--f-mono); }
+.browser .url span.lock { color: var(--ok); }
+.browser .url .addr { flex: 1; background: var(--bg); border-radius: 999px; padding: 4px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pubhead { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-bottom: 1px solid var(--line); }
+.pubhead .t { font: 700 14px var(--f-display); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pubbody { max-width: 860px; margin: 0 auto; padding: 22px 24px 40px; }
+.pubbody h1 { font: 700 34px/1.15 var(--f-display); margin: 0 0 6px; }
+.pubfoot { border-top: 1px solid var(--line); padding: 12px 24px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.notfound { display: grid; place-items: center; min-height: 260px; text-align: center; padding: 30px; }
+.notfound b { font: 700 46px var(--f-display); display: block; }
+
+/* phone */
+.phone { width: 390px; max-width: 100%; border: 10px solid #0b1116; border-radius: 34px; background: var(--bg); overflow: hidden; position: relative; }
+.phone .bar { padding: 10px 12px; }
+.phone .main { padding: 12px 14px 24px; }
+.phone .pagehead h1 { font-size: 23px; min-width: 0; }
+.phone .scrim { position: absolute; inset: 0; background: rgba(8,10,16,.55); }
+.drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 82%; background: var(--surface); padding: 14px 10px; box-shadow: 10px 0 40px rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 8px; }
+.phone .pubbody { padding: 16px 16px 30px; } .phone .pubbody h1 { font-size: 25px; }
+.phone .pubhead { padding: 10px 16px; }
+
+@media (max-width: 960px) {
+  .docs { grid-template-columns: 1fr; } .side { border-right: 0; border-bottom: 1px solid var(--line); }
+  .withtoc, .cols2, .hist { grid-template-columns: 1fr; } .toc { display: none; }
+  .main { padding: 14px 16px 30px; } .ctx { display: none; }
+  .mermaid-edit { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="chrome" role="tablist">
+  <h1>Docs: mockups</h1>
+  <button class="tab" data-p="tree" role="tab">1 · Tree + page</button>
+  <button class="tab" data-p="edit" role="tab">2 · Editor</button>
+  <button class="tab" data-p="publish" role="tab">3 · Publish</button>
+  <button class="tab" data-p="webapp" role="tab">4 · Webapp page</button>
+  <button class="tab" data-p="history" role="tab">5 · History</button>
+  <button class="tab" data-p="public" role="tab">6 · Public view</button>
+  <button class="tab" data-p="phone" role="tab">7 · Phone</button>
+  <span class="grow"></span>
+  <button class="btn sm" id="theme">Theme: system</button>
+</div>
+
+<!-- SVG pieces reused below -->
+<template id="netimg">
+<svg viewBox="0 0 720 220" width="100%" role="img" aria-label="Network diagram" style="display:block">
+  <rect width="720" height="220" fill="var(--surface)"/>
+  <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">
+    <rect x="20" y="80" width="120" height="56" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="80" y="112" text-anchor="middle">Internet</text>
+    <rect x="200" y="80" width="140" height="56" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="270" y="105" text-anchor="middle">Cloudflare</text><text x="270" y="122" text-anchor="middle" fill="var(--muted)">*.domain.com</text>
+    <rect x="400" y="30" width="140" height="56" rx="6" fill="var(--bg)" stroke="var(--accent)"/><text x="470" y="55" text-anchor="middle">docs-public</text><text x="470" y="72" text-anchor="middle" fill="var(--muted)">LXC · no port</text>
+    <rect x="400" y="140" width="140" height="56" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="470" y="165" text-anchor="middle">docs-internal</text><text x="470" y="182" text-anchor="middle" fill="var(--muted)">LAN + Tailscale</text>
+    <rect x="590" y="80" width="110" height="56" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="645" y="112" text-anchor="middle">snapshot/</text>
+  </g>
+  <g stroke="var(--muted)" stroke-width="1.6" fill="none">
+    <path d="M140 108 H200"/><path d="M340 100 L400 62"/><path d="M540 168 C580 168 600 150 620 136"/><path d="M620 80 C600 66 570 58 540 58" stroke-dasharray="4 4"/>
+  </g>
+</svg>
+</template>
+<template id="mermaidsvg">
+<svg viewBox="0 0 300 190" width="100%" style="display:block;max-width:300px">
+  <g font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--ink)">
+    <rect x="95" y="6" width="110" height="30" rx="4" fill="var(--bg)" stroke="var(--accent)"/><text x="150" y="25" text-anchor="middle">Request</text>
+    <polygon points="150,58 205,82 150,106 95,82" fill="var(--bg)" stroke="var(--line)"/><text x="150" y="86" text-anchor="middle">Host known?</text>
+    <rect x="10" y="140" width="110" height="30" rx="4" fill="var(--bg)" stroke="var(--line)"/><text x="65" y="159" text-anchor="middle">Serve page</text>
+    <rect x="180" y="140" width="110" height="30" rx="4" fill="var(--bg)" stroke="var(--line)"/><text x="235" y="159" text-anchor="middle">404</text>
+  </g>
+  <g stroke="var(--muted)" fill="none" stroke-width="1.4"><path d="M150 36 V58"/><path d="M95 82 C65 82 65 110 65 140"/><path d="M205 82 C235 82 235 110 235 140"/></g>
+  <g font-size="10" fill="var(--muted)" font-family="IBM Plex Mono, monospace"><text x="72" y="118">yes</text><text x="240" y="112">no</text></g>
+</svg>
+</template>
+
+<div class="wrap">
+
+<!-- ============ 1. TREE + PAGE ============ -->
+<section class="panel" id="p-tree">
+  <div class="notes"><b>Docs page, reading a page (desktop).</b>
+    <ul>
+      <li>The Docs app runs on its <b>own Proxmox LXC</b> with its own login. The hub on the Pi only has a <b>Docs</b> link to it, and <b>← Hub</b> goes back. Left: the page tree. Drag a page to reorder it or drop it <i>onto</i> another page to make it a child (the orange line and dashed box show both drop targets). The <b>⋯</b> menu (right-click also works) has the same actions for keyboard and phone users: <b>Move to…</b>, <b>Add child page</b>, <b>Add webapp page</b>, <b>Duplicate</b>, <b>Delete</b>.</li>
+      <li>Dots: <span style="color:var(--ok)">●</span> public (has a hostname), <span style="color:var(--warn)">●</span> public with unpublished changes, ○ internal. <span class="pill kapp">app</span> marks a webapp page.</li>
+      <li>The page shows the <b>draft</b>, the version you are editing. A banner says when it differs from what the public sees. Links to other pages are dotted-underlined, and hovering one says whether it will be clickable publicly.</li>
+      <li>Every block type is shown here: callout, image with caption, table, code, Mermaid (pre-rendered SVG), collapsible, attachment, and an embedded webapp (sandboxed, try clicking its nodes).</li>
+    </ul></div>
+  <div class="app" style="position:relative">
+    <div class="bar"><div class="brand"><i></i>Docs</div><a class="btn sm ghost" href="#" title="Back to the Homelab Hub on the Pi (DOCS_HUB_URL)">← Hub</a>
+      <span class="grow"></span><span class="hint mono">docs.&lt;tailnet&gt;.ts.net</span><button class="btn sm">Search ⌘K</button><button class="btn sm">Sign out</button></div>
+    <div class="docs">
+      <aside class="side">
+        <div style="display:flex;gap:6px"><input class="search" placeholder="Filter pages…"><button class="btn sm pri" title="New page">＋</button></div>
+        <ul class="tree" id="tree1"></ul>
+        <div class="legend"><span><i class="dot pub"></i>public</span><span><i class="dot draft"></i>unpublished changes</span><span><i class="dot"></i>internal</span></div>
+      </aside>
+      <div class="ctx"><div>Add child page</div><div>Add webapp page</div><div>Move to…</div><div>Duplicate</div><hr><div>Page settings…</div><div>Copy public link</div><hr><div style="color:var(--bad)">Delete…</div></div>
+      <main class="main">
+        <div class="crumbs"><a href="#">Homelab</a> / <a href="#">Networking</a> / Cloudflare tunnel</div>
+        <div class="pagehead"><h1>Cloudflare tunnel</h1>
+          <button class="btn sm" data-go="history">History</button><button class="btn sm" data-go="publish">Settings</button><button class="btn sm" data-go="edit">Edit</button><button class="btn sm pri" data-go="publish">Publish…</button></div>
+        <div class="meta"><span class="pill pub">public</span><span class="mono">tunnel.domain.com</span><span>·</span><span>Draft saved 2 min ago</span><span>·</span><span>Published 14 Oct 2026</span></div>
+        <div class="banner">The draft has <b>3 changes</b> that the public page does not show yet. <a href="#" data-go="history">Compare</a> · <a href="#" data-go="publish">Publish</a></div>
+        <div class="withtoc">
+          <article class="doc" id="doc1"></article>
+          <nav class="toc"><div class="caption">On this page</div><a href="#" class="on">How it fits together</a><a href="#">Routing by hostname</a><a href="#">Setup steps</a><a href="#">Troubleshooting</a></nav>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. EDITOR ============ -->
+<section class="panel" id="p-edit">
+  <div class="notes"><b>Editing (WYSIWYG, same layout as reading).</b>
+    <ul>
+      <li>Type as usual. Markdown shortcuts work (<span class="mono">## </span>, <span class="mono">- </span>, <span class="mono">```</span>, <span class="mono">&gt; </span>). Type <span class="mono">/</span> for the block menu. Paste or drag an image anywhere to upload it.</li>
+      <li>Blocks have a drag handle (⋮⋮) on hover. When the cursor is in a table, a small toolbar appears (add/remove row or column, header row, merge).</li>
+      <li>A Mermaid block is a code box with a live preview next to it. On save, the editor turns it into an SVG (light and dark), so the public site never loads Mermaid.</li>
+      <li>Autosave keeps a local draft every few seconds. <b>Save</b> stores a draft version on the server (<span class="mono">Ctrl+S</span>). It never changes the public page. <b>Publish…</b> does.</li>
+    </ul></div>
+  <div class="app">
+    <div class="bar"><div class="brand"><i></i>Docs</div><a class="btn sm ghost" href="#" title="Back to the Homelab Hub on the Pi (DOCS_HUB_URL)">← Hub</a><span class="grow"></span>
+      <span class="hint">Editing · unsaved changes</span><button class="btn sm">Cancel</button><button class="btn sm">Save draft</button><button class="btn sm pri">Publish…</button></div>
+    <div class="docs">
+      <aside class="side"><input class="search" placeholder="Filter pages…"><ul class="tree" id="tree2"></ul></aside>
+      <main class="main">
+        <div class="edbar">
+          <select class="tb" style="border-color:var(--line)"><option>Paragraph</option><option>Heading 2</option><option>Heading 3</option></select>
+          <span class="sep"></span><button class="tb on"><b>B</b></button><button class="tb"><i>I</i></button><button class="tb"><u>U</u></button><button class="tb"><s>S</s></button><button class="tb mono">&lt;/&gt;</button><button class="tb">🔗</button>
+          <span class="sep"></span><button class="tb">• List</button><button class="tb">1. List</button><button class="tb">☑</button>
+          <span class="sep"></span><button class="tb">▦ Table</button><button class="tb">🖼 Image</button><button class="tb">{ } Code</button><button class="tb">ⓘ Callout</button><button class="tb">◇ Diagram</button><button class="tb">▸ Toggle</button><button class="tb">📎 File</button><button class="tb">⧉ Webapp</button>
+          <span class="grow"></span><button class="tb">↶</button><button class="tb">↷</button>
+        </div>
+        <div class="doc editing">
+          <input class="titlein" value="Cloudflare tunnel">
+          <div class="blk"><p>Every public page has <b>its own hostname</b>. Cloudflare sends the original <code>Host</code> header, and docs-public uses it to pick the page.</p></div>
+          <div class="blk" style="position:relative"><p>/<span class="caret"></span></p>
+            <div class="slash">
+              <div class="q">Basic</div>
+              <div class="it on"><span class="ico">H2</span><div>Heading<small>Section title</small></div></div>
+              <div class="it"><span class="ico">▦</span><div>Table<small>3 × 3, header row</small></div></div>
+              <div class="it"><span class="ico">{ }</span><div>Code block<small>With language and copy button</small></div></div>
+              <div class="it"><span class="ico">🖼</span><div>Image<small>Upload, paste or drag</small></div></div>
+              <div class="q">Rich</div>
+              <div class="it"><span class="ico">ⓘ</span><div>Callout<small>Info, tip, warning, danger</small></div></div>
+              <div class="it"><span class="ico">◇</span><div>Mermaid diagram<small>Flowchart, sequence…</small></div></div>
+              <div class="it"><span class="ico">▸</span><div>Collapsible section</div></div>
+              <div class="it"><span class="ico">📎</span><div>Attachment<small>PDF, config, zip (≤ 20 MB)</small></div></div>
+              <div class="it"><span class="ico">⧉</span><div>Embed webapp page<small>Choose one of your webapp pages</small></div></div>
+              <div class="it"><span class="ico">↗</span><div>Link to page<small>Search the tree</small></div></div>
+            </div>
+          </div>
+          <div class="blk" style="margin-top:250px"><div class="tabletools"><span>＋ row</span><span>＋ col</span><span>− row</span><span>− col</span><span>header</span><span>merge</span><span>🗑</span></div>
+            <table><tr><th>Hostname</th><th>Page</th><th>State</th></tr><tr><td>tunnel.domain.com</td><td>Cloudflare tunnel</td><td>public</td></tr><tr><td style="outline:2px solid var(--accent);outline-offset:-2px">flow.domain.com<span class="caret"></span></td><td>Request flow (webapp)</td><td>public</td></tr></table></div>
+          <div class="blk"><div class="dropzone">Drop image here to upload<br><span class="hint" style="color:var(--accent)">png, jpg, webp, gif, svg · up to 20 MB · stored once, even if used on several pages</span></div></div>
+          <div class="blk"><div class="caption">Mermaid block (editing)</div>
+            <div class="mermaid-edit"><textarea spellcheck="false">flowchart TD
+  R[Request] --> H{Host known?}
+  H -- yes --> P[Serve page]
+  H -- no --> N[404]</textarea><div class="pv" id="mmd"></div></div></div>
+          <div class="blk"><div class="callout warn"><b>Warning.</b> Never set "HTTP Host Header" in the tunnel's origin settings, or every page will look the same to docs-public. <span class="hint">· type: <u>warning</u> ▾</span></div></div>
+          <div class="savebar"><span class="hint">Local draft kept · last server save 2 min ago · v14</span><span class="grow"></span><button class="btn">Cancel</button><button class="btn">Save draft</button><button class="btn pri">Publish…</button></div>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. PUBLISH ============ -->
+<section class="panel" id="p-publish">
+  <div class="notes"><b>Page settings and Publish (one dialog).</b>
+    <ul>
+      <li>A page is public only when <b>Public</b> is on and it has a <b>hostname</b>. Type the sub-domain and pick the domain (from <span class="mono">DOCS_DOMAINS</span>). The check runs as you type: valid label, allowed domain, not used by another page.</li>
+      <li>The <b>pre-publish checks</b> list what the visitor will get: links to internal pages become plain text, links to other public pages go to their hostname, and files that will be copied to the public side are listed.</li>
+      <li><b>Publish</b> copies the current draft to the public side (live within seconds). <b>Unpublish</b> takes the hostname offline at once (visitors get 404) but keeps the hostname reserved for this page. Changing the hostname kills the old link.</li>
+      <li>Parent and position can also be changed here (the tree's drag and drop does the same).</li>
+    </ul></div>
+  <div class="modal-wrap app">
+    <div style="padding:20px;opacity:.5"><div class="pagehead"><h1>Cloudflare tunnel</h1></div><div class="doc" id="doc3"></div></div>
+    <div class="scrim"></div>
+    <div class="dialog">
+      <h3>Publish “Cloudflare tunnel”</h3>
+      <p class="hint" style="margin:0 0 10px">Draft v14 · public now shows v11 (published 14 Oct 2026, 18:02)</p>
+      <div class="field" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span class="switch" role="switch" aria-checked="true" id="pubsw"><i></i><b>Public</b></span>
+        <span class="hint" id="pubhint">Anyone with the link can view this one page. It is never listed or indexed.</span>
+      </div>
+      <div class="field" id="hostfield"><label>Public address</label>
+        <div class="hostin"><span style="padding:8px 0 8px 10px" class="mono muted">https://</span><input id="host" value="tunnel"><select><option>.domain.com</option><option>.docs.example.org</option></select></div>
+        <div class="hint" id="hostmsg" style="color:var(--ok)">✓ tunnel.domain.com is free. With the wildcard tunnel set up, it works as soon as you publish.</div>
+      </div>
+      <div class="field" style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px"><label style="font-weight:500;font-size:14px">Parent</label><select style="width:100%;padding:8px;border:1px solid var(--line);background:var(--bg);border-radius:4px"><option>Homelab / Networking</option><option>Homelab</option><option>(top level)</option></select></div>
+        <div style="width:140px"><label style="font-weight:500;font-size:14px">Position</label><select style="width:100%;padding:8px;border:1px solid var(--line);background:var(--bg);border-radius:4px"><option>2 of 4</option></select></div>
+      </div>
+      <div class="caption" style="margin-top:12px">Pre-publish checks</div>
+      <div class="check"><span class="m ok">✓</span><div>3 changes since v11: <b>1 section added</b>, 1 table edited, 1 image replaced. <a href="#" data-go="history">Show diff</a></div></div>
+      <div class="check"><span class="m ok">✓</span><div>Link to <b>Request flow</b> → <span class="mono">flow.domain.com</span> (public)</div></div>
+      <div class="check"><span class="m w">!</span><div>Link to <b>Router VLANs</b> is internal, so visitors see it as <b>plain text</b>. <a href="#">Go to link</a></div></div>
+      <div class="check"><span class="m ok">✓</span><div>Embedded webapp <b>Request flow</b> (published bundle b3, 412 KB) will be included.</div></div>
+      <div class="check"><span class="m ok">✓</span><div>4 files will be copied to the public side (2 images, 1 diagram, 1 PDF · 1.8 MB)</div></div>
+      <div class="acts"><button class="btn danger">Unpublish</button><span class="grow"></span><button class="btn">Cancel</button><button class="btn">Save settings only</button><button class="btn pri">Publish v14</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. WEBAPP ============ -->
+<section class="panel" id="p-webapp">
+  <div class="notes"><b>Webapp page: settings, bundles and live preview.</b>
+    <ul>
+      <li>Upload a single <span class="mono">index.html</span> or a <b>.zip</b> (it must contain <span class="mono">index.html</span> at the top or in one top folder). Each upload becomes a new <b>bundle</b> (b1, b2, …). The newest is the <b>draft</b>. Publish makes it live. <b>Use</b> on an older bundle rolls back.</li>
+      <li><b>Display</b>: <i>Full page</i> (the app fills the browser, no hub header) or <i>Framed</i> (page title, text above and below, app in a frame). <b>Height</b>: fixed px, <i>auto</i> (the app reports its height) or viewport.</li>
+      <li><b>Network</b>: by default the app can load only files from its own bundle. Tick a CDN to allow it. The app always runs in a sandbox: it cannot see the hub, its cookies or its APIs.</li>
+      <li>The theme (light/dark) is passed to the app. The preview on the right is a real sandboxed iframe: click the nodes and try the theme buttons.</li>
+    </ul></div>
+  <div class="app">
+    <div class="bar"><div class="brand"><i></i>Docs</div><a class="btn sm ghost" href="#" title="Back to the Homelab Hub on the Pi (DOCS_HUB_URL)">← Hub</a><span class="grow"></span></div>
+    <div class="main">
+      <div class="crumbs"><a href="#">Homelab</a> / <a href="#">Networking</a> / Request flow</div>
+      <div class="pagehead"><h1>Request flow <span class="pill kapp" style="vertical-align:middle">webapp</span></h1><button class="btn sm" data-go="history">History</button><button class="btn sm pri" data-go="publish">Publish…</button></div>
+      <div class="meta"><span class="pill pub">public</span><span class="mono">flow.domain.com</span><span>·</span><span>Draft bundle b4 differs from published b3</span></div>
+      <div class="cols2">
+        <div>
+          <div class="card"><h4>Bundle</h4>
+            <div class="upload">Drop <b>index.html</b> or a <b>.zip</b> here, or <a href="#">choose a file</a><br><span class="hint">zip ≤ 25 MB · ≤ 500 files · ≤ 60 MB unpacked · html, css, js, json, images, fonts, svg, wasm, csv, txt</span></div>
+            <table class="bundles" style="margin-top:10px">
+              <tr><th>Bundle</th><th>Uploaded</th><th>Size</th><th></th></tr>
+              <tr><td><b>b4</b> <span class="pill draft">draft</span></td><td>today 10:12</td><td>418 KB</td><td><button class="btn sm">Files</button></td></tr>
+              <tr><td><b>b3</b> <span class="pill pub">live</span></td><td>14 Oct</td><td>412 KB</td><td><button class="btn sm">Use</button></td></tr>
+              <tr><td>b2</td><td>12 Oct</td><td>390 KB</td><td><button class="btn sm">Use</button></td></tr>
+              <tr><td>b1</td><td>10 Oct</td><td>12 KB</td><td><button class="btn sm">Use</button></td></tr>
+            </table>
+            <details style="margin-top:10px"><summary>Files in b4 (6)</summary><div class="files">index.html · 6 KB<br>app.js · 14 KB<br>style.css · 3 KB<br>vendor/d3.min.js · 280 KB<br>data/steps.json · 2 KB<br>img/cloud.svg · 4 KB</div></details>
+          </div>
+          <div class="card"><h4>Display</h4>
+            <div class="field"><label>Mode</label><div class="seg" id="mode"><button aria-pressed="true" data-m="full">Full page</button><button aria-pressed="false" data-m="framed">Framed</button></div>
+              <div class="hint" id="modehint">The app fills the whole browser window. Visitors see only your app.</div></div>
+            <div class="field" id="desc" style="display:none"><label>Text above the app (optional, rich text)</label><textarea rows="2">Click a box to see what happens at that hop.</textarea></div>
+            <div class="field"><label>Height</label><div class="seg" id="hmode"><button aria-pressed="false">Fixed</button><button aria-pressed="true">Auto</button><button aria-pressed="false">Viewport</button></div>
+              <div class="hint">Auto: the app sends <span class="mono">{type:"hub:height", px}</span> with postMessage. Falls back to 600 px.</div></div>
+            <div class="field"><label>Theme</label><label class="cb"><input type="checkbox" checked> Pass the hub's light/dark theme to the app (<span class="mono">?theme=dark</span> + postMessage)</label></div>
+          </div>
+          <div class="card"><h4>Network access</h4>
+            <label class="cb"><input type="checkbox" checked disabled> Files from this bundle</label>
+            <label class="cb"><input type="checkbox"> cdnjs.cloudflare.com</label>
+            <label class="cb"><input type="checkbox"> cdn.jsdelivr.net</label>
+            <label class="cb"><input type="checkbox"> unpkg.com</label>
+            <div class="hint">Scripts, styles, fonts and images only. Fetching data (<span class="mono">connect-src</span>) is always limited to the bundle.</div>
+          </div>
+        </div>
+        <div>
+          <div class="previewbox">
+            <div class="ph"><b>Preview</b><span class="pill draft">b4 draft</span><span class="grow"></span>
+              <div class="seg" id="pvtheme"><button aria-pressed="true" data-t="light">Light</button><button aria-pressed="false" data-t="dark">Dark</button></div>
+              <div class="seg"><button aria-pressed="true">Desktop</button><button aria-pressed="false">Phone</button></div>
+              <button class="btn sm">Open full screen ↗</button></div>
+            <iframe id="appframe" sandbox="allow-scripts" title="Webapp preview"></iframe>
+          </div>
+          <p class="hint">Sandboxed iframe: <span class="mono">sandbox="allow-scripts"</span>, no same-origin. Files are served with <span class="mono">Content-Security-Policy: sandbox allow-scripts</span>, so this holds even when a file is opened directly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. HISTORY ============ -->
+<section class="panel" id="p-history">
+  <div class="notes"><b>Page history.</b>
+    <ul>
+      <li>Each <b>Save draft</b> and each <b>Publish</b> is a version (the last 100 per page are kept, and published versions are never pruned). Moves, renames and hostname changes are listed too.</li>
+      <li>Pick a version to see its changes against the version before it, or against what is live now. <b>Restore</b> copies that version into the draft. It does not publish by itself.</li>
+      <li>For webapp pages, the history lists bundle uploads and which bundle was published when.</li>
+    </ul></div>
+  <div class="app">
+    <div class="bar"><div class="brand"><i></i>Docs</div><a class="btn sm ghost" href="#" title="Back to the Homelab Hub on the Pi (DOCS_HUB_URL)">← Hub</a><span class="grow"></span><button class="btn sm" data-go="tree">← Back to page</button></div>
+    <div class="main">
+      <div class="pagehead"><h1>History · Cloudflare tunnel</h1></div>
+      <div class="hist">
+        <div class="card" style="padding:0;border-top-width:3px">
+          <div class="ver on"><b>v14</b> <span class="pill draft">draft</span><div class="w">Today 10:40 · saved</div></div>
+          <div class="ver"><b>v13</b><div class="w">Today 09:58 · saved</div></div>
+          <div class="ver"><b>v12</b><div class="w">15 Oct · saved · moved under Networking</div></div>
+          <div class="ver"><b>v11</b> <span class="pill pub">live</span><div class="w">14 Oct 18:02 · published</div></div>
+          <div class="ver"><b>v10</b><div class="w">14 Oct 17:40 · saved</div></div>
+          <div class="ver"><b>v6</b> <span class="pill">published</span><div class="w">2 Oct · published · hostname set</div></div>
+          <div class="ver"><b>v1</b><div class="w">28 Sep · created</div></div>
+        </div>
+        <div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><span>Compare <b>v14</b> with</span>
+            <div class="seg"><button aria-pressed="false">previous (v13)</button><button aria-pressed="true">live (v11)</button></div><span class="grow"></span><button class="btn sm">Restore v14 into draft</button></div>
+          <div class="doc diff">
+            <h2>Routing by hostname</h2>
+            <p>Every public page has <del class="del">a path under /docs</del> <ins class="ins">its own hostname</ins>. Cloudflare sends the original <code>Host</code> header.</p>
+            <div class="blockchg"><span class="pill draft">table changed</span><table><tr><th>Hostname</th><th>Page</th></tr><tr><td>tunnel.domain.com</td><td>Cloudflare tunnel</td></tr><tr class="ins"><td>flow.domain.com</td><td>Request flow</td></tr></table></div>
+            <div class="blockchg"><span class="pill pub">section added</span><h2 class="ins" style="display:inline-block">Troubleshooting</h2><p class="ins">If every page shows the same content, check the origin's HTTP Host Header setting…</p></div>
+            <div class="blockchg"><span class="pill">image replaced</span> <span class="hint">network-v2.png (84 KB) → network-v3.png (91 KB)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. PUBLIC ============ -->
+<section class="panel" id="p-public">
+  <div class="notes"><b>What a visitor sees.</b>
+    <ul>
+      <li><b>Exactly one page per hostname.</b> No tree, no breadcrumbs, no search, no list of other pages. A small header with the page title and a theme button, and a footer with the "last updated" date. No hub branding unless you want it.</li>
+      <li>Links to other <i>public</i> pages are normal links to their hostname. Links to internal pages are plain text.</li>
+      <li>A webapp page in <b>full page</b> mode is just the app filling the window. An unknown hostname gets a plain 404 that says nothing about which pages exist.</li>
+      <li>Every response: <span class="mono">X-Robots-Tag: noindex, nofollow</span>, robots.txt disallows all, strict CSP, no third-party requests (except CDNs you allowed for one app, inside its sandbox).</li>
+    </ul></div>
+  <p class="caption">A · tunnel.domain.com (rich page)</p>
+  <div class="browser">
+    <div class="url"><span class="lock">🔒</span><span class="addr">https://tunnel.domain.com/</span></div>
+    <div class="pubhead"><span class="t">Cloudflare tunnel</span><button class="btn sm" id="ptheme">◐ Theme</button></div>
+    <div class="pubbody"><h1>Cloudflare tunnel</h1><div class="hint" style="margin-bottom:14px">Updated 14 Oct 2026</div><article class="doc" id="doc6"></article></div>
+    <div class="pubfoot"><span>Last updated 14 Oct 2026</span><span>Shared page · read only</span></div>
+  </div>
+  <div class="stage" style="margin-top:22px">
+    <div style="flex:2;min-width:300px"><p class="caption">B · flow.domain.com (webapp, full page)</p>
+      <div class="browser"><div class="url"><span class="lock">🔒</span><span class="addr">https://flow.domain.com/</span></div><iframe id="appframe2" sandbox="allow-scripts" title="Public webapp" style="width:100%;height:460px;border:0;display:block"></iframe></div></div>
+    <div style="flex:1;min-width:260px"><p class="caption">C · random.domain.com (no page)</p>
+      <div class="browser"><div class="url"><span class="lock">🔒</span><span class="addr">https://random.domain.com/</span></div><div class="notfound"><div><b>404</b><span class="muted">Nothing here.</span></div></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 7. PHONE ============ -->
+<section class="panel" id="p-phone">
+  <div class="notes"><b>Phone (installed hub app and public visitors).</b>
+    <ul>
+      <li>Internal: the tree opens as a drawer from the ☰ button. Drag and drop is replaced by <b>Move to…</b> (pick the parent, then the position). The editor is the same, and its toolbar scrolls sideways.</li>
+      <li>Public: the same single page, sized for the phone. Tables scroll sideways and code blocks wrap or scroll.</li>
+    </ul></div>
+  <div class="stage">
+    <div><p class="caption">Internal · tree drawer</p>
+      <div class="phone" style="height:720px">
+        <div class="bar"><button class="btn sm">☰</button><div class="brand"><i></i>Docs</div><span class="grow"></span><a class="btn sm ghost" href="#">← Hub</a><button class="btn sm">Edit</button></div>
+        <div class="main"><div class="crumbs">Networking /</div><div class="pagehead"><h1>Cloudflare tunnel</h1></div><p>Every public page has its own hostname…</p></div>
+        <div class="scrim"></div>
+        <div class="drawer"><input class="search" placeholder="Filter pages…"><ul class="tree" id="tree7"></ul><button class="btn sm pri">＋ New page</button></div>
+      </div></div>
+    <div><p class="caption">Internal · Move to…</p>
+      <div class="phone" style="height:720px">
+        <div class="bar"><button class="btn sm">☰</button><div class="brand"><i></i>Docs</div></div>
+        <div class="scrim"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:16px 16px 0 0;padding:16px;box-shadow:0 -10px 40px rgba(0,0,0,.35)">
+          <h3 style="margin:0 0 4px;font:700 18px var(--f-display)">Move “Cloudflare tunnel”</h3>
+          <div class="hint">Children move with it (2 pages).</div>
+          <div class="field"><label>New parent</label><select style="width:100%;padding:9px;border:1px solid var(--line);background:var(--bg);border-radius:4px"><option>Homelab / Networking</option><option>Homelab</option><option>Homelab / Services</option><option>(top level)</option></select></div>
+          <div class="field"><label>Position</label><select style="width:100%;padding:9px;border:1px solid var(--line);background:var(--bg);border-radius:4px"><option>After “VLANs”</option><option>First</option><option>Last</option></select></div>
+          <div class="hint" style="margin-bottom:10px">Moving a page never changes whether it is public.</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn">Cancel</button><button class="btn pri">Move</button></div>
+        </div>
+      </div></div>
+    <div><p class="caption">Public · tunnel.domain.com</p>
+      <div class="phone" style="height:720px;overflow:auto">
+        <div class="pubhead"><span class="t">Cloudflare tunnel</span><button class="btn sm">◐</button></div>
+        <div class="pubbody"><h1>Cloudflare tunnel</h1><article class="doc" id="doc7"></article></div>
+      </div></div>
+  </div>
+</section>
+</div>
+
+<!-- The demo webapp shown in the sandboxed iframes: an interactive request-flow chart. -->
+<template id="demoapp">
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#f6f8f9;--ink:#13202b;--muted:#54626f;--line:#c4cdd5;--acc:#c2410c;--soft:#f6dccf}
+:root.dark{--bg:#172129;--ink:#e4eaee;--muted:#93a1ad;--line:#2c3944;--acc:#ff8a4c;--soft:#3a2418}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",Arial,sans-serif;padding:16px}
+h2{font:700 18px Arial,sans-serif;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+svg{width:100%;height:auto;display:block}.n rect{fill:var(--bg);stroke:var(--line);stroke-width:1.5;cursor:pointer;transition:all .2s}
+.n text{fill:var(--ink);font:12px monospace;pointer-events:none}.n.on rect{stroke:var(--acc);fill:var(--soft);stroke-width:2.5}
+.e{stroke:var(--muted);stroke-width:1.5;fill:none}.pkt{fill:var(--acc)}
+.box{border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:4px;padding:8px 12px;min-height:58px}
+button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:5px 10px;cursor:pointer;margin-right:6px}
+</style></head><body>
+<h2>How a visitor reaches one page</h2><div class="sub">Click a box, or play the request.</div>
+<svg viewBox="0 0 640 150"><path class="e" d="M110 75H160"/><path class="e" d="M270 75H320"/><path class="e" d="M430 75H480"/>
+<g class="n" data-i="0"><rect x="10" y="45" width="100" height="60" rx="6"/><text x="60" y="80" text-anchor="middle">Visitor</text></g>
+<g class="n" data-i="1"><rect x="160" y="45" width="110" height="60" rx="6"/><text x="215" y="80" text-anchor="middle">Cloudflare</text></g>
+<g class="n" data-i="2"><rect x="320" y="45" width="110" height="60" rx="6"/><text x="375" y="80" text-anchor="middle">cloudflared</text></g>
+<g class="n" data-i="3"><rect x="480" y="45" width="140" height="60" rx="6"/><text x="550" y="72" text-anchor="middle">docs-public</text><text x="550" y="90" text-anchor="middle">Host → page</text></g>
+<circle class="pkt" id="pkt" r="7" cx="60" cy="30" style="opacity:0"/></svg>
+<div class="box" id="info">Pick a step.</div><p><button id="play">▶ Play request</button><button id="reset">Reset</button></p>
+<script>
+var T=["Opens https://flow.domain.com/ from the link you shared.","*.domain.com points at the docs tunnel. TLS ends here (Universal SSL covers the wildcard).","Runs on the Docs LXC. Forwards to http://docs-public:3011 over the compose network and keeps Host: flow.domain.com.","Looks up flow.domain.com in hosts.json and serves only that page. Unknown host: 404."];
+var X=[60,215,375,550],ns=[].slice.call(document.querySelectorAll(".n")),pk=document.getElementById("pkt"),tm;
+function sel(i){ns.forEach(function(n,j){n.classList.toggle("on",j===i)});document.getElementById("info").innerHTML="<b>"+(i+1)+". </b>"+T[i];pk.setAttribute("cx",X[i]);pk.style.opacity=1}
+ns.forEach(function(n,i){n.onclick=function(){clearInterval(tm);sel(i)}});
+document.getElementById("play").onclick=function(){var i=0;clearInterval(tm);sel(0);tm=setInterval(function(){i++;if(i>3){clearInterval(tm);return}sel(i)},1100)};
+document.getElementById("reset").onclick=function(){clearInterval(tm);ns.forEach(function(n){n.classList.remove("on")});pk.style.opacity=0;document.getElementById("info").textContent="Pick a step."};
+function theme(t){document.documentElement.classList.toggle("dark",t==="dark")}
+addEventListener("message",function(e){if(e.data&&e.data.type==="hub:theme")theme(e.data.theme)});
+function h(){parent.postMessage({type:"hub:height",px:document.documentElement.scrollHeight},"*")}addEventListener("load",h);
+</script></body></html>
+</template>
+
+<script>
+// ---- shared content ----
+const treeData = [
+  { t: "Homelab", s: "", open: true, kids: [
+    { t: "Networking", s: "pub", open: true, kids: [
+      { t: "VLANs", s: "" },
+      { t: "Cloudflare tunnel", s: "draft", on: true, kids: [{ t: "Troubleshooting", s: "" }] },
+      { t: "Request flow", s: "pub", app: true },
+      { t: "Router VLANs", s: "" } ] },
+    { t: "Services", s: "", kids: [{ t: "Pi-hole", s: "" }, { t: "Backups", s: "pub" }] },
+    { t: "Hardware", s: "" } ] },
+  { t: "Work notes", s: "", kids: [{ t: "Kafka cheatsheet", s: "pub" }] },
+  { t: "Interactive demos", s: "", open: true, kids: [{ t: "TLS handshake", s: "", app: true }, { t: "Raft explained", s: "pub", app: true }] },
+];
+function renderTree(el, items, opts) {
+  for (const it of items) {
+    const li = document.createElement("li");
+    const n = document.createElement("div"); n.className = "node" + (it.on ? " on" : "");
+    if (opts && opts.dnd && it.t === "Kafka cheatsheet") n.classList.add("ghost");
+    if (opts && opts.dnd && it.t === "Router VLANs") n.classList.add("drop-before");
+    if (opts && opts.dnd && it.t === "Services") n.classList.add("drop-into");
+    n.innerHTML = `<span class="tw">${it.kids ? (it.open ? "▾" : "▸") : ""}</span><i class="dot ${it.s}"></i><span class="t">${it.t}</span>${it.app ? '<span class="kind">APP</span>' : ""}${it.on ? '<span style="opacity:.8">⋯</span>' : ""}`;
+    n.onclick = () => { if (it.kids) { it.open = !it.open; el.innerHTML = ""; renderTree(el, items === treeData ? treeData : items, opts); } };
+    li.appendChild(n);
+    if (it.kids && it.open) { const ul = document.createElement("ul"); renderTree(ul, it.kids, opts); li.appendChild(ul); }
+    el.appendChild(li);
+  }
+}
+function rerender(id, opts) { const el = document.getElementById(id); el.innerHTML = ""; renderTree(el, treeData, opts); }
+rerender("tree1", { dnd: true }); rerender("tree2"); rerender("tree7");
+
+function docHtml(pub) {
+  const internalLink = pub ? `<span>Router VLANs</span>` : `<a class="xlink" href="#" title="Internal page: shown as plain text publicly">Router VLANs</a>`;
+  const publicLink = pub ? `<a href="#">Request flow</a>` : `<a class="xlink" href="#" title="Public: links to flow.domain.com">Request flow</a>`;
+  return `
+  <div class="callout tip"><b>In short.</b> One wildcard hostname in Cloudflare, one container, and each page answers on its own sub-domain.</div>
+  <h2>How it fits together</h2>
+  <p>The tunnel forwards every <code>*.domain.com</code> request to docs-public on the Docs LXC. VLAN details are in ${internalLink}; the animated version is ${publicLink}.</p>
+  <figure><div class="img">${document.getElementById("netimg").innerHTML}</div><figcaption>Figure 1 · Only docs-public is reachable from the docs tunnel. The Pi is not involved.</figcaption></figure>
+  <h2>Routing by hostname</h2>
+  <table><tr><th>Hostname</th><th>Served by</th><th>Result</th></tr>
+  <tr><td><code>portfolio.domain.com</code></td><td>Pi tunnel (explicit DNS record)</td><td>Portfolio, unchanged</td></tr>
+  <tr><td><code>tunnel.domain.com</code></td><td>docs tunnel → docs-public</td><td>This page</td></tr>
+  <tr><td><code>anything-else.domain.com</code></td><td>docs tunnel → docs-public</td><td>404</td></tr></table>
+  <div style="display:flex;justify-content:center;margin:10px 0">${document.getElementById("mermaidsvg").innerHTML}</div>
+  <h2>Setup steps</h2>
+  <div class="codeblock"><div class="ch"><span>bash</span><span>Copy</span></div><pre><span class="c"># DNS: one wildcard CNAME to the docs tunnel</span>
+cloudflared tunnel route dns <span class="s">docs</span> <span class="s">"*.domain.com"</span>
+<span class="c"># deploy/docs/.env on the LXC</span>
+<span class="n">TUNNEL_TOKEN</span>=<span class="s">&lt;docs tunnel token&gt;</span></pre></div>
+  <details><summary>Why not a path in the service URL?</summary><div><p>cloudflared accepts only <code>scheme://host:port</code> as a service. The path field on a public hostname only matches requests and never rewrites them.</p></div></details>
+  <div class="attach"><span class="ic">PDF</span><div><b>tunnel-setup-checklist.pdf</b><div class="hint">212 KB · Download</div></div></div>
+  <div class="embed"><div class="eh"><span class="pill kapp">webapp</span><span>Request flow</span><span class="grow"></span>${pub ? "" : "<span>sandboxed · auto height</span>"}</div><iframe class="emb" sandbox="allow-scripts" title="Request flow" style="height:400px"></iframe></div>
+  <h2>Troubleshooting</h2>
+  <div class="callout warn"><b>Every page looks the same?</b> The origin's "HTTP Host Header" override is set. Clear it.</div>`;
+}
+document.getElementById("doc1").innerHTML = docHtml(false);
+document.getElementById("doc3").innerHTML = docHtml(false);
+document.getElementById("doc6").innerHTML = docHtml(true);
+document.getElementById("doc7").innerHTML = docHtml(true);
+document.getElementById("mmd").innerHTML = document.getElementById("mermaidsvg").innerHTML;
+
+// ---- sandboxed demo app ----
+const appSrc = document.getElementById("demoapp").innerHTML;
+const frames = [...document.querySelectorAll("iframe.emb"), document.getElementById("appframe"), document.getElementById("appframe2")];
+frames.forEach((f) => { f.srcdoc = appSrc; });
+function effectiveTheme() { const d = document.documentElement.dataset.theme; return d || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+function pushTheme(t) { frames.forEach((f) => f.contentWindow && f.contentWindow.postMessage({ type: "hub:theme", theme: t || effectiveTheme() }, "*")); }
+frames.forEach((f) => f.addEventListener("load", () => pushTheme()));
+// auto height: only trust messages from our own frames (their origin is "null" because of the sandbox)
+addEventListener("message", (e) => { const f = frames.find((x) => x.contentWindow === e.source); if (f && f.classList.contains("emb") && e.data && e.data.type === "hub:height" && e.data.px > 150) f.style.height = Math.min(Math.max(e.data.px, 200), 1200) + "px"; });
+
+// ---- tabs, theme, small interactions ----
+const panels = ["tree", "edit", "publish", "webapp", "history", "public", "phone"];
+function show(p) { if (!panels.includes(p)) p = "tree";
+  panels.forEach((x) => document.getElementById("p-" + x).classList.toggle("on", x === p));
+  document.querySelectorAll(".tab[data-p]").forEach((t) => t.setAttribute("aria-selected", t.dataset.p === p)); location.hash = p; scrollTo(0, 0); }
+document.querySelectorAll(".tab[data-p]").forEach((t) => (t.onclick = () => show(t.dataset.p)));
+document.querySelectorAll("[data-go]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); show(b.dataset.go); }));
+show(location.hash.slice(1));
+let th = 0;
+document.getElementById("theme").onclick = (e) => { th = (th + 1) % 3; const r = document.documentElement;
+  if (th === 0) r.removeAttribute("data-theme"); else r.dataset.theme = th === 1 ? "light" : "dark"; e.target.textContent = "Theme: " + ["system", "light", "dark"][th]; pushTheme(); };
+document.getElementById("ptheme").onclick = () => document.getElementById("theme").click();
+document.querySelectorAll("#pvtheme button").forEach((b) => (b.onclick = () => { document.querySelectorAll("#pvtheme button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  document.getElementById("appframe").contentWindow.postMessage({ type: "hub:theme", theme: b.dataset.t }, "*"); }));
+document.querySelectorAll("#mode button").forEach((b) => (b.onclick = () => { document.querySelectorAll("#mode button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  const framed = b.dataset.m === "framed"; document.getElementById("desc").style.display = framed ? "block" : "none";
+  document.getElementById("modehint").textContent = framed ? "The page title and your text are shown, and the app sits in a frame below." : "The app fills the whole browser window. Visitors see only your app."; }));
+document.querySelectorAll("#hmode button").forEach((b) => (b.onclick = () => document.querySelectorAll("#hmode button").forEach((x) => x.setAttribute("aria-pressed", x === b))));
+const sw = document.getElementById("pubsw");
+sw.onclick = () => { const on = sw.getAttribute("aria-checked") !== "true"; sw.setAttribute("aria-checked", on);
+  document.getElementById("hostfield").style.opacity = on ? 1 : .4;
+  document.getElementById("pubhint").textContent = on ? "Anyone with the link can view this one page. It is never listed or indexed." : "Internal only. Publishing stores the version, but nothing is served publicly."; };
+const taken = { flow: "Request flow", raft: "Raft explained", backups: "Backups" };
+document.getElementById("host").oninput = (e) => { const v = e.target.value.trim().toLowerCase(), m = document.getElementById("hostmsg");
+  if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(v)) { m.style.color = "var(--bad)"; m.textContent = "✗ Use a–z, 0–9 and inner hyphens, 1–63 characters."; }
+  else if (taken[v]) { m.style.color = "var(--bad)"; m.textContent = `✗ ${v}.domain.com is already used by ${taken[v]}.`; }
+  else { m.style.color = "var(--ok)"; m.textContent = `✓ ${v}.domain.com is free. With the wildcard tunnel set up, it works as soon as you publish.`; } };
+</script>
+</body>
+</html>

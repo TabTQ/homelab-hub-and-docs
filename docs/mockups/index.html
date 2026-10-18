@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en" data-dir="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homelab Hub Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ===== Tokens. Bare :root = direction A light. Every token is declared here first. ===== */
+:root{
+  --bg:#E8ECEF; --surface:#F6F8F9; --surface2:#DDE3E8; --ink:#13202B; --muted:#54626F; --line:#C4CDD5;
+  --accent:#C2410C; --accent-ink:#FFFFFF; --accent-soft:#F6DCCF;
+  --ok:#237A3B; --warn:#B45309; --bad:#B42323; --off:#8A96A1;
+  --radius:4px; --radius-lg:6px; --shadow:none;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --h1:clamp(1.6rem,1.2rem + 1.6vw,2.3rem);
+  color-scheme:light;
+}
+/* Direction B light */
+:root[data-dir="b"]{
+  --bg:#F5F6F8; --surface:#FFFFFF; --surface2:#ECEEF2; --ink:#10131A; --muted:#5A6272; --line:#D6DAE2;
+  --accent:#0B6E69; --accent-ink:#FFFFFF; --accent-soft:#D3ECEA;
+  --ok:#1F7A45; --warn:#A45A0B; --bad:#B3261E; --off:#8B93A3;
+  --radius:0px; --radius-lg:0px;
+  --f-display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --f-body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  --h1:clamp(2rem,1.4rem + 2.4vw,3.2rem);
+}
+/* Direction C light */
+:root[data-dir="c"]{
+  --bg:#E9ECF4; --surface:#FFFFFF; --surface2:#F1F3FA; --ink:#171B2E; --muted:#5B6280; --line:#D9DDEB;
+  --accent:#3B52D0; --accent-ink:#FFFFFF; --accent-soft:#DDE3FB;
+  --ok:#1E7B47; --warn:#B45F06; --bad:#C0342B; --off:#8C93AD;
+  --radius:12px; --radius-lg:20px; --shadow:0 1px 2px rgba(23,27,46,.06),0 8px 24px rgba(23,27,46,.06);
+  --f-display:"Outfit","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Outfit","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --h1:clamp(1.7rem,1.3rem + 1.6vw,2.4rem);
+}
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"])[data-dir="a"]{--bg:#0F171D;--surface:#172129;--surface2:#202C36;--ink:#E4EAEE;--muted:#93A1AD;--line:#2C3944;--accent:#FF8A4C;--accent-ink:#1A0E07;--accent-soft:#3A2418;--ok:#4CC46F;--warn:#F0A040;--bad:#FF6B6B;--off:#667480;--shadow:none;color-scheme:dark}
+:root:not([data-theme="light"])[data-dir="b"]{--bg:#101216;--surface:#16191F;--surface2:#1E222A;--ink:#ECEEF2;--muted:#9AA2B2;--line:#2B303A;--accent:#4FC1B9;--accent-ink:#06211F;--accent-soft:#14322F;--ok:#52C285;--warn:#E8A24A;--bad:#FF7A70;--off:#6E7686;--shadow:none;color-scheme:dark}
+:root:not([data-theme="light"])[data-dir="c"]{--bg:#12141F;--surface:#1C2033;--surface2:#262B44;--ink:#E8EAF6;--muted:#98A0C4;--line:#2E3450;--accent:#8FA3FF;--accent-ink:#0E1330;--accent-soft:#2B3466;--ok:#55C98A;--warn:#F2A65A;--bad:#FF7B72;--off:#6F7799;--shadow:0 1px 2px rgba(0,0,0,.4);color-scheme:dark}
+}
+:root[data-theme="dark"][data-dir="a"]{--bg:#0F171D;--surface:#172129;--surface2:#202C36;--ink:#E4EAEE;--muted:#93A1AD;--line:#2C3944;--accent:#FF8A4C;--accent-ink:#1A0E07;--accent-soft:#3A2418;--ok:#4CC46F;--warn:#F0A040;--bad:#FF6B6B;--off:#667480;--shadow:none;color-scheme:dark}
+:root[data-theme="dark"][data-dir="b"]{--bg:#101216;--surface:#16191F;--surface2:#1E222A;--ink:#ECEEF2;--muted:#9AA2B2;--line:#2B303A;--accent:#4FC1B9;--accent-ink:#06211F;--accent-soft:#14322F;--ok:#52C285;--warn:#E8A24A;--bad:#FF7A70;--off:#6E7686;--shadow:none;color-scheme:dark}
+:root[data-theme="dark"][data-dir="c"]{--bg:#12141F;--surface:#1C2033;--surface2:#262B44;--ink:#E8EAF6;--muted:#98A0C4;--line:#2E3450;--accent:#8FA3FF;--accent-ink:#0E1330;--accent-soft:#2B3466;--ok:#55C98A;--warn:#F2A65A;--bad:#FF7B72;--off:#6F7799;--shadow:0 1px 2px rgba(0,0,0,.4);color-scheme:dark}
+
+
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ===== Mockup control bar (not part of the design) ===== */
+.mockbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--ink);color:var(--bg);display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;padding:9px 16px;font:500 12.5px/1.2 var(--f-mono)}
+.mockbar .mgrp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.mockbar .lbl{opacity:.6;margin-right:4px;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.mockbar button{background:transparent;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg);padding:5px 10px;border-radius:3px}
+.mockbar button[aria-pressed="true"]{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+.mockbar .note{margin-left:auto;opacity:.7}
+@media (max-width:900px){.mockbar .note{display:none}}
+
+/* ===== App shell (shared by every page: the consistency the design must guarantee) ===== */
+.shell{max-width:2200px;margin:0 auto;padding:0 clamp(16px,3vw,56px) 64px}
+.top{display:flex;align-items:center;gap:16px;padding:18px 0;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:600;font-size:1.25rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand i{width:14px;height:14px;background:var(--accent);display:inline-block;border-radius:var(--radius)}
+.nav{display:flex;gap:2px;flex-wrap:wrap}
+.nav button{background:none;border:0;padding:7px 12px;color:var(--muted);border-radius:var(--radius);font-weight:500}
+.nav button[aria-current="page"]{color:var(--ink);background:var(--surface2)}
+.grow{flex:1}
+.kbd-search{display:flex;align-items:center;gap:10px;min-width:min(100%,260px);background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:var(--radius)}
+.kbd-search kbd{margin-left:auto;font:500 11px var(--f-mono);border:1px solid var(--line);padding:1px 6px;border-radius:3px}
+.scope{font:500 11.5px var(--f-mono);color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.scope b{color:var(--ok);font-weight:500}
+h1{font-family:var(--f-display);font-size:var(--h1);line-height:1.08;margin:6px 0 4px;letter-spacing:-.015em;text-wrap:balance;font-weight:600}
+:root[data-dir="b"] h1{font-weight:400}
+h2{font-family:var(--f-display);font-size:1.15rem;margin:0;font-weight:600;letter-spacing:-.005em}
+:root[data-dir="b"] h2{font-weight:400;font-size:1.55rem}
+.sub{color:var(--muted);margin:0 0 20px;max-width:65ch}
+.eyebrow{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--off);flex:none;display:inline-block}
+.dot.up{background:var(--ok)} .dot.down{background:var(--bad)} .dot.warn{background:var(--warn)} .dot.unknown{background:transparent;border:1.5px solid var(--off)}
+:root[data-dir="a"] .dot{border-radius:1px}
+.state{font:500 11.5px var(--f-mono);color:var(--muted)}
+.state.up{color:var(--ok)} .state.down{color:var(--bad)} .state.warn{color:var(--warn)}
+.btn{background:var(--surface);border:1px solid var(--line);padding:7px 12px;border-radius:var(--radius);font-weight:500}
+.btn:hover{border-color:var(--ink)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.screen[hidden]{display:none}
+
+/* ===== Dashboard ===== */
+.widgets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 18px}
+.w{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+.w .k{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.w .v{font:600 1.3rem var(--f-display);font-variant-numeric:tabular-nums;margin-top:2px}
+.w .v small{font:400 .8rem var(--f-body);color:var(--muted);margin-left:4px}
+.bar{height:5px;background:var(--surface2);margin-top:8px;border-radius:999px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.pinned{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 22px}
+.pinned .eyebrow{margin-right:6px}
+.chip-act{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);padding:7px 12px;border-radius:var(--radius);font-weight:500}
+.chip-act:hover{border-color:var(--accent)}
+.groups{columns:3 360px;column-gap:14px}
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);break-inside:avoid;margin:0 0 14px}
+.grp>header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.grp .count{font:500 11.5px var(--f-mono);color:var(--muted)}
+.items{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.sub-grp{grid-column:1/-1;margin-top:6px}
+.sub-grp .eyebrow{display:block;margin:6px 0}
+.sub-grp .items{margin:0}
+.item a,.item button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface2);border:1px solid transparent;padding:9px 10px;border-radius:var(--radius);min-height:46px}
+.item a:hover,.item button:hover{border-color:var(--accent)}
+.ico{width:26px;height:26px;border-radius:var(--radius);background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 12px var(--f-display);flex:none}
+.item .nm{font-weight:500;line-height:1.2;display:block}
+.item .hs{font:400 11px var(--f-mono);color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .txt{min-width:0;flex:1}
+.item.off .nm{color:var(--muted)}
+.portfolio-card{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;background:var(--accent);color:var(--accent-ink);padding:16px 18px;border-radius:var(--radius-lg);margin-bottom:14px}
+.portfolio-card h2{color:inherit}
+.portfolio-card p{margin:2px 0 0;opacity:.85}
+.portfolio-card .btn{background:transparent;color:inherit;border-color:color-mix(in srgb,var(--accent-ink) 55%,transparent)}
+.portfolio-card .btn.solid{background:var(--accent-ink);color:var(--accent);border-color:var(--accent-ink)}
+
+/* --- Direction B "Ledger": no boxes, ruled rows --- */
+:root[data-dir="b"] .w{border:0;border-top:1px solid var(--ink);background:transparent;padding:8px 0}
+:root[data-dir="b"] .bar{display:none}
+:root[data-dir="b"] .grp{background:transparent;border:0;border-top:2px solid var(--ink);padding:10px 0 0;box-shadow:none}
+:root[data-dir="b"] .items{grid-template-columns:1fr;gap:0}
+:root[data-dir="b"] .item a,:root[data-dir="b"] .item button{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:8px 2px;min-height:0}
+:root[data-dir="b"] .item a:hover,:root[data-dir="b"] .item button:hover{background:var(--surface2)}
+:root[data-dir="b"] .ico{background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:0}
+:root[data-dir="b"] .item .hs{display:inline;margin-left:10px}
+:root[data-dir="b"] .item .txt{display:flex;align-items:baseline;gap:0;flex-wrap:wrap}
+:root[data-dir="b"] .chip-act{border-radius:0;background:transparent}
+:root[data-dir="b"] .portfolio-card{border-radius:0;background:var(--surface2);color:var(--ink);border-top:2px solid var(--accent)}
+:root[data-dir="b"] .portfolio-card .btn{border-color:var(--ink)}
+:root[data-dir="b"] .portfolio-card .btn.solid{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+/* --- Direction C "Lattice": soft bento tiles, pills --- */
+:root[data-dir="c"] .grp{padding:18px}
+:root[data-dir="c"] .items{display:flex;flex-wrap:wrap;gap:8px}
+:root[data-dir="c"] .item{flex:1 1 150px}
+:root[data-dir="c"] .item a,:root[data-dir="c"] .item button{border-radius:999px;padding:8px 14px 8px 10px;background:var(--surface2)}
+:root[data-dir="c"] .ico{border-radius:50%}
+:root[data-dir="c"] .w{border:0;box-shadow:var(--shadow);border-radius:var(--radius-lg);padding:14px 16px}
+:root[data-dir="c"] .chip-act{border-radius:999px;box-shadow:var(--shadow);border:0}
+:root[data-dir="c"] .kbd-search{border-radius:999px}
+:root[data-dir="c"] .btn{border-radius:999px}
+:root[data-dir="c"] .sub-grp{flex-basis:100%}
+/* --- Direction A "Signal": label-tape captions, status LED in the corner --- */
+:root[data-dir="a"] .item a,:root[data-dir="a"] .item button{position:relative;padding-right:22px}
+:root[data-dir="a"] .item .dot{position:absolute;top:8px;right:8px}
+:root[data-dir="a"] .items{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+:root[data-dir="a"] .grp>header h2{font:600 11.5px var(--f-mono);text-transform:uppercase;letter-spacing:.1em;background:var(--ink);color:var(--bg);padding:3px 8px;border-radius:2px}
+:root[data-dir="a"] .grp{border-top:3px solid var(--ink)}
+
+/* ===== Skills explorer ===== */
+.explorer{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:900px){.explorer{grid-template-columns:1fr}}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+:root[data-dir="b"] .pane{background:transparent;border:0;border-top:2px solid var(--ink);padding:10px 0}
+.skill-group{margin:0 0 16px}
+.skill-group h3{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.skill{border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:var(--radius);font-size:13.5px;display:inline-flex;gap:7px;align-items:center}
+:root[data-dir="c"] .skill{border-radius:999px}
+.skill .n{font:500 11px var(--f-mono);color:var(--muted)}
+.skill:hover{border-color:var(--accent)}
+.skill[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.skill[aria-pressed="true"] .n{color:inherit;opacity:.85}
+.skill.none{border-style:dashed;color:var(--muted);background:transparent}
+.skill.related{border-color:var(--accent);background:var(--accent-soft)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.evi{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.evi li{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:12px 14px}
+:root[data-dir="b"] .evi li{border:0;border-bottom:1px solid var(--line);padding:10px 0;background:transparent}
+.evi .kind{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--accent)}
+.evi .t{font-weight:600;margin:1px 0}
+.evi .m{color:var(--muted);font-size:13px}
+.evi mark{background:var(--accent-soft);color:var(--ink);padding:0 4px;border-radius:2px}
+.cov{font:500 12px var(--f-mono);color:var(--muted)}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:var(--radius);padding:16px}
+
+/* ===== Homelab ===== */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow)}
+:root[data-dir="b"] .card{background:transparent;border:0;border-top:1px solid var(--ink);padding:10px 0}
+.card h3{margin:0;font:600 1rem var(--f-display)}
+:root[data-dir="b"] .card h3{font:400 1.25rem var(--f-display)}
+.card .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:5px}
+.card .row span:first-child{color:var(--muted)}
+.hw{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 20px;margin:12px 0 22px}
+.hw div{border-top:1px solid var(--line);padding-top:6px}
+.hw dt{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hw dd{margin:1px 0 0}
+.tabs{display:flex;gap:6px;margin:0 0 18px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:var(--radius)}
+:root[data-dir="c"] .tabs button{border-radius:999px}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.h2row{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 10px}
+.static-note{font:500 11.5px var(--f-mono);color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px}
+.spec-list{margin:6px 0 0;padding-left:16px;color:var(--muted);font-size:12.5px}
+
+/* ===== Palette + modal + toast ===== */
+.overlay{position:fixed;inset:0;background:rgba(8,10,16,.62);display:grid;place-items:start center;padding:12vh 16px 16px;z-index:100}
+.overlay[hidden]{display:none}
+.dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);width:min(620px,100%);box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.dialog input[type=text]{width:100%;font:inherit;background:transparent;border:0;border-bottom:1px solid var(--line);padding:14px 16px;color:var(--ink)}
+.dialog input[type=text]:focus{outline:none;border-bottom-color:var(--accent)}
+.res{max-height:52vh;overflow:auto;padding:6px}
+.res .gl{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:8px 10px 4px}
+.res button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:var(--radius)}
+.res button[aria-selected="true"]{background:var(--accent-soft)}
+.res .hint{margin-left:auto;font:500 11px var(--f-mono);color:var(--muted)}
+.pfoot{display:flex;gap:16px;padding:8px 14px;border-top:1px solid var(--line);font:500 11px var(--f-mono);color:var(--muted)}
+.modal{padding:20px}
+.modal h2{font-size:1.3rem;margin:0 0 4px}
+.impact{margin:12px 0;padding:12px 14px;background:var(--surface2);border-radius:var(--radius);font-size:14px}
+.impact ul{margin:6px 0 0;padding-left:18px}
+.modal label{display:block;margin:14px 0 6px;font-weight:500}
+.modal input[type=text]{border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;width:100%;font:500 1rem var(--f-mono);background:var(--bg)}
+.mrow{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.audit{font:400 11.5px var(--f-mono);color:var(--muted);margin-top:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--radius);z-index:200;font-size:14px;max-width:calc(100% - 32px)}
+.toast[hidden]{display:none}
+@media (prefers-reduced-motion:no-preference){.bar>i{transition:width .4s}}
+</style>
+</head>
+<body>
+
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+  <div class="mgrp"><span class="lbl">Direction</span>
+    <button data-dir-btn="a" aria-pressed="true">A Signal</button>
+    <button data-dir-btn="b" aria-pressed="false">B Ledger</button>
+    <button data-dir-btn="c" aria-pressed="false">C Lattice</button></div>
+  <div class="mgrp"><span class="lbl">Theme</span>
+    <button data-theme-btn="system" aria-pressed="true">System</button>
+    <button data-theme-btn="light" aria-pressed="false">Light</button>
+    <button data-theme-btn="dark" aria-pressed="false">Dark</button></div>
+  <div class="mgrp"><span class="lbl">Screen</span>
+    <button data-screen-btn="dash" aria-pressed="true">Dashboard</button>
+    <button data-screen-btn="skills" aria-pressed="false">Skills explorer</button>
+    <button data-screen-btn="lab" aria-pressed="false">Homelab</button>
+    <button data-screen-btn="confirm" aria-pressed="false">Confirm shutdown</button></div>
+  <span class="note">Mockup: static sample data, nothing here calls the Pi or Proxmox. Press Ctrl/Cmd+K.</span>
+</div>
+
+<div class="shell">
+  <header class="top">
+    <div class="brand"><i aria-hidden="true"></i>Homelab Hub</div>
+    <nav class="nav" aria-label="Main">
+      <button data-nav="dash">Dashboard</button>
+      <button data-nav="skills">Portfolio</button>
+      <button data-nav="lab">Homelab</button>
+      <button data-nav="cfg">Config</button>
+    </nav>
+    <span class="grow"></span>
+    <span class="scope" title="Internal app, reachable only from LAN and Tailscale"><b>&#9679;</b> Internal &middot; LAN + Tailscale</span>
+    <button class="kbd-search" id="openPalette" aria-label="Open search and actions"><span>Search services, actions, portfolio</span><kbd>Ctrl K</kbd></button>
+  </header>
+
+  <!-- DASHBOARD -->
+  <main class="screen" data-screen="dash">
+    <h1>Tabish&rsquo;s Homelab</h1>
+    <p class="sub">Thursday 24 September &middot; 3 of 6 containers running &middot; Proxmox host reachable.</p>
+    <section class="widgets" id="widgets" aria-label="Raspberry Pi resources"></section>
+    <div class="pinned" id="pinned"><span class="eyebrow">Quick actions</span></div>
+    <div class="portfolio-card">
+      <div><h2>Portfolio &middot; Tabish Tariq, Data Engineer</h2>
+      <p>Public site live on port 3011 &middot; snapshot synced 12 s ago &middot; 62 skills, 7 projects and roles</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn solid" data-nav="skills">Open</button><button class="btn" data-nav="skills">Edit content</button></div>
+    </div>
+    <div class="groups" id="groups"></div>
+  </main>
+
+  <!-- SKILLS EXPLORER -->
+  <main class="screen" data-screen="skills" hidden>
+    <div class="eyebrow">Portfolio &rsaquo; Skills</div>
+    <h1>What have I actually used?</h1>
+    <p class="sub">Pick one or more skills. You get the roles and projects that used all of them, and the skills that show up next to them. Skills with no linked evidence stay visible and dashed.</p>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Filter mode"><button data-mode="all" aria-pressed="true">Match all</button><button data-mode="any" aria-pressed="false">Match any</button></div>
+      <button class="btn" id="clearSkills">Clear</button>
+      <span class="cov" id="cov"></span>
+    </div>
+    <div class="explorer">
+      <section class="pane" id="skillPane" aria-label="Skills by group"></section>
+      <section class="pane" aria-live="polite"><div class="eyebrow" id="evHead"></div><ul class="evi" id="evList"></ul><div id="related" style="margin-top:16px"></div></section>
+    </div>
+  </main>
+
+  <!-- HOMELAB -->
+  <main class="screen" data-screen="lab" hidden>
+    <div class="eyebrow">Portfolio &rsaquo; Homelab</div>
+    <h1 id="labTitle"></h1>
+    <p class="sub" id="labSummary"></p>
+    <div class="tabs" id="labTabs" role="group" aria-label="Homelab pages"></div>
+    <dl class="hw" id="labHw"></dl>
+    <div id="labBody"></div>
+  </main>
+
+  <!-- CONFIG (placeholder) -->
+  <main class="screen" data-screen="cfg" hidden>
+    <h1>Config</h1>
+    <p class="sub">The YAML editor (with add-service forms, diff before save, and version history) is the next mockup. Not designed yet.</p>
+  </main>
+</div>
+
+<!-- Command palette -->
+<div class="overlay" id="paletteOv" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Search and actions">
+    <input type="text" id="q" placeholder="Type a service, action, skill or project" autocomplete="off" aria-controls="res">
+    <div class="res" id="res" role="listbox"></div>
+    <div class="pfoot"><span>&uarr;&darr; move</span><span>Enter open</span><span>Esc close</span><span style="margin-left:auto">Actions always ask to confirm</span></div>
+  </div>
+</div>
+
+<!-- Confirmation modal -->
+<div class="overlay" id="confirmOv" hidden>
+  <div class="dialog modal" role="alertdialog" aria-modal="true" aria-labelledby="cTitle">
+    <div class="eyebrow" id="cKind"></div>
+    <h2 id="cTitle"></h2>
+    <div class="impact" id="cImpact"></div>
+    <div id="cTypeWrap"><label for="cInput" id="cLabel"></label><input type="text" id="cInput" autocomplete="off" spellcheck="false"></div>
+    <div class="mrow"><button class="btn" id="cCancel">Cancel</button><button class="btn danger" id="cGo" disabled>Confirm</button></div>
+    <div class="audit" id="cAudit"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const DATA = {"skills": [{"name": "Cloud & Data Warehousing", "skills": [{"l": "Amazon Redshift", "ev": ["e-genpact", "e-tcs-system-engineer", "e-tcs-trainee", "p-redshift"]}, {"l": "Redshift Spectrum", "ev": ["e-genpact"]}, {"l": "AWS S3", "ev": ["e-genpact", "e-tcs-trainee", "p-redshift"]}, {"l": "AWS Glue (Catalog & Jobs)", "ev": ["e-genpact", "p-redshift"]}, {"l": "AWS Secrets Manager", "ev": ["p-redshift"]}, {"l": "KMS", "ev": ["p-redshift"]}, {"l": "IAM", "ev": []}]}, {"name": "Languages", "skills": [{"l": "Python 3", "ev": ["e-genpact", "e-tcs-system-engineer", "e-tcs-trainee", "p-redshift", "p-algo-trading-bot"]}, {"l": "SQL", "ev": ["e-tcs-system-engineer"]}, {"l": "PL/pgSQL", "ev": ["e-genpact", "e-tcs-system-engineer", "p-redshift"]}, {"l": "Bash", "ev": []}, {"l": "Java", "ev": ["e-tcs-trainee", "p-spring-shopping-cart"]}, {"l": "C++", "ev": ["p-greenhouse-irrigation"]}]}, {"name": "Data Engineering", "skills": [{"l": "ETL pipeline design", "ev": ["e-tcs-trainee"]}, {"l": "MERGE / UPSERT patterns", "ev": []}, {"l": "MERGE REMOVE DUPLICATES", "ev": ["e-genpact"]}, {"l": "EXCEPT-based dedup", "ev": []}, {"l": "Watermark incremental loads", "ev": []}, {"l": "DISTKEY / SORTKEY tuning", "ev": []}, {"l": "MPP query optimization", "ev": []}, {"l": "Manifest-based bulk loads", "ev": []}]}, {"name": "Python Ecosystem", "skills": [{"l": "psycopg2 (ThreadedConnectionPool)", "ev": ["e-genpact"]}, {"l": "boto3", "ev": []}, {"l": "concurrent.futures", "ev": []}, {"l": "argparse", "ev": []}, {"l": "configparser", "ev": []}, {"l": "cryptography (Fernet)", "ev": []}, {"l": "NumPy", "ev": ["p-algo-trading-bot"]}, {"l": "Pandas", "ev": ["p-algo-trading-bot"]}]}, {"name": "Automation & Orchestration", "skills": [{"l": "Jenkins", "ev": []}, {"l": "n8n", "ev": []}, {"l": "systemd", "ev": []}, {"l": "cron", "ev": []}, {"l": "GEMINI scheduler", "ev": []}, {"l": "ServiceNow integration", "ev": ["e-tcs-system-engineer"]}]}, {"name": "Infrastructure & DevOps", "skills": [{"l": "Docker / Compose", "ev": []}, {"l": "Proxmox VE", "ev": []}, {"l": "LXC containers", "ev": []}, {"l": "Proxmox Backup Server", "ev": []}, {"l": "Linux (Debian/Ubuntu)", "ev": []}, {"l": "Tailscale", "ev": []}, {"l": "Cloudflare Tunnel", "ev": []}, {"l": "Prometheus / Grafana", "ev": []}, {"l": "cAdvisor / Node Exporter", "ev": []}]}, {"name": "AI-Assisted Development", "skills": [{"l": "Claude Code", "ev": []}, {"l": "Gemini CLI", "ev": []}, {"l": "OpenCode", "ev": []}, {"l": "Claude / Gemini / Grok chat", "ev": []}]}, {"name": "Tooling", "skills": [{"l": "Git / GitHub", "ev": []}, {"l": "Confluence", "ev": []}, {"l": "Jira", "ev": []}, {"l": "VS Code / Code-Server", "ev": []}]}, {"name": "Databases & BI", "skills": [{"l": "SQL Server", "ev": ["e-tcs-trainee"]}, {"l": "Tableau", "ev": ["e-tcs-system-engineer"]}]}, {"name": "Embedded & Control Systems", "skills": [{"l": "Arduino", "ev": ["p-greenhouse-irrigation"]}, {"l": "Control Systems", "ev": ["p-greenhouse-irrigation"]}, {"l": "Fuzzy Logic", "ev": ["p-greenhouse-irrigation"]}, {"l": "MATLAB", "ev": ["p-greenhouse-irrigation"]}, {"l": "Simulink", "ev": ["p-greenhouse-irrigation"]}]}, {"name": "Java Ecosystem", "skills": [{"l": "Hibernate", "ev": ["p-spring-shopping-cart"]}, {"l": "JSP", "ev": ["p-spring-shopping-cart"]}, {"l": "Spring", "ev": ["p-spring-shopping-cart"]}]}], "evidence": [{"id": "e-genpact", "kind": "Role", "title": "Consultant / Data Engineer", "sub": "Genpact", "when": "May 2025 – Present", "skills": ["AWS S3", "AWS Glue (Catalog & Jobs)", "Python 3", "psycopg2 (ThreadedConnectionPool)", "Amazon Redshift", "MERGE REMOVE DUPLICATES", "PL/pgSQL", "Redshift Spectrum"], "tags": []}, {"id": "e-tcs-system-engineer", "kind": "Role", "title": "System Engineer", "sub": "Tata Consultancy Services", "when": "Jan 2023 – May 2025", "skills": ["Python 3", "ServiceNow integration", "Amazon Redshift", "Tableau", "PL/pgSQL", "SQL"], "tags": []}, {"id": "e-tcs-trainee", "kind": "Role", "title": "Assistant System Engineer — Trainee", "sub": "Tata Consultancy Services", "when": "Feb 2022 – Dec 2022", "skills": ["ETL pipeline design", "Python 3", "SQL Server", "AWS S3", "Java", "Amazon Redshift"], "tags": []}, {"id": "p-redshift", "kind": "Flagship project", "title": "Amazon Redshift Pipeline Optimization", "sub": "8 deliverables", "when": "", "skills": ["Amazon Redshift", "AWS S3", "AWS Glue (Catalog & Jobs)", "AWS Secrets Manager", "KMS", "Python 3", "PL/pgSQL"], "tags": []}, {"id": "p-algo-trading-bot", "kind": "Project", "title": "Algo Trading Bot", "sub": "", "when": "", "skills": ["Python 3", "NumPy", "Pandas"], "tags": ["Binance API"]}, {"id": "p-greenhouse-irrigation", "kind": "Project", "title": "Automatic Greenhouse Irrigation", "sub": "", "when": "", "skills": ["Arduino", "C++", "Control Systems", "Fuzzy Logic", "MATLAB", "Simulink"], "tags": []}, {"id": "p-spring-shopping-cart", "kind": "Project", "title": "Spring Framework Shopping Cart", "sub": "", "when": "", "skills": ["Hibernate", "JSP", "Java", "Spring"], "tags": []}], "devices": [{"key": "proxmox-host", "cat": "proxmox", "name": "Proxmox VE Node", "ip": "192.168.10.100", "summary": "Primary compute platform of the homelab — a Proxmox VE 8.x node running ~10 services across isolated LXC containers, and the central backup repository for the entire homelab.", "hw": [{"spec": "AMD Ryzen 5 5500 (6C/12T @ 3.6GHz, boosts 4.2GHz)", "component": "CPU"}, {"spec": "16GB DDR4-3200 (~30% utilization)", "component": "Memory"}, {"spec": "1TB NVMe SSD — OS & LVM pool", "component": "Boot drive"}, {"spec": "1TB SATA HDD — media / downloads", "component": "Data drive"}, {"spec": "240GB SSD — dedicated PBS datastore", "component": "Backup drive"}, {"spec": "Proxmox VE 8.x (kernel 6.14.x)", "component": "OS"}]}, {"key": "raspberry-pi", "cat": "raspberry_pi", "name": "Raspberry Pi Monitoring Stack", "ip": "192.168.10.101", "summary": "A Dockerized observability and remote-access stack on a Raspberry Pi 4 (8GB). Public services via Cloudflare Tunnel (no open ports); admin over Tailscale. Weekly automated PBS backups to the Proxmox node.", "hw": [{"spec": "Raspberry Pi 4 Model B Rev 1.4", "component": "Model"}, {"spec": "8GB LPDDR4 (~21% used)", "component": "RAM"}, {"spec": "64GB USB 3.1 flash drive", "component": "Boot/Root"}, {"spec": "32GB MicroSD", "component": "Temp/Swap"}, {"spec": "Debian 12 (bookworm)", "component": "OS"}, {"spec": "tabishrpi4 · 192.168.10.101 · Tailscale 100.64.0.5", "component": "Host / IP"}]}, {"key": "home-network", "cat": "network", "name": "Dual-ISP VLAN-Segmented Network", "ip": null, "summary": "A dual-ISP home network on a TP-Link ER605 gateway with bidirectional WAN failover between a 1 Gbps fiber PPPoE link and a 30 Mbps secondary ISP. VLAN 10 (high-speed) and VLAN 20 (IoT / cameras) are segmented across managed and unmanaged switches and WiFi 6 APs.", "hw": []}], "containers": [{"key": "lxc-100", "name": "UbuntuCT", "ip": "192.168.10.130", "purpose": "Web & AI Services", "res": "2C / 4GB", "status": "Active"}, {"key": "lxc-101", "name": "n8n", "ip": "192.168.10.105", "purpose": "Automation", "res": "2C / 2GB", "status": "Active"}, {"key": "lxc-102", "name": "Postgres", "ip": "192.168.10.198", "purpose": "Database", "res": "2C / 4GB", "status": "Active"}, {"key": "lxc-103", "name": "Code-Server", "ip": "192.168.10.113", "purpose": "Development", "res": "4C / 4GB", "status": "Active"}, {"key": "lxc-210", "name": "Downloads", "ip": "192.168.10.131", "purpose": "Media Stack", "res": "4C / 2GB", "status": "Active"}, {"key": "lxc-211", "name": "Fabric", "ip": "192.168.10.197", "purpose": "AI Research", "res": "4C / 8GB", "status": "Idle"}, {"key": "lxc-999", "name": "PBS", "ip": "192.168.10.199", "purpose": "Backups", "res": "1C / 2GB", "status": "Active"}], "services": [{"name": "Homepage", "ct": "homepage", "port": "2000", "fn": "Main dashboard (public via Cloudflare)"}, {"name": "Portainer", "ct": "portainer", "port": "9000", "fn": "Docker management"}, {"name": "Grafana", "ct": "grafana", "port": "3000", "fn": "Metrics visualization"}, {"name": "Prometheus", "ct": "prometheus", "port": "9090", "fn": "Metric collection"}, {"name": "Node Exporter", "ct": "node-exporter", "port": "9100", "fn": "Hardware metrics"}, {"name": "cAdvisor", "ct": "cadvisor", "port": "8080", "fn": "Container metrics"}, {"name": "Guacamole", "ct": "guacamole", "port": "8081", "fn": "Remote-desktop gateway (VNC/RDP/SSH)"}, {"name": "Cloudflared", "ct": "cloudflared", "port": "60123", "fn": "Secure outbound tunnel"}, {"name": "Watchtower", "ct": "watchtower", "port": "—", "fn": "Automated image updates"}, {"name": "WOL Server", "ct": "wol-server", "port": "host", "fn": "Wake-on-LAN magic packets"}], "network": [{"type": "isp", "name": "ISP 1 (Primary)", "spec": {"spec": "1 Gbps Fiber → Fiber-to-RJ45 converter → ER605 WAN 1 (PPPoE)"}}, {"type": "isp", "name": "ISP 2 (Secondary)", "spec": {"spec": "30 Mbps → ISP Router → ER605 WAN 2 (Dynamic IP)"}}, {"type": "vlan", "name": "VLAN 10", "spec": {"role": "High-speed — uses ISP 1 primarily", "subnet": "192.168.10.0/24"}}, {"type": "vlan", "name": "VLAN 20", "spec": {"role": "Low-speed / IoT — uses ISP 2 primarily", "subnet": "192.168.20.0/24"}}, {"type": "switch", "name": "TP-Link TL-SG108E", "spec": {"role": "Central VLAN 10 distribution", "type": "8-Port Gigabit · Managed", "ports": ["P1 ER605 LAN1 uplink", "P2 → room switch", "P3 Raspberry Pi", "P4 Proxmox node", "P5 Brother's PC", "P6 EX220 WiFi 6 AP"], "anchor": "sg108e"}}, {"type": "switch", "name": "TP-Link LS105G", "spec": {"role": "My room switch (VLAN 10)", "type": "5-Port Gigabit · Unmanaged", "ports": ["Uplink from SG108E P2", "P2 My PC", "P3 AX10 WiFi 6 AP", "P4 Office laptop"], "anchor": "ls105g"}}, {"type": "switch", "name": "Tenda 8-Port", "spec": {"role": "VLAN 20 IoT distribution", "type": "100 Mbps · Unmanaged", "ports": ["Uplink from ER605 LAN3", "P2 Camera DVR", "P3 Secondary router AP (Floor 2)"], "anchor": "tenda"}}], "profile": {"name": "Tabish Tariq", "title": "Data Engineer", "tagline": "AWS & Amazon Redshift · Python ETL · Self-hosted Infra", "stats": [{"sub": "Genpact · TCS", "label": "Years experience", "value": "4+"}, {"sub": "config-driven framework", "label": "Legacy procs unified", "value": "35→7"}, {"sub": "from days, 1yr of data", "label": "Backfill recovery", "value": "<2h"}, {"sub": "Proxmox + Raspberry Pi", "label": "Self-hosted services", "value": "~20"}]}};
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* Real state of the Proxmox guests from `pct list` on 2026-09-24: 100,102,999 running; 101,103,210 stopped. */
+const SVC=[
+ {g:'Proxmox',items:[
+  {n:'Proxmox VE',h:'192.168.10.102:8006',s:'up',i:'PV'},{n:'Proxmox Backup Server',h:'192.168.10.199:8007',s:'up',i:'PB'}],
+  sub:[{t:'Raspberry Pi',items:[
+  {n:'Grafana',h:':3000',s:'up',i:'Gr'},{n:'Prometheus',h:':9090',s:'up',i:'Pr'},{n:'Homepage',h:':2000',s:'up',i:'Hp'},{n:'Portainer',h:':9000',s:'up',i:'Po'},{n:'Guacamole',h:':8081',s:'up',i:'Gu'}]}]},
+ {g:'Applications',items:[
+  {n:'Tabish Tariq',h:'192.168.10.130:3000',s:'up',i:'TT'},{n:'XWiki',h:'192.168.10.130:8080',s:'up',i:'XW'},{n:'Trilium Notes',h:'192.168.10.130:8081',s:'up',i:'Tr'},{n:'Open WebUI',h:'192.168.10.130:3001',s:'up',i:'OW'}],
+  sub:[{t:'Developer Tools',items:[
+  {n:'Code Server',h:'192.168.10.113:8680',s:'down',i:'CS'},{n:'N8N',h:'192.168.10.105:5678',s:'down',i:'n8'},{n:'PostgreSQL Webmin',h:'192.168.10.198:12321',s:'up',i:'Pg'},{n:'PostgreSQL Adminer',h:'192.168.10.198:12322',s:'up',i:'Ad'}]}]},
+ {g:'Media & Downloads',items:[
+  {n:'File Browser',h:'192.168.10.131:8080',s:'down',i:'FB'},{n:'qBittorrent',h:'192.168.10.131:8090',s:'down',i:'qB'},{n:'JDownloader',h:'192.168.10.131:5800',s:'down',i:'JD'},{n:'Jellyfin',h:'192.168.10.131:8096',s:'down',i:'Jf'},{n:'ClamAV Scanner',h:'192.168.10.131:8091',s:'down',i:'Cl'}]},
+ {g:'Power Management',items:[
+  {n:'Wake Proxmox',h:'WOL AA:BB:CC:DD:EE:01',s:'up',i:'W',a:'wake-pve'},{n:'Wake Predator',h:'WOL AA:BB:CC:DD:EE:02',s:'unknown',i:'W',a:'wake-pred'},{n:'Shutdown Proxmox',h:'node pve',s:'up',i:'S',a:'shut-pve'},{n:'Reboot Proxmox',h:'node pve',s:'up',i:'R',a:'reboot-pve'}],
+  sub:[{t:'Container toggles',items:[
+  {n:'Backup Server LXC',h:'lxc 999',s:'up',i:'T',a:'tog-999'},{n:'Apps LXC',h:'lxc 100',s:'up',i:'T',a:'tog-100'},{n:'Media LXC',h:'lxc 210',s:'down',i:'T',a:'tog-210'},{n:'N8N LXC',h:'lxc 101',s:'down',i:'T',a:'tog-101'},{n:'PostgreSQL LXC',h:'lxc 102',s:'up',i:'T',a:'tog-102'},{n:'Code-Server LXC',h:'lxc 103',s:'down',i:'T',a:'tog-103'}]}]}
+];
+const ACT={
+ 'wake-pve':{t:'Wake Proxmox',k:'Wake-on-LAN',mode:'click',impact:'Sends a magic packet to AA:BB:CC:DD:EE:01. The host is currently <b>up</b>, so this will do nothing.',go:'Send packet'},
+ 'wake-pred':{t:'Wake Predator RTX4060',k:'Wake-on-LAN',mode:'click',impact:'Sends a magic packet to AA:BB:CC:DD:EE:02. The app can only report that the packet was sent, then watches for a reply for 90 s.',go:'Send packet'},
+ 'shut-pve':{t:'Shut down Proxmox host “pve”',k:'Proxmox node power',mode:'type',word:'pve',impact:'<b>3 guests are running</b> and will go down with the host:<ul><li>UbuntuCT (100)</li><li>Postgres (102), your portfolio database</li><li>PBS (999)</li></ul>The host will not come back until you wake it.',go:'Shut down'},
+ 'reboot-pve':{t:'Reboot Proxmox host “pve”',k:'Proxmox node power',mode:'type',word:'pve',impact:'<b>3 guests are running</b> and will be interrupted: UbuntuCT (100), Postgres (102), PBS (999). Expect about 3 minutes of downtime.',go:'Reboot'}
+};
+[['999','Backup Server','running'],['100','Apps','running'],['210','Media','stopped'],['101','N8N','stopped'],['102','PostgreSQL','running'],['103','Code-Server','stopped']].forEach(([id,n,st])=>{
+  ACT['tog-'+id]= st==='running'
+   ? {t:'Stop '+n+' LXC ('+id+')',k:'Guest control · hard stop',mode:'type',word:id,impact:'This is an <b>immediate power-off</b>, not a graceful shutdown. Anything running inside the container is cut off.',go:'Stop now'}
+   : {t:'Start '+n+' LXC ('+id+')',k:'Guest control',mode:'click',impact:'Starts the container. It is currently <b>stopped</b>.',go:'Start'};
+});
+
+/* ---- Dashboard render ---- */
+const W=[['CPU',12,'%'],['Memory',21,'%','1.6 / 7.6 GB'],['Disk /',27,'%','14 / 56 GB'],['CPU temp',51,'°C'],['Uptime','4d 6h',''],['Network','2.1','MB/s']];
+$('#widgets').innerHTML=W.map(([k,v,u,x])=>`<div class="w"><div class="k">${k}</div><div class="v">${v}<small>${u}${x?' · '+x:''}</small></div>${typeof v==='number'&&u==='%'?`<div class="bar"><i style="width:${v}%"></i></div>`:''}</div>`).join('');
+const item=(x)=>{
+  const inner=`<span class="ico" aria-hidden="true">${esc(x.i)}</span><span class="txt"><span class="nm">${esc(x.n)}</span><span class="hs">${esc(x.h)}</span></span><span class="dot ${x.s}" title="${x.s}"></span><span class="sr">${x.s}</span>`;
+  return `<li class="item ${x.s==='down'?'off':''}">${x.a?`<button data-act="${x.a}">${inner}</button>`:`<a href="#" data-link="${esc(x.n)}" title="${esc(x.h)}">${inner}</a>`}</li>`;
+};
+$('#groups').innerHTML=SVC.map(g=>{
+  const all=[...g.items,...(g.sub||[]).flatMap(s=>s.items)]; const up=all.filter(x=>x.s==='up').length;
+  return `<section class="grp"><header><h2>${esc(g.g)}</h2><span class="count">${up}/${all.length} up</span></header><ul class="items">${g.items.map(item).join('')}${(g.sub||[]).map(s=>`<li class="sub-grp"><span class="eyebrow">${esc(s.t)}</span><ul class="items">${s.items.map(item).join('')}</ul></li>`).join('')}</ul></section>`;
+}).join('');
+$('#pinned').insertAdjacentHTML('beforeend',['wake-pve','wake-pred','tog-100','tog-210'].map(a=>`<button class="chip-act" data-act="${a}"><span class="dot ${a==='wake-pred'?'unknown':(a==='tog-210'?'down':'up')}"></span>${esc(ACT[a].t.replace(' LXC',''))}</button>`).join(''));
+
+/* ---- Skills explorer ---- */
+const EV=Object.fromEntries(DATA.evidence.map(e=>[e.id,e]));
+let picked=new Set(), mode='all';
+function evidenceFor(){
+  const p=[...picked]; if(!p.length) return [];
+  return DATA.evidence.filter(e=> mode==='all'? p.every(s=>e.skills.includes(s)) : p.some(s=>e.skills.includes(s)));
+}
+function renderSkills(){
+  const res=evidenceFor(), resIds=new Set(res.map(e=>e.id));
+  const related={}; res.forEach(e=>e.skills.forEach(s=>{ if(!picked.has(s)) related[s]=(related[s]||0)+1; }));
+  const total=DATA.skills.reduce((a,g)=>a+g.skills.length,0), cov=DATA.skills.reduce((a,g)=>a+g.skills.filter(s=>s.ev.length).length,0);
+  $('#cov').textContent=`${cov} of ${total} skills have linked evidence`;
+  $('#skillPane').innerHTML=DATA.skills.map(g=>`<div class="skill-group"><h3><span>${esc(g.name)}</span><span>${g.skills.filter(s=>s.ev.length).length}/${g.skills.length}</span></h3><div class="chips">${g.skills.map(s=>`<button class="skill ${s.ev.length?'':'none'} ${related[s.l]&&!picked.has(s.l)?'related':''}" data-skill="${esc(s.l)}" aria-pressed="${picked.has(s.l)}">${esc(s.l)}<span class="n">${s.ev.length||'—'}</span></button>`).join('')}</div></div>`).join('');
+  const head=$('#evHead'), list=$('#evList');
+  if(!picked.size){ head.textContent='Evidence'; list.innerHTML=`<li class="empty">Choose a skill on the left. Try <b>Python 3</b>, then add <b>Amazon Redshift</b>.</li>`; $('#related').innerHTML=''; return; }
+  head.textContent=`${res.length} match${res.length===1?'':'es'} for ${[...picked].join(mode==='all'?' + ':' or ')}`;
+  list.innerHTML=res.length?res.map(e=>`<li><div class="kind">${esc(e.kind)}${e.when?' · '+esc(e.when):''}</div><div class="t">${esc(e.title)}</div><div class="m">${esc(e.sub)}${e.sub?' · ':''}${e.skills.map(s=>picked.has(s)?`<mark>${esc(s)}</mark>`:esc(s)).join(', ')}${e.tags.length?` <span class="m">· also tagged: ${e.tags.map(esc).join(', ')}</span>`:''}</div></li>`).join(''):`<li class="empty">No role or project links all of these. Switch to <b>Match any</b> to see partial matches.</li>`;
+  const rel=Object.entries(related).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,10);
+  $('#related').innerHTML=rel.length?`<div class="eyebrow" style="margin-bottom:8px">Often used alongside</div><div class="chips">${rel.map(([s,n])=>`<button class="skill related" data-skill="${esc(s)}" aria-pressed="false">${esc(s)}<span class="n">${n}</span></button>`).join('')}</div>`:'';
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-skill]'); if(b){const s=b.dataset.skill; picked.has(s)?picked.delete(s):picked.add(s); renderSkills(); return;}
+  const m=e.target.closest('[data-mode]'); if(m){mode=m.dataset.mode; $$('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===m)); renderSkills();}
+});
+$('#clearSkills').onclick=()=>{picked.clear();renderSkills()};
+
+/* ---- Homelab ---- */
+let labKey='proxmox-host';
+function renderLab(){
+  $('#labTabs').innerHTML=DATA.devices.map(d=>`<button data-lab="${d.key}" aria-pressed="${d.key===labKey}">${esc(d.name)}</button>`).join('');
+  const d=DATA.devices.find(x=>x.key===labKey);
+  $('#labTitle').textContent=d.name; $('#labSummary').textContent=d.summary;
+  $('#labHw').innerHTML=d.hw.map(h=>`<div><dt>${esc(h.component)}</dt><dd>${esc(h.spec)}</dd></div>`).join('');
+  let body='';
+  if(d.cat==='proxmox') body=`<div class="h2row"><h2>Containers</h2><span class="static-note">Static portfolio content, not live status</span></div><div class="hgrid">${DATA.containers.map(c=>`<article class="card"><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(c.name)}</h3><span class="state ${c.status==='Active'?'up':'warn'}">${esc(c.status)}</span></div><div class="row"><span>ID</span><span class="mono">${esc(c.key.replace('lxc-',''))}</span></div><div class="row"><span>Purpose</span><span>${esc(c.purpose)}</span></div><div class="row"><span>Resources</span><span class="mono">${esc(c.res)}</span></div><div class="row"><span>Address</span><span class="mono">${esc(c.ip)}</span></div></article>`).join('')}</div>`;
+  if(d.cat==='raspberry_pi') body=`<div class="h2row"><h2>Services</h2><span class="static-note">${DATA.services.length} containers</span></div><div class="hgrid">${DATA.services.map(s=>`<article class="card"><h3>${esc(s.name)}</h3><div class="row"><span>Function</span><span style="text-align:right">${esc(s.fn)}</span></div><div class="row"><span>Container</span><span class="mono">${esc(s.ct)}</span></div><div class="row"><span>Port</span><span class="mono">${esc(s.port)}</span></div></article>`).join('')}</div>`;
+  if(d.cat==='network'){
+    const g=t=>DATA.network.filter(n=>n.type===t);
+    body=`<div class="h2row"><h2>Uplinks</h2></div><div class="two">${g('isp').map(n=>`<article class="card"><h3>${esc(n.name)}</h3><div class="m" style="color:var(--muted);font-size:13px;margin-top:4px">${esc(n.spec.spec)}</div></article>`).join('')}</div>
+    <div class="h2row"><h2>VLANs</h2></div><div class="two">${g('vlan').map(n=>`<article class="card"><h3>${esc(n.name)}</h3><div class="row"><span>Subnet</span><span class="mono">${esc(n.spec.subnet)}</span></div><div class="row"><span>Role</span><span style="text-align:right">${esc(n.spec.role)}</span></div></article>`).join('')}</div>
+    <div class="h2row"><h2>Switches</h2></div><div class="hgrid">${g('switch').map(n=>`<article class="card"><h3>${esc(n.name)}</h3><div class="row"><span>Type</span><span>${esc(n.spec.type)}</span></div><div class="row"><span>Role</span><span style="text-align:right">${esc(n.spec.role)}</span></div><ul class="spec-list">${(n.spec.ports||[]).slice(0,4).map(p=>`<li>${esc(p)}</li>`).join('')}</ul></article>`).join('')}</div>`;
+  }
+  $('#labBody').innerHTML=body;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-lab]'); if(t){labKey=t.dataset.lab; renderLab();}});
+
+/* ---- Toast, actions, confirmation ---- */
+let toastT; function toast(m){const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3800);}
+let curAct=null, lastFocus=null;
+function openConfirm(id){
+  const a=ACT[id]; if(!a) return; curAct=a; lastFocus=document.activeElement;
+  $('#cKind').textContent=a.k; $('#cTitle').textContent=a.t; $('#cImpact').innerHTML=a.impact;
+  const typed=a.mode==='type'; $('#cTypeWrap').hidden=!typed; $('#cInput').value='';
+  if(typed) $('#cLabel').innerHTML=`Type <b class="mono">${esc(a.word)}</b> to confirm`;
+  $('#cGo').textContent=a.go; $('#cGo').disabled=typed; $('#cGo').className='btn '+(typed?'danger':'pri');
+  $('#cAudit').textContent='Recorded in the audit log with time, your IP and this browser.';
+  $('#confirmOv').hidden=false; (typed?$('#cInput'):$('#cGo')).focus();
+}
+function closeConfirm(){ $('#confirmOv').hidden=true; lastFocus&&lastFocus.focus&&lastFocus.focus(); }
+$('#cInput').addEventListener('input',()=>{ $('#cGo').disabled= $('#cInput').value.trim()!==curAct.word; });
+$('#cCancel').onclick=closeConfirm;
+$('#cGo').onclick=()=>{ const t=curAct.t; closeConfirm(); toast('Mockup only: “'+t+'” would be sent now. Nothing was called.'); };
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]'); if(a){openConfirm(a.dataset.act); return;}
+  const l=e.target.closest('[data-link]'); if(l){e.preventDefault(); toast('Would open '+l.dataset.link+' in a new tab.');}
+});
+
+/* ---- Command palette ---- */
+const INDEX=[
+ ...SVC.flatMap(g=>[...g.items,...(g.sub||[]).flatMap(s=>s.items)].filter(x=>!x.a).map(x=>({g:'Services',t:x.n,d:x.h,link:1}))),
+ ...Object.entries(ACT).map(([id,a])=>({g:'Actions',t:a.t,d:a.k,act:id})),
+ ...DATA.evidence.map(e=>({g:'Portfolio',t:e.title,d:e.kind+(e.sub?' · '+e.sub:''),go:'skills'})),
+ ...DATA.skills.flatMap(g=>g.skills.map(s=>({g:'Skills',t:s.l,d:g.name+' · '+(s.ev.length?s.ev.length+' linked':'no linked evidence'),skill:s.l}))),
+ ...[['Dashboard','dash'],['Portfolio skills','skills'],['Homelab pages','lab']].map(([t,go])=>({g:'Pages',t,d:'Go to',go}))
+];
+let sel=0, shown=[];
+function drawPalette(){
+  const q=$('#q').value.trim().toLowerCase(); const toks=q.split(/\s+/).filter(Boolean);
+  shown=INDEX.filter(x=>toks.every(t=>(x.t+' '+x.d+' '+x.g).toLowerCase().includes(t))).slice(0,q?40:14);
+  sel=Math.min(sel,Math.max(0,shown.length-1)); let last='';
+  $('#res').innerHTML=shown.length?shown.map((x,i)=>{const h=x.g!==last?`<div class="gl">${x.g}</div>`:''; last=x.g; return h+`<button role="option" data-i="${i}" aria-selected="${i===sel}"><span>${esc(x.t)}</span><span class="hint">${esc(x.d)}</span></button>`;}).join(''):'<div class="gl">No matches</div>';
+}
+function openPalette(){ $('#paletteOv').hidden=false; $('#q').value=''; sel=0; drawPalette(); $('#q').focus(); }
+function closePalette(){ $('#paletteOv').hidden=true; }
+function runItem(x){
+  closePalette();
+  if(x.act) return openConfirm(x.act);
+  if(x.skill){ picked=new Set([x.skill]); setScreen('skills'); return renderSkills(); }
+  if(x.go) return setScreen(x.go);
+  toast('Would open '+x.t+' in a new tab.');
+}
+$('#openPalette').onclick=openPalette;
+$('#q').addEventListener('input',()=>{sel=0;drawPalette()});
+$('#res').addEventListener('click',e=>{const b=e.target.closest('[data-i]'); if(b) runItem(shown[+b.dataset.i]);});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); $('#paletteOv').hidden?openPalette():closePalette(); return;}
+  if(e.key==='Escape'){ if(!$('#paletteOv').hidden) closePalette(); else if(!$('#confirmOv').hidden) closeConfirm(); return; }
+  if($('#paletteOv').hidden) return;
+  if(e.key==='ArrowDown'){e.preventDefault(); sel=Math.min(sel+1,shown.length-1); drawPalette(); $('[aria-selected="true"]',$('#res'))?.scrollIntoView({block:'nearest'});}
+  if(e.key==='ArrowUp'){e.preventDefault(); sel=Math.max(sel-1,0); drawPalette(); $('[aria-selected="true"]',$('#res'))?.scrollIntoView({block:'nearest'});}
+  if(e.key==='Enter'&&shown[sel]){e.preventDefault(); runItem(shown[sel]);}
+});
+$('#paletteOv').addEventListener('mousedown',e=>{ if(e.target===e.currentTarget) closePalette(); });
+$('#confirmOv').addEventListener('mousedown',e=>{ if(e.target===e.currentTarget) closeConfirm(); });
+
+/* ---- Mockup controls ---- */
+function setDir(d){ document.documentElement.dataset.dir=d; $$('[data-dir-btn]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dirBtn===d)); store.set('hub-dir',d); }
+function setTheme(t){ if(t==='system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme=t; $$('[data-theme-btn]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.themeBtn===t)); store.set('hub-theme',t); }
+function setScreen(s){
+  const real=s==='confirm'?'dash':s;
+  $$('.screen').forEach(m=>m.hidden=m.dataset.screen!==real);
+  $$('[data-screen-btn]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.screenBtn===s));
+  $$('[data-nav]').forEach(b=>b.dataset.nav===(real==='cfg'?'cfg':real)?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'));
+  if(real==='skills') renderSkills(); if(real==='lab') renderLab();
+  if(s==='confirm') openConfirm('shut-pve');
+}
+$$('[data-dir-btn]').forEach(b=>b.onclick=()=>setDir(b.dataset.dirBtn));
+$$('[data-theme-btn]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeBtn));
+$$('[data-screen-btn]').forEach(b=>b.onclick=()=>setScreen(b.dataset.screenBtn));
+document.addEventListener('click',e=>{const n=e.target.closest('[data-nav]'); if(n&&!n.closest('.mockbar')) setScreen(n.dataset.nav);});
+setDir(store.get('hub-dir','a')); setTheme(store.get('hub-theme','system')); setScreen('dash');
+</script>
+</body>
+</html>

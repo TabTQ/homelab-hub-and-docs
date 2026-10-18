@@ -1,0 +1,51 @@
+# Run from the repository root:  docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+#
+# hub-internal uses host networking on purpose: Wake-on-LAN needs a broadcast on the real LAN, and a bridge network
+# would silently swallow it. Publish nothing of it to the internet; only LAN and Tailscale should reach it.
+# The Pi serves nothing public any more: the portfolio is edited in Docs and served from the Docs LXC (deploy/docs).
+services:
+  hub-internal:
+    build: { context: .., dockerfile: deploy/Dockerfile.internal }
+    image: homelab-hub-internal:local
+    container_name: hub-internal
+    restart: unless-stopped
+    labels:
+      # Watchtower must leave these alone: the images are built locally (":local") and exist in no registry, so it can only fail.
+      - "com.centurylinklabs.watchtower.enable=false"
+      # The Docker page never stops, restarts, updates or removes a container with this label (it would cut its own branch).
+      - "com.homelabhub.self=true"
+    network_mode: host
+    environment:
+      HUB_PORT: ${HUB_PORT:-3010}
+      HUB_PASSWORD_HASH: "${HUB_PASSWORD_HASH:?set HUB_PASSWORD_HASH in deploy/.env (see README)}"
+      HUB_ALLOWED_HOSTS: ${HUB_ALLOWED_HOSTS:-}
+      HUB_AUTH_MODE: ${HUB_AUTH_MODE:-all}
+      HUB_SECURE_COOKIES: ${HUB_SECURE_COOKIES:-false}
+      HUB_BUDGET_ZONE: ${HUB_BUDGET_ZONE:-Asia/Kolkata}
+      PROXMOX_API_URL: ${PROXMOX_API_URL:-}
+      PROXMOX_API_TOKEN: ${PROXMOX_API_TOKEN:-}
+      PROXMOX_TLS_MODE: ${PROXMOX_TLS_MODE:-pinned}
+      PROXMOX_TLS_FINGERPRINT: ${PROXMOX_TLS_FINGERPRINT:-}
+      # Terminal page: off unless HUB_TERMINAL_ENABLED=true (see README, Terminal setup). The key lives in the data volume (ssh/).
+      HUB_TERMINAL_ENABLED: ${HUB_TERMINAL_ENABLED:-false}
+      HUB_TERMINAL_IDLE_SECONDS: ${HUB_TERMINAL_IDLE_SECONDS:-900}
+      HUB_TERMINAL_MAX_SECONDS: ${HUB_TERMINAL_MAX_SECONDS:-7200}
+      HUB_TERMINAL_MAX_SESSIONS: ${HUB_TERMINAL_MAX_SESSIONS:-2}
+      # Docker page: off unless HUB_DOCKER_ENABLED=true (see README, Docker setup). Hosts are declared in dashboard.yaml.
+      HUB_DOCKER_ENABLED: ${HUB_DOCKER_ENABLED:-false}
+      # Explicit heap: the Pi kernel has no memory cgroup, so container limits and percentage-based JVM sizing do nothing.
+      JAVA_TOOL_OPTIONS: ${HUB_INTERNAL_JAVA_OPTS:--Xmx256m -XX:+UseSerialGC -Xss512k}
+    volumes:
+      - ${HUB_DATA:-./data}/hub:/data          # hub.db, config/dashboard.yaml, secrets.env, images/, backups/
+    read_only: true
+    # exec is needed: sqlite-jdbc unpacks its native library into /tmp and loads it from there
+    tmpfs: ["/tmp:rw,exec,nosuid,size=64m"]
+    cap_drop: [ALL]
+    cap_add: [NET_RAW]   # for ping
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${HUB_PORT:-3010}/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

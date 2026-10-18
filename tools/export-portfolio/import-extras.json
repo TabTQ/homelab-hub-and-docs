@@ -1,0 +1,32 @@
+{
+  "_comment": "Extra content the importer adds on top of the export. Homelab items had no skill links in the old database; this mapping is the proposal shown in the design mockup. Edit freely, then re-run the import with --replace.",
+  "homelabSkillLinks": {
+    "devices": {
+      "proxmox-host": ["Proxmox VE", "LXC containers", "Proxmox Backup Server"],
+      "raspberry-pi": ["Docker / Compose", "Prometheus / Grafana", "cAdvisor / Node Exporter", "Cloudflare Tunnel", "Linux (Debian/Ubuntu)"]
+    },
+    "containers": {
+      "lxc-100": ["Docker / Compose", "Linux (Debian/Ubuntu)"],
+      "lxc-101": ["n8n"],
+      "lxc-102": ["SQL"],
+      "lxc-103": ["VS Code / Code-Server"],
+      "lxc-999": ["Proxmox Backup Server"]
+    },
+    "services": {
+      "Homepage": ["Docker / Compose"],
+      "Portainer": ["Docker / Compose"],
+      "Grafana": ["Prometheus / Grafana"],
+      "Prometheus": ["Prometheus / Grafana"],
+      "Node Exporter": ["cAdvisor / Node Exporter"],
+      "cAdvisor": ["cAdvisor / Node Exporter"],
+      "Guacamole": ["Docker / Compose"],
+      "Cloudflared": ["Cloudflare Tunnel", "Docker / Compose"],
+      "Watchtower": ["Docker / Compose"],
+      "WOL Server": ["Java", "Spring", "Docker / Compose"]
+    }
+  },
+  "casePlatformAliases": {
+    "AWS Glue": "AWS Glue (Catalog & Jobs)",
+    "Secrets Manager": "AWS Secrets Manager"
+  }
+}

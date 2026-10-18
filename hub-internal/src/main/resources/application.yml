@@ -1,0 +1,80 @@
+server:
+  port: ${HUB_PORT:3010}
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        name: HUBSESSION
+        http-only: true
+        same-site: strict
+        # true = the browser only sends the cookie over https (use when the dashboard is served through `tailscale serve`)
+        secure: ${hub.security.secure-cookies:false}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    # Pragmas as URL params (sqlite-jdbc applies them per connection). Verified by SchemaAndPragmasTest.
+    url: jdbc:sqlite:${HUB_DATA_DIR:./data}/hub.db?foreign_keys=on&journal_mode=WAL&busy_timeout=5000&synchronous=NORMAL
+    hikari:
+      maximum-pool-size: 4
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+
+hub:
+  proxmox:
+    url: ${PROXMOX_API_URL:}
+    token: ${PROXMOX_API_TOKEN:}
+    tls-mode: ${PROXMOX_TLS_MODE:pinned}
+    tls-fingerprint: ${PROXMOX_TLS_FINGERPRINT:}
+  legacy:
+    enabled: true
+    block-cross-site: true
+  auth:
+    # all = the whole dashboard needs the password (default, decision D7 revised / D12)
+    # edit = only /api/admin/** needs it, none = no login at all
+    mode: ${HUB_AUTH_MODE:all}
+    password-hash: ${HUB_PASSWORD_HASH:}
+  security:
+    # Comma separated extra Host names we answer to (LAN name, Tailscale MagicDNS name). IP literals and localhost are always allowed.
+    allowed-hosts: ${HUB_ALLOWED_HOSTS:}
+    # Marks the session and CSRF cookies Secure. Turn on only when EVERY way you open the dashboard is https: over plain http the
+    # browser refuses to store a Secure cookie, so login would silently fail.
+    secure-cookies: ${HUB_SECURE_COOKIES:false}
+  terminal:
+    # The Terminal page: a shell on this machine (or another declared in dashboard.yaml `terminals:`) over SSH.
+    # Off unless HUB_TERMINAL_ENABLED=true. Refuses to turn on when HUB_AUTH_MODE=none.
+    enabled: ${HUB_TERMINAL_ENABLED:false}
+    idle-seconds: ${HUB_TERMINAL_IDLE_SECONDS:900}
+    warn-seconds: ${HUB_TERMINAL_WARN_SECONDS:60}
+    max-seconds: ${HUB_TERMINAL_MAX_SECONDS:7200}
+    max-sessions: ${HUB_TERMINAL_MAX_SESSIONS:2}
+    connect-timeout-seconds: 10
+    max-message-bytes: 65536
+    max-queued-output-bytes: 524288
+  docker:
+    # The Docker page: containers and compose stacks on the hosts declared in dashboard.yaml `dockerHosts:`, managed by
+    # running the docker CLI over SSH. Off unless HUB_DOCKER_ENABLED=true. Refuses to turn on when HUB_AUTH_MODE=none.
+    enabled: ${HUB_DOCKER_ENABLED:false}
+    command-timeout-seconds: ${HUB_DOCKER_COMMAND_TIMEOUT_SECONDS:20}
+    job-timeout-seconds: ${HUB_DOCKER_JOB_TIMEOUT_SECONDS:900}
+    log-follow-max-seconds: ${HUB_DOCKER_LOG_FOLLOW_MAX_SECONDS:1800}
+    max-log-lines: 5000
+    idle-session-seconds: 60
+  budget:
+    # "Today" for the Budget page (settlement dates, "This month"). The container runs in UTC, so this is never the JVM zone.
+    zone: ${HUB_BUDGET_ZONE:Asia/Kolkata}

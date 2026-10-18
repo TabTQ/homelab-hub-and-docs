@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budget page: mockups</title>
+<style>
+/* Same tokens as the app (direction "A Signal"). Fonts fall back to system fonts in this mockup. */
+:root {
+  --bg: #e8ecef; --surface: #f6f8f9; --surface2: #dde3e8; --ink: #13202b; --muted: #54626f; --line: #c4cdd5;
+  --accent: #c2410c; --accent-ink: #ffffff; --accent-soft: #f6dccf;
+  --ok: #237a3b; --warn: #b45309; --bad: #b42323;
+  --radius: 4px; --radius-lg: 6px;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f171d; --surface: #172129; --surface2: #202c36; --ink: #e4eaee; --muted: #93a1ad; --line: #2c3944;
+    --accent: #ff8a4c; --accent-ink: #1a0e07; --accent-soft: #3a2418; --ok: #4cc46f; --warn: #f0a040; --bad: #ff6b6b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f171d; --surface: #172129; --surface2: #202c36; --ink: #e4eaee; --muted: #93a1ad; --line: #2c3944;
+  --accent: #ff8a4c; --accent-ink: #1a0e07; --accent-soft: #3a2418; --ok: #4cc46f; --warn: #f0a040; --bad: #ff6b6b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono { font-family: var(--f-mono); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.pos { color: var(--ok); } .neg { color: var(--bad); } .muted { color: var(--muted); }
+
+/* ---- mockup chrome ---- */
+.chrome { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chrome h1 { font: 700 15px var(--f-display); margin: 0 12px 0 0; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 6px 12px; font-size: 13px; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.grow { flex: 1; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 18px 16px 60px; }
+.panel { display: none; } .panel.on { display: block; }
+.notes { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-lg); padding: 12px 16px; margin: 0 0 18px; font-size: 14px; }
+.notes b { font-family: var(--f-display); }
+.notes ul { margin: 6px 0 0; padding-left: 20px; }
+.stage { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+/* ---- app look ---- */
+.app { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+.bar { display: flex; gap: 6px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg); flex-wrap: wrap; }
+.brand { font: 700 15px var(--f-display); display: flex; gap: 8px; align-items: center; margin-right: 10px; }
+.brand i { width: 12px; height: 12px; background: var(--accent); display: inline-block; }
+.nav a { padding: 5px 10px; border-radius: var(--radius); font-size: 14px; color: var(--muted); text-decoration: none; }
+.nav a.on { background: var(--surface2); color: var(--ink); }
+.content { padding: 16px 18px 24px; }
+h2.tape, .tape { font: 600 11px var(--f-mono); letter-spacing: .09em; text-transform: uppercase; background: var(--ink); color: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 2px; margin: 0; }
+.eyebrow { font: 500 11px var(--f-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 12px; font-size: 14px; }
+.btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.btn.danger { color: var(--bad); }
+.card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--ink); border-radius: var(--radius-lg); padding: 14px; }
+.card + .card { margin-top: 14px; }
+.card header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.monthbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.monthbar h1 { font: 700 28px/1.1 var(--f-display); margin: 0 8px; }
+.iconbtn { width: 34px; height: 34px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); font-size: 18px; line-height: 1; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.scrollx { overflow-x: auto; }
+a { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { font: 500 11px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+th.num { text-align: right; }
+td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tfoot td { border-top: 2px solid var(--ink); font-weight: 600; }
+.pill { font: 500 10.5px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 2px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; white-space: nowrap; }
+.pill.grey { background: var(--surface2); color: var(--muted); }
+.xfer { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.xfer:last-child { border-bottom: 0; }
+.xfer .who { flex: 1; min-width: 130px; }
+.xfer .who b { font-family: var(--f-display); }
+.xfer.done { opacity: .6; }
+.xfer.done .amt { text-decoration: line-through; }
+.hint { font-size: 12.5px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip.add { border-style: dashed; color: var(--accent); }
+.field { margin: 12px 0; }
+.field label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 14px; }
+.field input[type=text], .field input[type=number], .field select, .field input[type=month], .field input[type=date] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); background: var(--bg); border-radius: var(--radius); }
+.field .row { display: flex; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.rupee { position: relative; }
+.rupee span { position: absolute; left: 10px; top: 9px; color: var(--muted); }
+.rupee input { padding-left: 26px !important; font-family: var(--f-mono); }
+.preview { font-size: 13px; color: var(--muted); background: var(--surface2); border-radius: var(--radius); padding: 8px 10px; margin-top: 8px; }
+.sheet-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; margin-top: 10px; border-top: 1px solid var(--line); }
+.banner { border: 1px solid var(--line); border-left: 4px solid var(--warn); background: var(--surface); padding: 8px 12px; border-radius: var(--radius); font-size: 14px; margin-bottom: 12px; }
+
+/* phone frame */
+.phone { width: 390px; max-width: 100%; border: 10px solid #0b1116; border-radius: 34px; background: var(--bg); overflow: hidden; position: relative; }
+.phone .bar { padding: 10px 12px; }
+.phone .content { padding: 12px 12px 20px; }
+.phone .monthbar h1 { font-size: 22px; }
+.phone .cols { grid-template-columns: 1fr; }
+.phone .scrim { position: absolute; inset: 0; background: rgba(8,10,16,.55); }
+.phone .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 16px 16px 0 0; padding: 14px 16px 16px; max-height: 92%; overflow: auto; box-shadow: 0 -10px 40px rgba(0,0,0,.35); }
+.phone .sheet h3 { margin: 0 0 4px; font: 700 18px var(--f-display); }
+.grab { width: 44px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 10px; }
+.entry { padding: 10px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.entry:last-child { border-bottom: 0; }
+.entry .t { font-weight: 500; } .entry .m { font-size: 12.5px; color: var(--muted); grid-column: 1 / -1; }
+.desktop { width: 100%; max-width: 1180px; }
+.modal-wrap { position: relative; min-height: 640px; }
+.modal-wrap .scrim { position: absolute; inset: 0; background: rgba(8,10,16,.5); }
+.dialog { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); width: min(560px, 94%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: 0 20px 60px rgba(0,0,0,.35); padding: 18px 20px; }
+.dialog h3 { margin: 0 0 4px; font: 700 20px var(--f-display); }
+
+/* PDF paper */
+.paper { background: #fff; color: #111; width: 595px; max-width: 100%; min-height: 780px; padding: 40px 42px; box-shadow: 0 6px 30px rgba(0,0,0,.25); font: 12px/1.45 "Helvetica Neue", Arial, sans-serif; }
+.paper h4 { font-size: 20px; margin: 0 0 2px; }
+.paper .sub { color: #555; margin-bottom: 14px; }
+.paper h5 { font-size: 12.5px; margin: 16px 0 5px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1.5px solid #111; padding-bottom: 3px; }
+.paper table { font-size: 11.5px; }
+.paper th { color: #444; border-bottom: 1px solid #999; padding: 4px 5px; font-family: inherit; }
+.paper td { border-bottom: 1px solid #ddd; padding: 4px 5px; }
+.paper .num { font-family: inherit; }
+.paper tfoot td { border-top: 1.5px solid #111; }
+.paper .foot { margin-top: 26px; color: #777; font-size: 10.5px; display: flex; justify-content: space-between; }
+.paper .to { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd; }
+
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="chrome" role="tablist" aria-label="Screens">
+  <h1>Budget page · mockups</h1>
+  <button class="tab" role="tab" data-p="month">1 Month (desktop)</button>
+  <button class="tab" role="tab" data-p="phone">2 Month (phone)</button>
+  <button class="tab" role="tab" data-p="add">3 Add expense</button>
+  <button class="tab" role="tab" data-p="recur">4 Recurring</button>
+  <button class="tab" role="tab" data-p="people">5 People</button>
+  <button class="tab" role="tab" data-p="export">6 Export</button>
+  <button class="tab" role="tab" data-p="pdf">7 PDF preview</button>
+  <span class="grow"></span>
+  <button class="tab" id="theme">Theme: system</button>
+</div>
+
+<div class="wrap">
+
+<!-- ========================================================= 1 MONTH DESKTOP -->
+<section class="panel" id="p-month">
+  <div class="notes"><b>Month view.</b> Sample people (Anu, Ravi, Meera) and sample amounts, only to show the layout. Every figure on this screen was checked to add up.
+    <ul>
+      <li>Pick any month with the arrows or the month picker. Nothing is locked: every month stays editable, and people can be added at any time.</li>
+      <li><b>Who pays whom</b> already includes what was carried in from earlier unpaid months (here ₹300.00 that Ravi owed Meera from August). Balances are netted across everyone, so fewer payments are needed.</li>
+      <li><b>Mark paid</b> records a settlement (with a date). The transfer then shows as paid, and it stops being carried into later months.</li>
+      <li>An entry with no day shows just the month and counts as the 15th (see Electricity bill). The “recurring” badge marks an entry created from a recurring expense.</li>
+    </ul></div>
+  <div class="app desktop">
+    <div class="bar"><span class="brand"><i></i>Homelab Hub</span><span class="nav"><a>Dashboard</a><a>Portfolio</a><a>Config</a><a class="on">Budget</a></span></div>
+    <div class="content">
+      <div class="monthbar">
+        <button class="iconbtn" aria-label="Previous month">‹</button><h1>September 2026</h1><button class="iconbtn" aria-label="Next month">›</button>
+        <input type="month" value="2026-09" aria-label="Pick a month" style="padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:var(--surface)">
+        <span class="grow"></span>
+        <button class="btn">People</button><button class="btn">Recurring</button><button class="btn">Export PDF</button><button class="btn pri">+ Add expense</button>
+      </div>
+      <div class="cols">
+        <div>
+          <div class="card"><header><span class="tape">Who pays whom</span><span class="hint">2 payments settle everything</span></header>
+            <div class="xfer"><div class="who"><b>Ravi</b> pays <b>Anu</b><div class="hint">includes ₹300.00 carried in from August</div></div><div class="num amt">₹8,517.50</div><button class="btn sm pri markpaid">Mark paid</button></div>
+            <div class="xfer"><div class="who"><b>Meera</b> pays <b>Anu</b></div><div class="num amt">₹7,865.99</div><button class="btn sm pri markpaid">Mark paid</button></div>
+          </div>
+          <div class="card"><header><span class="tape">People</span><span class="hint">+ is owed money · − owes</span></header>
+            <div class="scrollx"><table>
+              <thead><tr><th>Person</th><th class="num">Paid</th><th class="num">Share</th><th class="num">This month</th><th class="num">Carried in</th><th class="num">To settle</th></tr></thead>
+              <tbody>
+                <tr><td>Anu</td><td class="num">30,000.00</td><td class="num">13,616.51</td><td class="num pos">+16,383.49</td><td class="num muted">0.00</td><td class="num pos"><b>+16,383.49</b></td></tr>
+                <tr><td>Ravi</td><td class="num">3,599.00</td><td class="num">11,816.50</td><td class="num neg">−8,217.50</td><td class="num neg">−300.00</td><td class="num neg"><b>−8,517.50</b></td></tr>
+                <tr><td>Meera</td><td class="num">5,450.50</td><td class="num">13,616.49</td><td class="num neg">−8,165.99</td><td class="num pos">+300.00</td><td class="num neg"><b>−7,865.99</b></td></tr>
+              </tbody>
+              <tfoot><tr><td>Total</td><td class="num">₹39,049.50</td><td class="num">₹39,049.50</td><td class="num">0.00</td><td class="num">0.00</td><td class="num">0.00</td></tr></tfoot>
+            </table></div>
+          </div>
+          <div class="card"><header><span class="tape">What everyone paid each month</span><span class="hint">sample history</span></header>
+            <table>
+              <thead><tr><th>Month</th><th class="num">Anu</th><th class="num">Ravi</th><th class="num">Meera</th><th class="num">Total</th></tr></thead>
+              <tbody>
+                <tr><td>Jun 2026</td><td class="num">30,000.00</td><td class="num">3,850.00</td><td class="num">2,900.00</td><td class="num">36,750.00</td></tr>
+                <tr><td>Jul 2026</td><td class="num">30,000.00</td><td class="num">4,720.00</td><td class="num">3,150.00</td><td class="num">37,870.00</td></tr>
+                <tr><td>Aug 2026</td><td class="num">30,000.00</td><td class="num">3,300.00</td><td class="num">5,010.00</td><td class="num">38,310.00</td></tr>
+                <tr><td><b>Sep 2026</b></td><td class="num">30,000.00</td><td class="num">3,599.00</td><td class="num">5,450.50</td><td class="num"><b>39,049.50</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card"><header><span class="tape">Expenses · September</span><span class="hint">5 entries · ₹39,049.50</span></header>
+          <div class="scrollx"><table>
+            <thead><tr><th>Date</th><th>Payment</th><th>Paid by</th><th>Split among</th><th class="num">Amount</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="mono">01 Sep</td><td>Rent<span class="pill">recurring</span></td><td>Anu</td><td>All 3</td><td class="num">₹30,000.00</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td class="mono">05 Sep</td><td>Internet<span class="pill">recurring</span></td><td>Ravi</td><td>All 3</td><td class="num">₹1,199.00</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td class="mono">12 Sep</td><td>Groceries</td><td>Ravi</td><td>All 3</td><td class="num">₹2,400.00</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td class="mono">Sep<span class="pill grey">no day</span></td><td>Electricity bill</td><td>Meera</td><td>All 3</td><td class="num">₹1,850.50</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td class="mono">20 Sep</td><td>Dinner out</td><td>Meera</td><td>Anu, Meera</td><td class="num">₹3,600.00</td><td><button class="btn sm">Edit</button></td></tr>
+            </tbody>
+          </table></div>
+          <p class="hint" style="margin:10px 0 0">Electricity ₹1,850.50 ÷ 3 leaves 1 paisa over; the leftover paise are given out in a fixed order (Anu first), so shares always add up exactly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= 2 MONTH PHONE -->
+<section class="panel" id="p-phone">
+  <div class="notes"><b>Month view on a phone (the installed app).</b> The same information stacked in one column. Add and Export stay within reach of the thumb.
+    <ul><li>“Who pays whom” comes first, because that is what you share. Tap <b>Mark paid</b> to record it.</li><li>Each expense is a compact two-line row: tap it to edit.</li></ul></div>
+  <div class="stage">
+    <div class="phone">
+      <div class="bar"><span class="brand"><i></i>Hub</span><span class="nav"><a>Dashboard</a><a class="on">Budget</a></span></div>
+      <div class="content">
+        <div class="monthbar"><button class="iconbtn">‹</button><h1>Sep 2026</h1><button class="iconbtn">›</button><span class="grow"></span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn pri" style="flex:1">+ Add expense</button><button class="btn">Export PDF</button><button class="btn" aria-label="More">⋯</button></div>
+        <div class="card"><header><span class="tape">Who pays whom</span></header>
+          <div class="xfer"><div class="who"><b>Ravi</b> → <b>Anu</b><div class="hint">incl. ₹300.00 carried in</div></div><div class="num amt">₹8,517.50</div><button class="btn sm pri markpaid">Paid</button></div>
+          <div class="xfer"><div class="who"><b>Meera</b> → <b>Anu</b></div><div class="num amt">₹7,865.99</div><button class="btn sm pri markpaid">Paid</button></div>
+        </div>
+        <div class="card"><header><span class="tape">People</span><span class="hint">paid · share · to settle</span></header>
+          <table><tbody>
+            <tr><td><b>Anu</b><div class="hint num" style="text-align:left">30,000.00 · 13,616.51</div></td><td class="num pos"><b>+16,383.49</b></td></tr>
+            <tr><td><b>Ravi</b><div class="hint num" style="text-align:left">3,599.00 · 11,816.50</div></td><td class="num neg"><b>−8,517.50</b></td></tr>
+            <tr><td><b>Meera</b><div class="hint num" style="text-align:left">5,450.50 · 13,616.49</div></td><td class="num neg"><b>−7,865.99</b></td></tr>
+          </tbody></table>
+        </div>
+        <div class="card"><header><span class="tape">Expenses</span><span class="hint">5 · ₹39,049.50</span></header>
+          <div class="entry"><span class="t">Rent <span class="pill">recurring</span></span><span class="num">₹30,000.00</span><span class="m">01 Sep · Anu paid · all 3</span></div>
+          <div class="entry"><span class="t">Internet <span class="pill">recurring</span></span><span class="num">₹1,199.00</span><span class="m">05 Sep · Ravi paid · all 3</span></div>
+          <div class="entry"><span class="t">Groceries</span><span class="num">₹2,400.00</span><span class="m">12 Sep · Ravi paid · all 3</span></div>
+          <div class="entry"><span class="t">Electricity bill</span><span class="num">₹1,850.50</span><span class="m">Sep (no day) · Meera paid · all 3</span></div>
+          <div class="entry"><span class="t">Dinner out</span><span class="num">₹3,600.00</span><span class="m">20 Sep · Meera paid · Anu, Meera</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= 3 ADD EXPENSE -->
+<section class="panel" id="p-add">
+  <div class="notes"><b>Add expense.</b> One entry at a time, opened from the “+ Add expense” button. On a phone it slides up as a sheet; on desktop it is a dialog.
+    <ul>
+      <li><b>Only the month is required.</b> Leave <i>Day</i> empty and the entry is stored as the 15th and shown as “Sep (no day)”. Choose a day if you know it. (Try the toggle.)</li>
+      <li><b>Split among</b> lists your saved people, all ticked to start. Untick anyone who is not part of it. <b>+ Add person</b> works right here, at any time, without leaving the form (try it).</li>
+      <li>The grey line shows the exact split before you save, including the leftover paisa.</li>
+      <li>Only the payment name is needed. There are no categories.</li>
+    </ul></div>
+  <div class="stage">
+    <div class="phone" style="min-height:760px">
+      <div class="bar"><span class="brand"><i></i>Hub</span><span class="nav"><a>Dashboard</a><a class="on">Budget</a></span></div>
+      <div class="content" style="opacity:.5"><div class="monthbar"><h1>Sep 2026</h1></div><div class="card"><span class="tape">Who pays whom</span></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <h3>Add expense</h3><div class="hint">September 2026</div>
+        <div class="field"><label for="a-name">Payment name</label><input id="a-name" type="text" value="Weekend trip fuel"></div>
+        <div class="field"><label>Amount</label><div class="rupee"><span>₹</span><input id="amt" type="number" step="0.01" value="1850.50"></div></div>
+        <div class="field"><label>When</label>
+          <div class="row" style="align-items:center;gap:10px">
+            <input type="month" value="2026-09" style="flex:1">
+            <div class="seg" id="daymode"><button aria-pressed="true" data-m="none">No day</button><button aria-pressed="false" data-m="day">Pick day</button></div>
+          </div>
+          <div id="dayrow" style="display:none;margin-top:8px"><input type="date" value="2026-09-13"></div>
+          <div class="hint" id="daynote" style="margin-top:6px">Saved as 15 Sep 2026 and shown as “Sep (no day)”.</div>
+        </div>
+        <div class="field"><label>Paid by</label><select id="paidby"><option>Anu</option><option selected>Ravi</option><option>Meera</option></select></div>
+        <div class="field"><label>Split among <span class="hint" style="font-weight:400">(<a href="#" id="all">All</a> · <a href="#" id="none">None</a>)</span></label>
+          <div class="chips" id="chips">
+            <button class="chip" aria-pressed="true">Anu</button><button class="chip" aria-pressed="true">Ravi</button><button class="chip" aria-pressed="true">Meera</button>
+            <button class="chip add" id="addperson">+ Add person</button>
+          </div>
+          <div id="newperson" style="display:none;margin-top:8px" class="row"><input type="text" placeholder="New person's name" value="Kiran" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg)"><button class="btn pri" id="savep">Add</button></div>
+          <div class="preview" id="split">₹1,850.50 ÷ 3 → Anu ₹616.84 · Ravi ₹616.83 · Meera ₹616.83</div>
+        </div>
+        <div class="sheet-actions"><button class="btn">Cancel</button><button class="btn pri">Save expense</button></div>
+      </div>
+    </div>
+    <div class="card" style="max-width:420px"><header><span class="tape">Checks that stop a bad entry</span></header>
+      <ul style="margin:0;padding-left:20px;font-size:14px">
+        <li>Amount must be more than zero, with at most 2 decimals.</li>
+        <li>At least one person must be in the split. The payer may or may not be in it.</li>
+        <li>Name required (up to 100 characters).</li>
+        <li>A new person is saved to your People list as well, and appears in future forms.</li>
+        <li>Editing an earlier expense lets you add the new person to it. Older expenses are not changed automatically.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- ========================================================= 4 RECURRING -->
+<section class="panel" id="p-recur">
+  <div class="notes"><b>Recurring expenses.</b> Set once; each month gets its entry automatically.
+    <ul>
+      <li>Monthly only. <b>Starts</b> is a month, <b>Ends</b> is an optional month. <b>Day</b> is optional (blank = the 15th; the 31st becomes the last day of shorter months).</li>
+      <li>When you open a month, its recurring entries are created once, as ordinary entries you can edit or delete for that month only. A deleted one is not created again.</li>
+      <li>Editing the recurring item changes months you have <i>not opened yet</i>. Months already opened keep their entries, so old summaries never change.</li>
+      <li>Nothing runs in the background: the entries appear when you open the month.</li>
+    </ul></div>
+  <div class="stage">
+    <div class="card desktop" style="flex:1;min-width:340px;max-width:600px"><header><span class="tape">Recurring expenses</span><button class="btn pri sm">+ New</button></header>
+      <table>
+        <thead><tr><th>Payment</th><th>Paid by</th><th>Split</th><th>When</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Rent</td><td>Anu</td><td>All 3</td><td>day 1 · from Jan 2026<br><span class="hint">no end</span></td><td class="num">₹30,000.00</td><td><button class="btn sm">Edit</button></td></tr>
+          <tr><td>Internet</td><td>Ravi</td><td>All 3</td><td>day 5 · Mar 2026 → Feb 2027</td><td class="num">₹1,199.00</td><td><button class="btn sm">Edit</button></td></tr>
+        </tbody>
+      </table>
+      <p class="hint" style="margin:10px 0 0">Ended items stay listed (greyed) so you can see them; they no longer create entries.</p>
+    </div>
+    <div class="card" style="width:400px;max-width:100%"><header><span class="tape">New recurring expense</span></header>
+      <div class="field"><label>Payment name</label><input type="text" value="Cook salary"></div>
+      <div class="field"><label>Amount</label><div class="rupee"><span>₹</span><input type="number" value="4000.00"></div></div>
+      <div class="field"><label>Paid by</label><select><option selected>Anu</option><option>Ravi</option><option>Meera</option></select></div>
+      <div class="field"><label>Split among</label><div class="chips"><button class="chip" aria-pressed="true">Anu</button><button class="chip" aria-pressed="true">Ravi</button><button class="chip" aria-pressed="true">Meera</button></div></div>
+      <div class="field"><div class="row"><div style="flex:1"><label>Starts</label><input type="month" value="2026-10"></div><div style="flex:1"><label>Ends (optional)</label><input type="month"></div></div></div>
+      <div class="field"><label>Day of month (optional)</label><input type="number" min="1" max="31" placeholder="15 if empty"></div>
+      <div class="preview">Creates an entry each month from Oct 2026, until you end it.</div>
+      <div class="sheet-actions"><button class="btn">Cancel</button><button class="btn pri">Save</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= 5 PEOPLE -->
+<section class="panel" id="p-people">
+  <div class="notes"><b>People.</b> Set up once; they appear in “Paid by” and “Split among”.
+    <ul>
+      <li>Add a person at any time, including in the middle of a month. Nothing is locked.</li>
+      <li>A person with history cannot be deleted (their old entries would break). <b>Archive</b> hides them from new forms but keeps every past entry and balance. <b>Restore</b> brings them back.</li>
+      <li>Renaming updates the name everywhere, including old entries.</li>
+      <li>An archived person with an unsettled balance is still shown in the summary until it is settled.</li>
+    </ul></div>
+  <div class="card" style="max-width:560px"><header><span class="tape">People</span></header>
+    <table><tbody>
+      <tr><td>Anu</td><td><span class="hint">3 recurring · 41 expenses</span></td><td class="num"><button class="btn sm">Rename</button> <button class="btn sm">Archive</button></td></tr>
+      <tr><td>Ravi</td><td><span class="hint">1 recurring</span></td><td class="num"><button class="btn sm">Rename</button> <button class="btn sm">Archive</button></td></tr>
+      <tr><td>Meera</td><td><span class="hint"></span></td><td class="num"><button class="btn sm">Rename</button> <button class="btn sm">Archive</button></td></tr>
+      <tr><td class="muted">Kiran <span class="pill grey">archived</span></td><td class="hint">left in Aug 2026 · settled</td><td class="num"><button class="btn sm">Restore</button></td></tr>
+    </tbody></table>
+    <div class="row" style="display:flex;gap:8px;margin-top:12px"><input type="text" placeholder="Add a person" style="flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg)"><button class="btn pri">Add</button></div>
+  </div>
+</section>
+
+<!-- ========================================================= 6 EXPORT -->
+<section class="panel" id="p-export">
+  <div class="notes"><b>Export a PDF.</b> Choose this month, or any range, then share it from your phone.
+    <ul>
+      <li><b>This month</b> gives exactly what the month screen shows, including balances carried in.</li>
+      <li><b>Custom range</b>: <b>carried in</b> is worked out properly as the balance just before the range starts (all earlier expenses minus all settlements made before that date). Expenses and settlements <i>inside</i> the range are then listed and added on top, and “who pays whom” is the net result. So the PDF for any range is a correct statement on its own.</li>
+      <li>Expenses with no day count as the 15th; the PDF marks them “no day”.</li>
+      <li><b>Share</b> opens the phone's share sheet (WhatsApp, email, Drive). If the browser can't share files, it downloads instead. The file is named like <span class="mono">budget-2026-09.pdf</span>.</li>
+    </ul></div>
+  <div class="stage">
+    <div class="phone" style="min-height:720px">
+      <div class="bar"><span class="brand"><i></i>Hub</span><span class="nav"><a>Dashboard</a><a class="on">Budget</a></span></div>
+      <div class="content" style="opacity:.5"><div class="monthbar"><h1>Sep 2026</h1></div><div class="card"><span class="tape">Who pays whom</span></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <h3>Export PDF</h3>
+        <div class="field"><div class="seg" id="exmode"><button aria-pressed="false" data-m="month">This month</button><button aria-pressed="true" data-m="range">Choose range</button></div></div>
+        <div id="exmonth" style="display:none" class="hint">September 2026 · same as the screen.</div>
+        <div id="exrange">
+          <div class="field"><div class="row"><div style="flex:1"><label>From</label><input type="date" value="2026-09-01"></div><div style="flex:1"><label>To</label><input type="date" value="2026-09-20"></div></div></div>
+          <div class="preview">
+            <b>Balances before 1 Sep</b> (carried in): Ravi owes Meera ₹300.00.<br>
+            <b>In the range:</b> 5 expenses · ₹39,049.50 · 0 settlements.<br>
+            <b>Result:</b> Ravi → Anu ₹8,517.50 · Meera → Anu ₹7,865.99
+          </div>
+          <p class="hint" style="margin:8px 0 0">Change “To” to 10 Sep and the Electricity bill (counted as 15 Sep) and Dinner (20 Sep) drop out, and the result is recalculated.</p>
+        </div>
+<div class="sheet-actions" style="flex-wrap:wrap"><button class="btn">Cancel</button><button class="btn">Download</button><button class="btn pri">Share PDF…</button></div>
+      </div>
+    </div>
+    <div class="card" style="max-width:420px"><header><span class="tape">What happens when you tap</span></header>
+      <ol style="margin:0;padding-left:20px;font-size:14px">
+        <li>The server builds the PDF only now (nothing runs in the background).</li>
+        <li>Your phone gets the file, and the share sheet opens.</li>
+        <li>Nothing is stored on the server; the file lives on your phone.</li>
+      </ol>
+      <p class="hint" style="margin:10px 0 0">The figures above are the September sample data. In the app they are computed from your real entries.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= 7 PDF PREVIEW -->
+<section class="panel" id="p-pdf">
+  <div class="notes"><b>The PDF (September 2026).</b> A4, black on white so it prints and reads well in any chat app. Same numbers as the month screen.
+    <ul><li>Amounts use the ₹ sign (I'll embed a font that has it and check it renders, since standard PDF fonts do not).</li><li>Several pages are added automatically for long months, with page numbers.</li></ul></div>
+  <div class="stage">
+    <div class="paper">
+      <h4>Budget summary · September 2026</h4>
+      <div class="sub">Period 1 Sep 2026 – 30 Sep 2026 · Generated 30 Sep 2026 · All amounts in ₹</div>
+
+      <h5>Who pays whom</h5>
+      <div class="to"><span><b>Ravi</b> pays <b>Anu</b></span><b>₹8,517.50</b></div>
+      <div class="to"><span><b>Meera</b> pays <b>Anu</b></span><b>₹7,865.99</b></div>
+      <div style="color:#555;margin-top:4px">Includes ₹300.00 carried in from before this period (Ravi owed Meera, unsettled).</div>
+
+      <h5>People</h5>
+      <table>
+        <thead><tr><th>Person</th><th class="num">Paid</th><th class="num">Share</th><th class="num">This period</th><th class="num">Carried in</th><th class="num">To settle</th></tr></thead>
+        <tbody>
+          <tr><td>Anu</td><td class="num">30,000.00</td><td class="num">13,616.51</td><td class="num">+16,383.49</td><td class="num">0.00</td><td class="num">+16,383.49</td></tr>
+          <tr><td>Ravi</td><td class="num">3,599.00</td><td class="num">11,816.50</td><td class="num">−8,217.50</td><td class="num">−300.00</td><td class="num">−8,517.50</td></tr>
+          <tr><td>Meera</td><td class="num">5,450.50</td><td class="num">13,616.49</td><td class="num">−8,165.99</td><td class="num">+300.00</td><td class="num">−7,865.99</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="num">39,049.50</td><td class="num">39,049.50</td><td class="num">0.00</td><td class="num">0.00</td><td class="num">0.00</td></tr></tfoot>
+      </table>
+
+      <h5>Expenses</h5>
+      <table>
+        <thead><tr><th>Date</th><th>Payment</th><th>Paid by</th><th>Split among</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>01 Sep</td><td>Rent</td><td>Anu</td><td>Anu, Ravi, Meera</td><td class="num">30,000.00</td></tr>
+          <tr><td>05 Sep</td><td>Internet</td><td>Ravi</td><td>Anu, Ravi, Meera</td><td class="num">1,199.00</td></tr>
+          <tr><td>12 Sep</td><td>Groceries</td><td>Ravi</td><td>Anu, Ravi, Meera</td><td class="num">2,400.00</td></tr>
+          <tr><td>Sep (no day)</td><td>Electricity bill</td><td>Meera</td><td>Anu, Ravi, Meera</td><td class="num">1,850.50</td></tr>
+          <tr><td>20 Sep</td><td>Dinner out</td><td>Meera</td><td>Anu, Meera</td><td class="num">3,600.00</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="4">Total</td><td class="num">39,049.50</td></tr></tfoot>
+      </table>
+
+      <h5>Payments marked as settled</h5>
+      <div style="color:#555">None in this period.</div>
+
+      <div class="foot"><span>Homelab Hub · Budget</span><span>Page 1 of 1</span></div>
+    </div>
+    <div class="card" style="max-width:380px"><header><span class="tape">Notes</span></header>
+      <ul style="margin:0;padding-left:20px;font-size:14px">
+        <li>For a custom range the title becomes e.g. “10 Aug 2026 – 20 Sep 2026”, and the “Carried in” column is the balance just before the first date.</li>
+        <li>If you settled something inside the range, it appears under “Payments marked as settled” and is already deducted from “To settle”.</li>
+        <li>Nothing personal beyond the names and amounts you entered is in the file.</li>
+      </ul></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const panels = ["month","phone","add","recur","people","export","pdf"];
+function show(p){ if(!panels.includes(p)) p="month";
+  panels.forEach(x=>{ document.getElementById("p-"+x).classList.toggle("on",x===p); });
+  document.querySelectorAll(".tab[data-p]").forEach(t=>t.setAttribute("aria-selected", t.dataset.p===p)); location.hash=p; }
+document.querySelectorAll(".tab[data-p]").forEach(t=>t.onclick=()=>show(t.dataset.p));
+show(location.hash.slice(1));
+let th=0; document.getElementById("theme").onclick=e=>{ th=(th+1)%3; const r=document.documentElement;
+  if(th===0) r.removeAttribute("data-theme"); else r.dataset.theme=th===1?"light":"dark"; e.target.textContent="Theme: "+["system","light","dark"][th]; };
+document.querySelectorAll(".markpaid").forEach(b=>{ const label=b.textContent; b.onclick=()=>{ const x=b.closest(".xfer"); x.classList.toggle("done"); b.textContent=x.classList.contains("done")?"✓ Paid · undo":label; }; });
+// add-expense interactions
+const names=["Anu","Ravi","Meera"]; let people=[...names];
+function fmt(p){ return "₹"+(p/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function split(){ const on=[...document.querySelectorAll("#chips .chip[aria-pressed]:not(.add)")].filter(c=>c.getAttribute("aria-pressed")==="true").map(c=>c.textContent);
+  const paise=Math.round(parseFloat(document.getElementById("amt").value||0)*100); const box=document.getElementById("split");
+  if(!on.length||!paise){ box.textContent="Choose at least one person and an amount."; return; }
+  const base=Math.floor(paise/on.length), extra=paise-base*on.length;
+  box.textContent=fmt(paise)+" ÷ "+on.length+" → "+on.map((n,i)=>n+" "+fmt(base+(i<extra?1:0))).join(" · "); }
+document.getElementById("chips").addEventListener("click",e=>{ const c=e.target.closest(".chip"); if(!c||c.id==="addperson")return; c.setAttribute("aria-pressed",c.getAttribute("aria-pressed")==="true"?"false":"true"); split(); });
+document.getElementById("amt").oninput=split;
+document.getElementById("all").onclick=e=>{e.preventDefault();document.querySelectorAll("#chips .chip:not(.add)").forEach(c=>c.setAttribute("aria-pressed","true"));split();};
+document.getElementById("none").onclick=e=>{e.preventDefault();document.querySelectorAll("#chips .chip:not(.add)").forEach(c=>c.setAttribute("aria-pressed","false"));split();};
+document.getElementById("addperson").onclick=()=>{ const n=document.getElementById("newperson"); n.style.display=n.style.display==="none"?"flex":"none"; };
+document.getElementById("savep").onclick=()=>{ const name="Kiran"; const b=document.createElement("button"); b.className="chip"; b.setAttribute("aria-pressed","true"); b.textContent=name;
+  document.getElementById("chips").insertBefore(b,document.getElementById("addperson")); document.getElementById("newperson").style.display="none";
+  const o=document.createElement("option"); o.textContent=name; document.getElementById("paidby").appendChild(o); split(); };
+document.querySelectorAll("#daymode button").forEach(b=>b.onclick=()=>{ document.querySelectorAll("#daymode button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  const d=b.dataset.m==="day"; document.getElementById("dayrow").style.display=d?"block":"none";
+  document.getElementById("daynote").textContent=d?"Saved as 13 Sep 2026.":"Saved as 15 Sep 2026 and shown as “Sep (no day)”."; });
+document.querySelectorAll("#exmode button").forEach(b=>b.onclick=()=>{ document.querySelectorAll("#exmode button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  const r=b.dataset.m==="range"; document.getElementById("exrange").style.display=r?"block":"none"; document.getElementById("exmonth").style.display=r?"none":"block"; });
+</script>
+</body>
+</html>

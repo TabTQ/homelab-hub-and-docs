@@ -1,0 +1,12 @@
+# Used instead of the repository's .dockerignore when building deploy/docs/Dockerfile (BuildKit reads <Dockerfile>.dockerignore).
+**/node_modules
+**/target
+**/dist
+web/e2e
+.git
+.scratch
+data
+deploy/docs/.env
+deploy/.env
+**/*.db
+**/src/main/resources/static

@@ -1,0 +1,12 @@
+# Runtime image for hub-internal. It packages the jar built by scripts/build-all.sh (which also runs every test),
+# so the image itself needs no Node or Maven. eclipse-temurin publishes a multi-arch (amd64 + arm64) JRE image.
+FROM eclipse-temurin:17-jre
+# iputils-ping: the dashboard's "icmp" health checks shell out to ping (it needs the NET_RAW capability, see compose)
+RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin hub \
+ && mkdir -p /data && chown hub /data
+COPY hub-internal/target/hub-internal-0.1.0-SNAPSHOT.jar /app/hub-internal.jar
+USER hub
+ENV HUB_DATA_DIR=/data
+VOLUME /data
+ENTRYPOINT ["java", "-jar", "/app/hub-internal.jar"]

@@ -1,0 +1,55 @@
+# Homelab Hub dashboard. Edit this in the browser (Config page) or over SSH; both are validated before they are used.
+# Credentials never go in this file: write ${secret:NAME} and put NAME=value in secrets.env.
+version: 1
+title: Homelab
+defaults:
+  status: auto          # auto = check http(s) links with a quick TCP connect; none = only explicit status checks
+  interval: 30          # seconds between checks
+
+widgets:
+  - resources: {cpu: true, memory: true, disk: /, cputemp: true, uptime: true, network: true}
+  - search: {provider: google}
+
+groups:
+  - name: Example
+    items:
+      - name: Homepage docs
+        href: https://gethomepage.dev
+        icon: mdi-home
+        description: Replace this group with your own services.
+
+actions: []
+pinned: []
+
+# Terminal page (off unless HUB_TERMINAL_ENABLED=true; see README "Terminal setup"). Uncomment and fill in to use it:
+# terminals:
+#   - id: pi
+#     label: Raspberry Pi
+#     host: 127.0.0.1
+#     port: 22
+#     user: hubshell
+#     key: hub_terminal_ed25519        # a file NAME inside the data folder's ssh/ directory, never a path
+#     hostKey: "SHA256:..."            # from `terminal-hostkey 127.0.0.1:22`, compared with `ssh-keygen -lf` on the host
+
+# Docker page (off unless HUB_DOCKER_ENABLED=true; see README "Docker setup"). One entry per machine that runs Docker:
+# the Pi itself, Proxmox LXCs/VMs, ... The hub runs the docker CLI there over SSH as a user in the docker group.
+# dockerHosts:
+#   - id: pi
+#     label: Raspberry Pi
+#     host: 127.0.0.1
+#     port: 22
+#     user: hubdocker
+#     key: hub_docker_ed25519          # a file NAME inside the data folder's ssh/ directory, never a path
+#     hostKey: "SHA256:..."            # from `terminal-hostkey 127.0.0.1:22`, compared with `ssh-keygen -lf` on the host
+#     protect: [pihole]                # optional: containers the page may never stop, restart, update or remove
+#   - id: media
+#     label: Media LXC
+#     host: 192.168.1.50
+#     user: hubdocker
+#     key: hub_docker_ed25519
+#     hostKey: "SHA256:..."
+
+# Docs (the Docs app runs on its own Proxmox LXC; see README "Docs"). Adds a Docs link to the top bar. The hub only links
+# to it: nothing is shared between the two machines.
+# docs:
+#   url: https://docs.<tailnet>.ts.net

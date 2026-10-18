@@ -1,0 +1,7 @@
+# Runtime image for hub-public (read-only portfolio). No database driver, no secrets, no write access to anything.
+FROM eclipse-temurin:17-jre
+RUN useradd --system --uid 10002 --home-dir /nonexistent --shell /usr/sbin/nologin hubpub
+COPY hub-public/target/hub-public-0.1.0-SNAPSHOT.jar /app/hub-public.jar
+USER hubpub
+ENV HUB_SNAPSHOT_DIR=/snapshot
+ENTRYPOINT ["java", "-jar", "/app/hub-public.jar"]

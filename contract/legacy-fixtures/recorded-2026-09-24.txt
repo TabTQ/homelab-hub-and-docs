@@ -1,0 +1,84 @@
+### health
+HTTP/1.1 200 
+Content-Type: application/vnd.spring-boot.actuator.v3+json
+Transfer-Encoding: chunked
+
+{"status":"UP"}
+
+### wake-invalid-mac
+HTTP/1.1 400 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"success":false,"message":"Invalid MAC address format. Expected: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX"}
+
+### toggle-nonexistent-guest
+HTTP/1.1 500 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"success":false,"message":"Failed to toggle LXC99999 on node pve","node":null,"type":null,"id":null,"action":null,"previousStatus":null,"newStatus":null,"error":"Operation failed","errorDetails":"Failed to get status for LXC99999 on node pve. HTTP 500: {\"message\":\"Configuration file 'nodes/pve/lxc/99999.conf' does not exist\\n\",\"data\":null}"}
+
+### toggle-invalid-type
+HTTP/1.1 400 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"success":false,"message":"Invalid container type: foo. Must be 'lxc' or 'qemu'","node":null,"type":null,"id":null,"action":null,"previousStatus":null,"newStatus":null,"error":"Invalid parameters","errorDetails":null}
+
+### toggle-bad-id
+HTTP/1.1 400 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"error":"Invalid Parameter","message":"Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; For input string: \"abc\"","details":null}
+
+### toggle-unknown-node
+HTTP/1.1 500 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"success":false,"message":"Failed to toggle LXC100 on node nonode","node":null,"type":null,"id":null,"action":null,"previousStatus":null,"newStatus":null,"error":"Operation failed","errorDetails":"Failed to get status for LXC100 on node nonode. HTTP 500: {\"data\":null,\"message\":\"hostname lookup 'nonode' failed - failed to get address info for: nonode: Name or service not known\\n\"}"}
+
+### unknown-path
+HTTP/1.1 500 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"error":"Internal Server Error","message":"An unexpected error occurred","details":null}
+
+### wake-post-empty-body
+HTTP/1.1 500 
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"success":false,"message":"Failed to send WOL packet: Invalid MAC address format: null. Expected format: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX"}
+
+### post-toggle-type-lowercase
+HTTP/1.1 500 
+Content-Type: application/json
+
+{"error":"Internal Server Error","message":"An unexpected error occurred","details":null}
+
+### post-toggle-type-uppercase
+HTTP/1.1 500 
+Content-Type: application/json
+
+{"success":false,"message":"Failed to toggle LXC99999 on node pve","node":null,"type":null,"id":null,"action":null,"previousStatus":null,"newStatus":null,"error":"Operation failed","errorDetails":"Failed to get status for LXC99999 on node pve. HTTP 500: {\"data\":null,\"message\":\"Configuration file 'nodes/pve/lxc/99999.conf' does not exist\\n\"}"}
+
+### post-toggle-missing-fields
+HTTP/1.1 400 
+Content-Type: application/json
+
+{"error":"Validation Error","message":"Invalid request parameters","details":{"node":"Node name is required","id":"Container/VM ID is required","type":"Container type is required"}}
+
+### post-toggle-negative-id
+HTTP/1.1 400 
+Content-Type: application/json
+
+{"error":"Validation Error","message":"Invalid request parameters","details":{"id":"ID must be a positive number"}}
+
+### node-post-nonexistent-node-is-NOT-safe-skipped

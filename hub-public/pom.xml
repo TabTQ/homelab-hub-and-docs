@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.homelabhub</groupId>
+    <artifactId>homelab-hub</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>hub-public</artifactId>
+  <description>Read-only public app. Must never gain DB, security, or Proxmox capability.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.homelabhub</groupId>
+      <artifactId>hub-snapshot</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- Boundary check (plan 5.4): the public app must not be able to reach the DB or privileged code. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>public-boundary</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>true</searchTransitive>
+                  <excludes>
+                    <exclude>org.springframework.boot:spring-boot-starter-jdbc</exclude>
+                    <exclude>org.springframework:spring-jdbc</exclude>
+                    <exclude>com.zaxxer:HikariCP</exclude>
+                    <exclude>org.xerial:sqlite-jdbc</exclude>
+                    <exclude>org.flywaydb:*</exclude>
+                    <exclude>org.springframework.security:*</exclude>
+                    <exclude>org.springframework.boot:spring-boot-starter-security</exclude>
+                  </excludes>
+                </bannedDependencies>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

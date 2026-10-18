@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portfolio Single Page Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Direction A "Signal". Light tokens live on bare :root; dark overrides follow. */
+:root{
+  --bg:#E8ECEF; --surface:#F6F8F9; --surface2:#DDE3E8; --ink:#13202B; --muted:#54626F; --line:#C4CDD5;
+  --accent:#C2410C; --accent-ink:#FFFFFF; --accent-soft:#F6DCCF;
+  --ok:#237A3B; --warn:#B45309; --bad:#B42323; --off:#8A96A1;
+  --radius:4px; --radius-lg:6px;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --mb:44px; --stick:100px; --panelw:clamp(320px,22vw,400px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0F171D;--surface:#172129;--surface2:#202C36;--ink:#E4EAEE;--muted:#93A1AD;--line:#2C3944;--accent:#FF8A4C;--accent-ink:#1A0E07;--accent-soft:#3A2418;--ok:#4CC46F;--warn:#F0A040;--bad:#FF6B6B;--off:#667480;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#0F171D;--surface:#172129;--surface2:#202C36;--ink:#E4EAEE;--muted:#93A1AD;--line:#2C3944;--accent:#FF8A4C;--accent-ink:#1A0E07;--accent-soft:#3A2418;--ok:#4CC46F;--warn:#F0A040;--bad:#FF6B6B;--off:#667480;color-scheme:dark}
+
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Mockup controls (not part of the design) */
+.mockbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;background:var(--ink);color:var(--bg);display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;padding:8px 16px;font:500 12px/1.2 var(--f-mono)}
+.mockbar .mg{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.mockbar .lbl{opacity:.6;margin-right:4px;text-transform:uppercase;letter-spacing:.08em;font-size:10.5px}
+.mockbar button{background:transparent;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg);padding:4px 9px;border-radius:3px}
+.mockbar button[aria-pressed="true"]{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+
+/* Shell: same header, tokens and components as the dashboard mockup */
+.wrap{max-width:2200px;margin:0 auto;padding:0 clamp(16px,3vw,56px)}
+.top{display:flex;align-items:center;gap:16px;padding:14px 0;flex-wrap:wrap}
+.brand{font:600 1.2rem var(--f-display);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand i{width:14px;height:14px;background:var(--accent);display:inline-block;border-radius:2px}
+.nav{display:flex;gap:2px}
+.nav button{background:none;border:0;padding:6px 12px;color:var(--muted);border-radius:var(--radius);font-weight:500}
+.nav button[aria-current="page"]{color:var(--ink);background:var(--surface2)}
+.grow{flex:1}
+.scope{font:500 11.5px var(--f-mono);color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.scope b{color:var(--ok);font-weight:500}
+.kbd-search{display:flex;align-items:center;gap:10px;min-width:min(100%,250px);background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:var(--radius)}
+.kbd-search kbd{margin-left:auto;font:500 11px var(--f-mono);border:1px solid var(--line);padding:1px 6px;border-radius:3px}
+[data-view="public"] .int-only{display:none!important}
+[data-view="internal"] .pub-only{display:none!important}
+
+/* In-page section nav */
+.subnav{position:sticky;top:var(--mb);z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+.subnav .wrap{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.subnav a{padding:10px 12px;text-decoration:none;color:var(--muted);font:500 12px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;border-bottom:2px solid transparent}
+.subnav a:hover{color:var(--ink)}
+.subnav a.here{color:var(--ink);border-bottom-color:var(--accent)}
+.subnav .n{color:var(--accent);margin-left:6px}
+
+/* Layout: content + collapsible skill panel */
+.page{display:grid;grid-template-columns:minmax(0,1fr) var(--panelw);gap:28px;align-items:start;padding-top:22px;padding-bottom:80px;transition:grid-template-columns .2s}
+.page.collapsed{grid-template-columns:minmax(0,1fr) 46px}
+@media (prefers-reduced-motion:reduce){.page{transition:none}}
+.ribbon{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;background:var(--accent-soft);border:1px solid var(--accent);padding:9px 14px;border-radius:var(--radius);margin:0 0 22px;font-size:13.5px}
+.banner{border:1px solid var(--accent);background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin:0 0 22px;font-size:13.5px}
+.banner .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.banner .hid{color:var(--muted);margin-top:4px}
+.btn{background:var(--surface);border:1px solid var(--line);padding:5px 11px;border-radius:var(--radius);font-weight:500;font-size:13.5px}
+.btn:hover{border-color:var(--ink)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:2px 8px;font:500 11.5px var(--f-mono)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;font-size:inherit}
+
+.sec{margin:0 0 44px;scroll-margin-top:calc(var(--stick) + 8px)}
+.sec-h{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.tape{font:600 12px var(--f-mono);text-transform:uppercase;letter-spacing:.1em;background:var(--ink);color:var(--bg);padding:4px 10px;border-radius:2px;margin:0}
+.sec-h .rule{flex:1;height:1px;background:var(--line)}
+.sec-h .ct{font:500 12px var(--f-mono);color:var(--muted)}
+.sec.empty{margin:0 0 12px;opacity:.75}
+.sec.empty .sec-h{margin:0}
+.sec.empty .tape{background:var(--surface2);color:var(--muted)}
+h1{font:600 clamp(1.9rem,1.3rem + 2.4vw,3rem)/1.05 var(--f-display);letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h3{font:600 1.1rem/1.25 var(--f-display);margin:0;letter-spacing:-.005em}
+.eyebrow{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.lede{font-size:1.05rem;max-width:72ch;margin:0 0 10px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:13.5px;margin:6px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.about{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:20px clamp(24px,4vw,64px);align-items:start}
+.about .stats{grid-template-columns:repeat(2,minmax(0,1fr));margin:6px 0 0}
+.about .stat{padding:14px 16px}
+.about .stat .v{font-size:2rem}
+@media (max-width:1500px){.about{grid-template-columns:1fr}.about .stats{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.about .stat .v{font-size:1.7rem}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+.stat .v{font:600 1.6rem var(--f-display);font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px}
+.stat .s{color:var(--muted);font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--ink);border-radius:var(--radius-lg);padding:16px 18px;margin:0 0 14px;position:relative}
+.card.dim,.dim{opacity:.32}
+.card .edit{position:absolute;top:10px;right:10px}
+.card h3{padding-right:64px}
+.role-meta{display:flex;flex-wrap:wrap;gap:2px 14px;color:var(--muted);font-size:13.5px;margin:3px 0 10px}
+.role-meta .when{font-family:var(--f-mono);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 0}
+.chip{font:400 11.5px var(--f-mono);background:var(--surface2);border:1px solid transparent;padding:1px 7px;border-radius:2px;color:var(--ink);cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--accent-ink)}
+.chip.tag{cursor:default;background:transparent;border-color:var(--line);color:var(--muted)}
+details{margin:10px 0 0}
+summary{cursor:pointer;font-weight:500;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";font-family:var(--f-mono)}
+details[open]>summary::before{content:"\2212 "}
+.hl{margin:8px 0 0;padding-left:18px}
+.hl li{margin:0 0 6px}
+li.hit,.hit{background:var(--accent-soft)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:14px;align-items:start}
+.cols .card{margin:0}
+.card>p,.card details>p{max-width:96ch}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px}
+.grid3 .card{margin:0}
+.tablewrap{overflow-x:auto;margin:12px 0 4px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--ink)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.after{font-weight:600}
+td.after.accent{color:var(--accent)}
+.dl{margin:8px 0 0}
+.dl li{border-top:1px solid var(--line);padding:9px 0;list-style:none}
+.dl{padding:0}
+.dl .t{font-weight:600}
+.dl p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.edu{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.edu ul{list-style:none;margin:0;padding:0}
+.edu li{padding:10px 0;border-top:1px solid var(--line)}
+.edu li .t{font-weight:600}
+.edu li .m{color:var(--muted);font-size:13.5px}
+.dev{margin:0 0 20px}
+.dev>header{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:6px}
+.hw{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;margin:12px 0}
+.hw div{border-top:1px solid var(--line);padding-top:5px}
+.hw dt{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hw dd{margin:0;font-size:14px}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:4px}
+.kv span:first-child{color:var(--muted)}
+.state{font:500 11.5px var(--f-mono)}
+.state.up{color:var(--ok)} .state.warn{color:var(--warn)}
+.sub-h{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:16px 0 8px}
+.none{color:var(--muted);border:1px dashed var(--line);border-radius:var(--radius);padding:10px 14px;font-size:13.5px}
+.contact{display:flex;flex-wrap:wrap;gap:8px 28px}
+.contact div{min-width:200px}
+.contact .v{font-family:var(--f-mono);font-size:14px;user-select:all}
+.badge-new{font:500 10.5px var(--f-mono);color:var(--warn);border:1px solid var(--warn);padding:0 5px;border-radius:2px;margin-left:8px;vertical-align:middle}
+
+/* Skill panel */
+.panel{position:sticky;top:var(--stick);max-height:calc(100vh - var(--stick) - 12px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--ink);border-radius:var(--radius-lg)}
+.pbody{padding:14px}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.phead h2{margin:0}
+.iconbtn{background:var(--surface2);border:1px solid var(--line);width:30px;height:30px;border-radius:var(--radius);display:grid;place-items:center;font:600 14px var(--f-mono)}
+.iconbtn:hover{border-color:var(--ink)}
+.psearch{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink)}
+.psearch:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.ptools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:4px 10px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.active{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;min-height:0}
+.active .chip{padding:3px 8px;font-size:12px}
+.active .chip::after{content:" \00d7";opacity:.8}
+.pgroup{border-top:1px solid var(--line)}
+.pgroup summary{display:flex;justify-content:space-between;gap:8px;padding:9px 2px;font:500 11.5px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink)}
+.pgroup summary::before{content:"\25B8";margin-right:6px;color:var(--muted)}
+.pgroup[open] summary::before{content:"\25BE"}
+.pgroup summary .c{color:var(--muted);margin-left:auto}
+.pgroup .chips{margin:0 0 12px}
+.sk{font:400 12px var(--f-mono);background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:2px;display:inline-flex;gap:6px}
+.sk .n{color:var(--muted)}
+.sk:hover{border-color:var(--accent)}
+.sk[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sk[aria-pressed="true"] .n{color:inherit}
+.sk.zero{border-style:dashed;color:var(--muted)}
+.sk.rel{background:var(--accent-soft);border-color:var(--accent)}
+.pfoot{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.rail{display:none;flex-direction:column;align-items:center;gap:12px;padding:10px 0}
+.rail .vt{writing-mode:vertical-rl;font:600 12px var(--f-mono);text-transform:uppercase;letter-spacing:.12em}
+.rail .bd{background:var(--accent);color:var(--accent-ink);font:600 12px var(--f-mono);min-width:22px;text-align:center;border-radius:2px;padding:1px 4px}
+.collapsed .pbody{display:none}
+.collapsed .rail{display:flex}
+.collapsed .panel{cursor:pointer}
+.fab{display:none}
+.scrim{display:none}
+
+@media (max-width:900px){
+  .page,.page.collapsed{display:block}
+  .panel{position:fixed;top:0;right:0;bottom:0;max-height:none;width:min(92vw,390px);z-index:80;border-radius:0;transform:translateX(105%);transition:transform .2s;box-shadow:0 0 40px rgba(0,0,0,.35)}
+  .panel.open{transform:none}
+  .collapsed .pbody{display:block}
+  .collapsed .rail{display:none}
+  .fab{display:flex;position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:70;gap:8px;align-items:center;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:11px 18px;font:600 13px var(--f-mono);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+  .scrim.show{display:block;position:fixed;inset:0;background:rgba(8,10,16,.55);z-index:75}
+  .scope{display:none}
+}
+
+/* Palette */
+.overlay{position:fixed;inset:0;background:rgba(8,10,16,.62);display:grid;place-items:start center;padding:12vh 16px 16px;z-index:100}
+.overlay[hidden]{display:none}
+.dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);width:min(600px,100%);box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.dialog input{width:100%;font:inherit;background:transparent;border:0;border-bottom:1px solid var(--line);padding:14px 16px;color:var(--ink)}
+.dialog input:focus{outline:none;border-bottom-color:var(--accent)}
+.res{max-height:50vh;overflow:auto;padding:6px}
+.res .gl{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:8px 10px 4px}
+.res button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:var(--radius)}
+.res button[aria-selected="true"]{background:var(--accent-soft)}
+.res .hint{margin-left:auto;font:500 11px var(--f-mono);color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--radius);z-index:200;font-size:14px;max-width:calc(100% - 32px)}
+.toast[hidden]{display:none}
+</style>
+</head>
+<body data-view="public">
+<div class="mockbar" id="mockbar" role="toolbar" aria-label="Mockup controls">
+  <div class="mg"><span class="lbl">View</span><button data-view-btn="public" aria-pressed="true">Public site</button><button data-view-btn="internal" aria-pressed="false">Internal (editing)</button></div>
+  <div class="mg"><span class="lbl">Theme</span><button data-theme-btn="system" aria-pressed="true">System</button><button data-theme-btn="light" aria-pressed="false">Light</button><button data-theme-btn="dark" aria-pressed="false">Dark</button></div>
+  <div class="mg"><span class="lbl">Try</span><button data-demo="none">No filter</button><button data-demo="py">Python 3 + Redshift</button><button data-demo="docker">Docker / Compose</button><button data-demo="dead">Search “deadlock”</button></div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><i aria-hidden="true"></i><span class="int-only">Homelab Hub</span><span class="pub-only">Tabish Tariq</span></div>
+    <nav class="nav int-only" aria-label="Main"><button>Dashboard</button><button aria-current="page">Portfolio</button><button>Config</button></nav>
+    <span class="grow"></span>
+    <span class="scope int-only"><b>&#9679;</b> Internal &middot; LAN + Tailscale</span>
+    <button class="kbd-search" id="openPalette" aria-label="Search portfolio"><span>Search portfolio</span><kbd>Ctrl K</kbd></button>
+  </header>
+</div>
+<nav class="subnav" id="subnav" aria-label="Sections"><div class="wrap" id="subnavIn"></div></nav>
+
+<div class="wrap">
+  <div class="page" id="page">
+    <main id="content"></main>
+    <aside class="panel" id="panel" aria-label="Skill filter">
+      <button class="rail" id="rail" aria-label="Open skill filter"><span class="bd" id="railBd">0</span><span class="vt">Skills</span><span aria-hidden="true">&laquo;</span></button>
+      <div class="pbody">
+        <div class="phead"><h2 class="tape">Skill filter</h2><button class="iconbtn" id="collapse" aria-label="Collapse skill filter" title="Collapse">&raquo;</button></div>
+        <input class="psearch" id="psearch" type="search" placeholder="Search skills or any text" aria-label="Search skills or page text" autocomplete="off">
+        <div class="ptools">
+          <div class="seg" role="group" aria-label="Skill match mode"><button data-mode="all" aria-pressed="true">Match all</button><button data-mode="any" aria-pressed="false">Match any</button></div>
+          <div class="seg" role="group" aria-label="Non-matching items"><button data-vis="hide" aria-pressed="true">Hide others</button><button data-vis="dim" aria-pressed="false">Dim others</button></div>
+        </div>
+        <div class="active" id="active" aria-live="polite"></div>
+        <div id="groups"></div>
+        <div class="pfoot" id="pfoot"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+<button class="fab" id="fab" aria-label="Open skill filter">Skills <span id="fabN"></span></button>
+<div class="scrim" id="scrim"></div>
+
+<div class="overlay" id="paletteOv" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Search portfolio">
+    <input type="text" id="q" placeholder="Jump to a section, project, role or skill" autocomplete="off">
+    <div class="res" id="res" role="listbox"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const D = {"profile": {"name": "Tabish Tariq", "title": "Data Engineer", "tagline": "AWS & Amazon Redshift · Python ETL · Self-hosted Infra", "location": "New Delhi, India", "status": "working remotely", "brand": "StarT3Tech", "bio": ["Data engineer with 4+ years across Genpact and Tata Consultancy Services delivering Amazon Redshift and Python-based ETL pipelines for large-scale industrial telemetry workloads. Currently at Genpact, I led the end-to-end redesign of GE Renewables' global wind-turbine data pipeline — consolidating 21+ legacy stored procedures into a unified, config-driven framework, eliminating chronic deadlocks, and cutting backfill recovery from days to under 2 hours.", "I'm comfortable owning a system from requirements through root-cause investigation, performance tuning, testing, and production handover. On the side I run a self-hosted Linux / Docker / Proxmox homelab, and I routinely use AI coding assistants (Claude Code, Gemini CLI, OpenCode) as a force multiplier on design, review, and automation work."], "email": "you@example.com", "phone": "+00 0000000000", "socials": {"github": "https://github.com/TabTQ/", "linkedin": "https://www.linkedin.com/in/ertabish97/", "githubLabel": "github.com/TabTQ", "linkedinLabel": "linkedin.com/in/ertabish97"}, "stats": [{"sub": "Genpact · TCS", "label": "Years experience", "value": "4+"}, {"sub": "config-driven framework", "label": "Legacy procs unified", "value": "35→7"}, {"sub": "from days, 1yr of data", "label": "Backfill recovery", "value": "<2h"}, {"sub": "Proxmox + Raspberry Pi", "label": "Self-hosted services", "value": "~20"}], "summary": "Data engineer with 4+ years across Genpact and Tata Consultancy Services delivering Amazon Redshift and Python-based ETL pipelines for large-scale industrial telemetry workloads.", "skills": [], "t": "tabish tariq data engineer aws & amazon redshift · python etl · self-hosted infra new delhi, india start3tech data engineer with 4+ years across genpact and tata consultancy services delivering amazon redshift and python-based etl pipelines for large-scale industrial telemetry workloads. currently at genpact, i led the end-to-end redesign of ge renewables' global wind-turbine data pipeline — consolidating 21+ legacy stored procedures into a unified, config-driven framework, eliminating chronic deadlocks, and cutting backfill recovery from days to under 2 hours. i'm comfortable owning a system from requirements through root-cause investigation, performance tuning, testing, and production handover. on the side i run a self-hosted linux / docker / proxmox homelab, and i routinely use ai coding assistants (claude code, gemini cli, opencode) as a force multiplier on design, review, and automation work. data engineer with 4+ years across genpact and tata consultancy services delivering amazon redshift and python-based etl pipelines for large-scale industrial telemetry workloads."}, "experience": [{"id": "e-genpact", "role": "Consultant / Data Engineer", "company": "Genpact", "client": "GE Renewables — Wind Energy Data Services", "duration": "May 2025 – Present", "location": "New Delhi, India", "summary": "Offshore delivery lead for the Amazon Redshift telemetry pipeline ingesting 10-minute SCADA data from thousands of onshore and offshore wind turbines globally.", "highlights": ["Consolidated 21+ legacy stored procedures across two schema families into 7 unified, parameterized PL/pgSQL procedures, each handling daily loads and multi-year backfills through a single run_type parameter.", "Built a production-grade Python ETL orchestration framework (ThreadedConnectionPool + concurrent.futures) with dynamic worker auto-scaling, driving backfill recovery of 1 year of data from days to under 2 hours.", "Redesigned a 3.5B-row Channel join and a ~480M-row Statistic join that forced nested-loop execution on an OR predicate; pre-materialized equality lookup tables to enable hash joins, eliminating disk spill and converting both to single-pass execution.", "Eliminated chronic production deadlocks by redesigning the lock strategy to hold staging-table locks only and adopting MERGE REMOVE DUPLICATES; zero lock-contention incidents post go-live.", "Led a 3-day investigation into a watermark bug in dwf.dwf_10min_s3_load, identifying and recovering 23,784 systematically missing records.", "Fixed an OFW Data Coverage dashboard reporting >100% coverage (reaching 200% for dual-schema turbines) by rewriting the procedure against a unified, deduplicated view.", "Expanded ECDL analytics coverage from 2 offshore sites to all ~260+ sites streaming ECDL data globally; removed site-level hardcoding so new sites onboard automatically.", "Secured the DSL SCADA pipeline by replacing three uncoordinated cron scripts + a separate UDF with a single Python driver — pre-flight UDF status checks, Fernet-encrypted credentials, and data-loss protection.", "Authored and executed 216 parallel Prod-vs-QA test cases plus a 50-test mathematical validation of the OFW schema migration; introduced GitHub source control to an engagement that previously had none."], "skills": ["AWS S3", "AWS Glue (Catalog & Jobs)", "Python 3", "psycopg2 (ThreadedConnectionPool)", "Amazon Redshift", "MERGE REMOVE DUPLICATES", "PL/pgSQL", "Redshift Spectrum"], "tags": [], "t": "consultant / data engineer genpact ge renewables — wind energy data services offshore delivery lead for the amazon redshift telemetry pipeline ingesting 10-minute scada data from thousands of onshore and offshore wind turbines globally. consolidated 21+ legacy stored procedures across two schema families into 7 unified, parameterized pl/pgsql procedures, each handling daily loads and multi-year backfills through a single run_type parameter. built a production-grade python etl orchestration framework (threadedconnectionpool + concurrent.futures) with dynamic worker auto-scaling, driving backfill recovery of 1 year of data from days to under 2 hours. redesigned a 3.5b-row channel join and a ~480m-row statistic join that forced nested-loop execution on an or predicate; pre-materialized equality lookup tables to enable hash joins, eliminating disk spill and converting both to single-pass execution. eliminated chronic production deadlocks by redesigning the lock strategy to hold staging-table locks only and adopting merge remove duplicates; zero lock-contention incidents post go-live. led a 3-day investigation into a watermark bug in dwf.dwf_10min_s3_load, identifying and recovering 23,784 systematically missing records. fixed an ofw data coverage dashboard reporting >100% coverage (reaching 200% for dual-schema turbines) by rewriting the procedure against a unified, deduplicated view. expanded ecdl analytics coverage from 2 offshore sites to all ~260+ sites streaming ecdl data globally; removed site-level hardcoding so new sites onboard automatically. secured the dsl scada pipeline by replacing three uncoordinated cron scripts + a separate udf with a single python driver — pre-flight udf status checks, fernet-encrypted credentials, and data-loss protection. authored and executed 216 parallel prod-vs-qa test cases plus a 50-test mathematical validation of the ofw schema migration; introduced github source control to an engagement that previously had none. aws s3 aws glue (catalog & jobs) python 3 psycopg2 (threadedconnectionpool) amazon redshift merge remove duplicates pl/pgsql redshift spectrum"}, {"id": "e-tcs-system-engineer", "role": "System Engineer", "company": "Tata Consultancy Services", "client": "GE Renewables — Wind Energy Data Services", "duration": "Jan 2023 – May 2025", "location": "Noida, India", "summary": "Owned the monitoring, alerting, and data-quality surface of the same Redshift wind-turbine pipeline — keeping data flows visible, auditable, and self-healing.", "highlights": ["Built an auto-alerting framework on ServiceNow that scans data health for all contracted sources and raises incidents only for SLA-bound sources — cutting mean-time-to-detect data gaps from hours to minutes.", "Developed a source-level Data Coverage dashboard in Tableau surfacing daily completeness per site, turbine, and signal — adopted by operations teams globally as the primary data-health view.", "Added root-cause auto-classification into ServiceNow alerts, tagging each incident with its most likely cause (missing mapping, Edge box down, UDF failure, stale source).", "Built monitoring procedures covering UDF failures, Edge box health, and source-level health-message telemetry, consolidating ad-hoc scripts into a single operational view.", "Improved the data-lake-to-data-lake sync with a stage-table approach that isolated in-flight writes from reader queries, reducing contention and removing partial-write risk."], "skills": ["Python 3", "ServiceNow integration", "Amazon Redshift", "Tableau", "PL/pgSQL", "SQL"], "tags": [], "t": "system engineer tata consultancy services ge renewables — wind energy data services owned the monitoring, alerting, and data-quality surface of the same redshift wind-turbine pipeline — keeping data flows visible, auditable, and self-healing. built an auto-alerting framework on servicenow that scans data health for all contracted sources and raises incidents only for sla-bound sources — cutting mean-time-to-detect data gaps from hours to minutes. developed a source-level data coverage dashboard in tableau surfacing daily completeness per site, turbine, and signal — adopted by operations teams globally as the primary data-health view. added root-cause auto-classification into servicenow alerts, tagging each incident with its most likely cause (missing mapping, edge box down, udf failure, stale source). built monitoring procedures covering udf failures, edge box health, and source-level health-message telemetry, consolidating ad-hoc scripts into a single operational view. improved the data-lake-to-data-lake sync with a stage-table approach that isolated in-flight writes from reader queries, reducing contention and removing partial-write risk. python 3 servicenow integration amazon redshift tableau pl/pgsql sql"}, {"id": "e-tcs-trainee", "role": "Assistant System Engineer — Trainee", "company": "Tata Consultancy Services", "client": "GE Renewables — Wind Energy Data Services", "duration": "Feb 2022 – Dec 2022", "location": "Noida, India", "summary": "Joined the GE Renewables data-engineering engagement as a trainee, focused on source onboarding and ETL build-out for the Amazon Redshift / S3 data lakes.", "highlights": ["Configured end-to-end ingestion for new wind-farm data sources — from SCADA source through staging to Redshift data lakes — including schema mapping, validation, and cutover.", "Developed Redshift stored procedures that synchronize data between data lakes, unifying daily feeds into a common consumption layer.", "Built and debugged a source-to-staging data-movement process, making raw telemetry available for downstream ETL and reporting.", "Automated an analysis-and-report pipeline delivering daily data-health summaries, replacing manual Excel compilation.", "Improved data-lake coverage by ~30% by onboarding ~6,000 new data sources."], "skills": ["ETL pipeline design", "Python 3", "SQL Server", "AWS S3", "Java", "Amazon Redshift"], "tags": [], "t": "assistant system engineer — trainee tata consultancy services ge renewables — wind energy data services joined the ge renewables data-engineering engagement as a trainee, focused on source onboarding and etl build-out for the amazon redshift / s3 data lakes. configured end-to-end ingestion for new wind-farm data sources — from scada source through staging to redshift data lakes — including schema mapping, validation, and cutover. developed redshift stored procedures that synchronize data between data lakes, unifying daily feeds into a common consumption layer. built and debugged a source-to-staging data-movement process, making raw telemetry available for downstream etl and reporting. automated an analysis-and-report pipeline delivering daily data-health summaries, replacing manual excel compilation. improved data-lake coverage by ~30% by onboarding ~6,000 new data sources. etl pipeline design python 3 sql server aws s3 java amazon redshift"}], "projects": [{"id": "p-redshift", "kind": "flagship", "title": "Amazon Redshift Pipeline Optimization", "description": "End-to-end redesign and optimization of GE Renewables' global wind-turbine telemetry pipeline on Amazon Redshift — ingesting 10-minute SCADA data from thousands of onshore (ONW) and offshore (OFW) turbines and synchronizing it into Redshift for operations, reporting, and analytics.", "repo": null, "live": null, "type": null, "skills": ["Amazon Redshift", "AWS S3", "AWS Glue (Catalog & Jobs)", "AWS Secrets Manager", "KMS", "Python 3", "PL/pgSQL"], "tags": [], "case": {"client": "GE Renewables — Wind Energy Data Services", "role": "Data Engineer (Offshore Delivery Lead)", "duration": "2025 – 2026", "context": "The pipeline had years of technical debt: chronic deadlocks, inconsistent deduplication across 21+ siloed stored procedures, sites hardcoded into UDF bodies, data gaps from legacy reject logic, ~260 sites missing from ECDL analytics, and manual backfills that took days to recover from a single outage.", "metrics": [{"after": "7 unified procedures", "label": "Stored procedures", "before": "21+ across 2 schemas", "emphasis": "accent"}, {"after": "Under 2 hours (parallel)", "label": "Backfill recovery (1 yr)", "before": "Days to weeks (manual)", "emphasis": "sage"}, {"after": "Hash join, single-pass, no spill", "label": "Channel/Statistic join", "before": "Nested loop on 3.5B rows, disk spill", "emphasis": "sage"}, {"after": "EXCEPT + MERGE, 80% faster", "label": "Deduplication", "before": "6 inconsistent approaches", "emphasis": "gold"}, {"after": "Zero since go-live", "label": "Deadlock incidents", "before": "Chronic — multiple per week", "emphasis": "accent"}, {"after": "All ~260+ sites globally", "label": "ECDL site coverage", "before": "2 OFW sites", "emphasis": "sage"}, {"after": "Accurate, deduplicated", "label": "OFW dashboard coverage", "before": ">100% (up to 200%)", "emphasis": "gold"}, {"after": "Fixed — zero systematic loss", "label": "Missing records (watermark bug)", "before": "23,784/day silently dropped", "emphasis": "accent"}]}, "deliverables": [{"key": "consolidation", "title": "7 Unified Final-Load Procedures", "tag": "PL/pgSQL", "body": "Replaced 15+ legacy procedures with 7 parameterized procedures. A single run_type parameter (daily, backfill, backfill_dsl, backfill_copy, backfill_copy_dsl) covers daily operations and multi-year backfills using the same validated transformation logic — no divergence, no separate maintenance."}, {"key": "etl-framework", "title": "Python ETL Orchestration Framework", "tag": "Python · concurrency", "body": "etl_workflow_final.py — a thread-safe RedshiftManager (psycopg2.ThreadedConnectionPool) + S3Manager + ETLWorkflow. Dynamic worker auto-scaling sizes the pool from the number of outstanding dates (capped at 25 for the WLM queue). Pre-checks stv_recents for Coreflow conflicts, processes dates in parallel via ThreadPoolExecutor, then bulk COPY FROM MANIFEST. Fully config-driven and dry-run capable."}, {"key": "join-optimization", "title": "Channel & Statistic Join Optimization", "tag": "MPP tuning", "body": "The 3.5B-row Channel join used an OR predicate (sourcesignalid = channel_name OR alt_channel_name), forcing a nested-loop join. Pre-materialized a union-based equality lookup table with aligned DISTKEY/SORTKEY, making the join hash-eligible and single-pass. Same fix applied to the ~480M-row Statistic join. Validated with EXCEPT in both directions — zero data difference."}, {"key": "deadlocks", "title": "Deadlock & Lock-Strategy Redesign", "tag": "Concurrency", "body": "Legacy procedures locked the final table for the entire transformation. The new design locks only the staging table and adopts MERGE REMOVE DUPLICATES, dramatically reducing lock duration. Verified with live concurrency testing against svv_transactions / pg_locks — zero lock-contention incidents post go-live."}, {"key": "ecdl", "title": "ECDL Expansion & Duplicate Fix", "tag": "Data quality", "body": "Expanded ECDL (30-second aggregation) coverage from 2 OFW sites to all ~260+ streaming sites, with a dedicated ge_opd_ecdl schema preventing signal mixing. Root-caused duplicate accumulation from upstream late-arrival inserttimestamp updates; evaluated four approaches and adopted MERGE REMOVE DUPLICATES (\"latest value as final value\")."}, {"key": "dsl", "title": "DSL SCADA Update Script", "tag": "Python · security", "body": "dsl_update.py replaced three uncoordinated cron scripts + a separate UDF. Adds a pre-flight check of svl_stored_proc_call that blocks S3 re-upload if the prior run was aborted or stale (closing a real data-loss race), Fernet-encrypted credentials, and Prod→QA atomic sync."}, {"key": "monitoring", "title": "DSL Log Monitor & Duplicate Alerting", "tag": "Observability", "body": "dsl_log_monitor.py verifies remote job completion purely from S3 (file age, failure-keyword scan, completion marker) — no SSH to the source EC2. KMS ARNs are regex-masked in logs. A consolidate_duplicate_logs procedure aggregates duplicate detection across all 7 sources and raises a ServiceNow incident when values genuinely conflict."}, {"key": "watermark", "title": "Missing Records Investigation", "tag": "Root-cause", "body": "A 3-day structured investigation (snapshot → re-query Spectrum on the same watermark → dedup → EXCEPT) revealed dwf_10min_s3_load's inserttimestamp watermark logic silently dropped records visible in source. Identified 23,784 missing records across statistic and channel categories; root cause fixed and validated."}], "t": "amazon redshift pipeline optimization end-to-end redesign and optimization of ge renewables' global wind-turbine telemetry pipeline on amazon redshift — ingesting 10-minute scada data from thousands of onshore (onw) and offshore (ofw) turbines and synchronizing it into redshift for operations, reporting, and analytics. amazon redshift aws s3 aws glue (catalog & jobs) aws secrets manager kms python 3 pl/pgsql the pipeline had years of technical debt: chronic deadlocks, inconsistent deduplication across 21+ siloed stored procedures, sites hardcoded into udf bodies, data gaps from legacy reject logic, ~260 sites missing from ecdl analytics, and manual backfills that took days to recover from a single outage. 7 unified final-load procedures pl/pgsql replaced 15+ legacy procedures with 7 parameterized procedures. a single run_type parameter (daily, backfill, backfill_dsl, backfill_copy, backfill_copy_dsl) covers daily operations and multi-year backfills using the same validated transformation logic — no divergence, no separate maintenance. python etl orchestration framework python · concurrency etl_workflow_final.py — a thread-safe redshiftmanager (psycopg2.threadedconnectionpool) + s3manager + etlworkflow. dynamic worker auto-scaling sizes the pool from the number of outstanding dates (capped at 25 for the wlm queue). pre-checks stv_recents for coreflow conflicts, processes dates in parallel via threadpoolexecutor, then bulk copy from manifest. fully config-driven and dry-run capable. channel & statistic join optimization mpp tuning the 3.5b-row channel join used an or predicate (sourcesignalid = channel_name or alt_channel_name), forcing a nested-loop join. pre-materialized a union-based equality lookup table with aligned distkey/sortkey, making the join hash-eligible and single-pass. same fix applied to the ~480m-row statistic join. validated with except in both directions — zero data difference. deadlock & lock-strategy redesign concurrency legacy procedures locked the final table for the entire transformation. the new design locks only the staging table and adopts merge remove duplicates, dramatically reducing lock duration. verified with live concurrency testing against svv_transactions / pg_locks — zero lock-contention incidents post go-live. ecdl expansion & duplicate fix data quality expanded ecdl (30-second aggregation) coverage from 2 ofw sites to all ~260+ streaming sites, with a dedicated ge_opd_ecdl schema preventing signal mixing. root-caused duplicate accumulation from upstream late-arrival inserttimestamp updates; evaluated four approaches and adopted merge remove duplicates (\"latest value as final value\"). dsl scada update script python · security dsl_update.py replaced three uncoordinated cron scripts + a separate udf. adds a pre-flight check of svl_stored_proc_call that blocks s3 re-upload if the prior run was aborted or stale (closing a real data-loss race), fernet-encrypted credentials, and prod→qa atomic sync. dsl log monitor & duplicate alerting observability dsl_log_monitor.py verifies remote job completion purely from s3 (file age, failure-keyword scan, completion marker) — no ssh to the source ec2. kms arns are regex-masked in logs. a consolidate_duplicate_logs procedure aggregates duplicate detection across all 7 sources and raises a servicenow incident when values genuinely conflict. missing records investigation root-cause a 3-day structured investigation (snapshot → re-query spectrum on the same watermark → dedup → except) revealed dwf_10min_s3_load's inserttimestamp watermark logic silently dropped records visible in source. identified 23,784 missing records across statistic and channel categories; root cause fixed and validated."}, {"id": "p-algo-trading-bot", "kind": "small", "title": "Algo Trading Bot", "description": "A simple algorithmic trading bot built on the Binance API with NumPy and Pandas for signal computation and order logic in Python.", "repo": "https://github.com/TabTQ/Binance-Trading-Bot", "live": null, "type": "Automation", "skills": ["Python 3", "NumPy", "Pandas"], "tags": ["Binance API"], "t": "algo trading bot a simple algorithmic trading bot built on the binance api with numpy and pandas for signal computation and order logic in python. automation python 3 numpy pandas binance api"}, {"id": "p-greenhouse-irrigation", "kind": "small", "title": "Automatic Greenhouse Irrigation", "description": "Fuzzy-logic automation of a greenhouse irrigation system, controlling water flow rate from multiple environmental factors. Basis of two published papers (Springer & MDPI).", "repo": "https://github.com/TabTQ/Intelligent-Control-of-Irrigation-System-using-Fuzzy-Logic-Controller", "live": null, "type": "Control Systems", "skills": ["Arduino", "C++", "Control Systems", "Fuzzy Logic", "MATLAB", "Simulink"], "tags": [], "t": "automatic greenhouse irrigation fuzzy-logic automation of a greenhouse irrigation system, controlling water flow rate from multiple environmental factors. basis of two published papers (springer & mdpi). control systems arduino c++ control systems fuzzy logic matlab simulink"}, {"id": "p-spring-shopping-cart", "kind": "small", "title": "Spring Framework Shopping Cart", "description": "A shopping-cart web app built with the Spring framework and Hibernate to demonstrate cart flow and MVC fundamentals.", "repo": "https://github.com/TabTQ/Shopping-Cart-Spring-Framework", "live": null, "type": "Web App", "skills": ["Hibernate", "JSP", "Java", "Spring"], "tags": [], "t": "spring framework shopping cart a shopping-cart web app built with the spring framework and hibernate to demonstrate cart flow and mvc fundamentals. web app hibernate jsp java spring"}], "education": [{"id": "a-16", "type": "Degree", "title": "M.Tech, Control and Instrumentation", "inst": "Jamia Millia Islamia, New Delhi", "date": "2019 – 2023 · CGPA 9.05", "desc": "Thesis: \"Intelligent Control of Irrigation Systems Using Fuzzy Logic Controller\".", "url": null, "skills": [], "t": "m.tech, control and instrumentation jamia millia islamia, new delhi thesis: \"intelligent control of irrigation systems using fuzzy logic controller\". degree"}, {"id": "a-17", "type": "Degree", "title": "B.Tech, Electrical Engineering", "inst": "Jamia Millia Islamia, New Delhi", "date": "2015 – 2019", "desc": "Major in Control Systems. Capstone: density-based traffic control system using the AT89S52 microcontroller.", "url": null, "skills": [], "t": "b.tech, electrical engineering jamia millia islamia, new delhi major in control systems. capstone: density-based traffic control system using the at89s52 microcontroller. degree"}, {"id": "a-18", "type": "Publication", "title": "Analysis of Intelligent Control of Irrigation System", "inst": "Springer, Singapore", "date": "April 2023", "desc": "Study of intelligent control techniques to improve irrigation systems.", "url": "https://doi.org/10.1007/978-981-19-7993-4_24", "skills": [], "t": "analysis of intelligent control of irrigation system springer, singapore study of intelligent control techniques to improve irrigation systems. publication"}, {"id": "a-19", "type": "Publication", "title": "Intelligent Control of Irrigation Systems Using Fuzzy Logic Controller", "inst": "MDPI, Basel (Energies)", "date": "September 2022", "desc": "Development of a fuzzy-logic-based control of an irrigation system.", "url": "https://doi.org/10.3390/en15197199", "skills": [], "t": "intelligent control of irrigation systems using fuzzy logic controller mdpi, basel (energies) development of a fuzzy-logic-based control of an irrigation system. publication"}, {"id": "a-20", "type": "Certification", "title": "Introduction to Quantum Computing (Qiskit)", "inst": "Qubit by Qubit / The Coding School — sponsored by IBM Quantum", "date": "2020 – 2021", "desc": "IBM Quantum Global Summer School.", "url": "https://drive.google.com/file/d/1A_6UPX2BSu54-1LhX63jC7-6rO2Rr27L/view?usp=drivesdk", "skills": [], "t": "introduction to quantum computing (qiskit) qubit by qubit / the coding school — sponsored by ibm quantum ibm quantum global summer school. certification"}, {"id": "a-21", "type": "Certification", "title": "Python (Basic)", "inst": "HackerRank", "date": "September 2021", "desc": null, "url": "https://www.hackerrank.com/certificates/f8ebe76a9cf0", "skills": [], "t": "python (basic) hackerrank certification"}, {"id": "a-22", "type": "Certification", "title": "Java (Basic)", "inst": "HackerRank", "date": "November 2021", "desc": null, "url": "https://www.hackerrank.com/certificates/a2a0b6d60ed1", "skills": [], "t": "java (basic) hackerrank certification"}], "homelab": [{"id": "h-proxmox-host", "key": "proxmox-host", "cat": "proxmox", "name": "Proxmox VE Node", "ip": "192.168.10.100", "summary": "Primary compute platform of the homelab — a Proxmox VE 8.x node running ~10 services across isolated LXC containers, and the central backup repository for the entire homelab.", "hw": [{"spec": "AMD Ryzen 5 5500 (6C/12T @ 3.6GHz, boosts 4.2GHz)", "component": "CPU"}, {"spec": "16GB DDR4-3200 (~30% utilization)", "component": "Memory"}, {"spec": "1TB NVMe SSD — OS & LVM pool", "component": "Boot drive"}, {"spec": "1TB SATA HDD — media / downloads", "component": "Data drive"}, {"spec": "240GB SSD — dedicated PBS datastore", "component": "Backup drive"}, {"spec": "Proxmox VE 8.x (kernel 6.14.x)", "component": "OS"}], "skills": ["Proxmox VE", "LXC containers", "Proxmox Backup Server"], "containers": [{"id": "lxc-100", "name": "UbuntuCT", "ip": "192.168.10.130", "purpose": "Web & AI Services", "res": "2C / 4GB", "status": "Active", "skills": ["Docker / Compose", "Linux (Debian/Ubuntu)"], "t": "ubuntuct web & ai services 192.168.10.130 docker / compose linux (debian/ubuntu)"}, {"id": "lxc-101", "name": "n8n", "ip": "192.168.10.105", "purpose": "Automation", "res": "2C / 2GB", "status": "Active", "skills": ["n8n"], "t": "n8n automation 192.168.10.105 n8n"}, {"id": "lxc-102", "name": "Postgres", "ip": "192.168.10.198", "purpose": "Database", "res": "2C / 4GB", "status": "Active", "skills": ["SQL"], "t": "postgres database 192.168.10.198 sql"}, {"id": "lxc-103", "name": "Code-Server", "ip": "192.168.10.113", "purpose": "Development", "res": "4C / 4GB", "status": "Active", "skills": ["VS Code / Code-Server"], "t": "code-server development 192.168.10.113 vs code / code-server"}, {"id": "lxc-210", "name": "Downloads", "ip": "192.168.10.131", "purpose": "Media Stack", "res": "4C / 2GB", "status": "Active", "skills": [], "t": "downloads media stack 192.168.10.131"}, {"id": "lxc-211", "name": "Fabric", "ip": "192.168.10.197", "purpose": "AI Research", "res": "4C / 8GB", "status": "Idle", "skills": [], "t": "fabric ai research 192.168.10.197"}, {"id": "lxc-999", "name": "PBS", "ip": "192.168.10.199", "purpose": "Backups", "res": "1C / 2GB", "status": "Active", "skills": ["Proxmox Backup Server"], "t": "pbs backups 192.168.10.199 proxmox backup server"}], "services": [], "network": [], "t": "proxmox ve node primary compute platform of the homelab — a proxmox ve 8.x node running ~10 services across isolated lxc containers, and the central backup repository for the entire homelab. amd ryzen 5 5500 (6c/12t @ 3.6ghz, boosts 4.2ghz) 16gb ddr4-3200 (~30% utilization) 1tb nvme ssd — os & lvm pool 1tb sata hdd — media / downloads 240gb ssd — dedicated pbs datastore proxmox ve 8.x (kernel 6.14.x) proxmox ve lxc containers proxmox backup server"}, {"id": "h-raspberry-pi", "key": "raspberry-pi", "cat": "raspberry_pi", "name": "Raspberry Pi Monitoring Stack", "ip": "192.168.10.101", "summary": "A Dockerized observability and remote-access stack on a Raspberry Pi 4 (8GB). Public services via Cloudflare Tunnel (no open ports); admin over Tailscale. Weekly automated PBS backups to the Proxmox node.", "hw": [{"spec": "Raspberry Pi 4 Model B Rev 1.4", "component": "Model"}, {"spec": "8GB LPDDR4 (~21% used)", "component": "RAM"}, {"spec": "64GB USB 3.1 flash drive", "component": "Boot/Root"}, {"spec": "32GB MicroSD", "component": "Temp/Swap"}, {"spec": "Debian 12 (bookworm)", "component": "OS"}, {"spec": "tabishrpi4 · 192.168.10.101 · Tailscale 100.64.0.5", "component": "Host / IP"}], "skills": ["Docker / Compose", "Prometheus / Grafana", "cAdvisor / Node Exporter", "Cloudflare Tunnel", "Linux (Debian/Ubuntu)"], "containers": [], "services": [{"id": "s-homepage", "name": "Homepage", "ct": "homepage", "port": "2000", "fn": "Main dashboard (public via Cloudflare)", "skills": ["Docker / Compose"], "t": "homepage main dashboard (public via cloudflare) homepage docker / compose"}, {"id": "s-portainer", "name": "Portainer", "ct": "portainer", "port": "9000", "fn": "Docker management", "skills": ["Docker / Compose"], "t": "portainer docker management portainer docker / compose"}, {"id": "s-grafana", "name": "Grafana", "ct": "grafana", "port": "3000", "fn": "Metrics visualization", "skills": ["Prometheus / Grafana"], "t": "grafana metrics visualization grafana prometheus / grafana"}, {"id": "s-prometheus", "name": "Prometheus", "ct": "prometheus", "port": "9090", "fn": "Metric collection", "skills": ["Prometheus / Grafana"], "t": "prometheus metric collection prometheus prometheus / grafana"}, {"id": "s-node-exporter", "name": "Node Exporter", "ct": "node-exporter", "port": "9100", "fn": "Hardware metrics", "skills": ["cAdvisor / Node Exporter"], "t": "node exporter hardware metrics node-exporter cadvisor / node exporter"}, {"id": "s-cadvisor", "name": "cAdvisor", "ct": "cadvisor", "port": "8080", "fn": "Container metrics", "skills": ["cAdvisor / Node Exporter"], "t": "cadvisor container metrics cadvisor cadvisor / node exporter"}, {"id": "s-guacamole", "name": "Guacamole", "ct": "guacamole", "port": "8081", "fn": "Remote-desktop gateway (VNC/RDP/SSH)", "skills": ["Docker / Compose"], "t": "guacamole remote-desktop gateway (vnc/rdp/ssh) guacamole docker / compose"}, {"id": "s-cloudflared", "name": "Cloudflared", "ct": "cloudflared", "port": "60123", "fn": "Secure outbound tunnel", "skills": ["Cloudflare Tunnel", "Docker / Compose"], "t": "cloudflared secure outbound tunnel cloudflared cloudflare tunnel docker / compose"}, {"id": "s-watchtower", "name": "Watchtower", "ct": "watchtower", "port": "—", "fn": "Automated image updates", "skills": ["Docker / Compose"], "t": "watchtower automated image updates watchtower docker / compose"}, {"id": "s-wol-server", "name": "WOL Server", "ct": "wol-server", "port": "host", "fn": "Wake-on-LAN magic packets", "skills": ["Java", "Spring", "Docker / Compose"], "t": "wol server wake-on-lan magic packets wol-server java spring docker / compose"}], "network": [], "t": "raspberry pi monitoring stack a dockerized observability and remote-access stack on a raspberry pi 4 (8gb). public services via cloudflare tunnel (no open ports); admin over tailscale. weekly automated pbs backups to the proxmox node. raspberry pi 4 model b rev 1.4 8gb lpddr4 (~21% used) 64gb usb 3.1 flash drive 32gb microsd debian 12 (bookworm) tabishrpi4 · 192.168.10.101 · tailscale 100.64.0.5 docker / compose prometheus / grafana cadvisor / node exporter cloudflare tunnel linux (debian/ubuntu)"}, {"id": "h-home-network", "key": "home-network", "cat": "network", "name": "Dual-ISP VLAN-Segmented Network", "ip": null, "summary": "A dual-ISP home network on a TP-Link ER605 gateway with bidirectional WAN failover between a 1 Gbps fiber PPPoE link and a 30 Mbps secondary ISP. VLAN 10 (high-speed) and VLAN 20 (IoT / cameras) are segmented across managed and unmanaged switches and WiFi 6 APs.", "hw": [], "skills": [], "containers": [], "services": [], "network": [{"id": "n-15", "type": "isp", "name": "ISP 1 (Primary)", "spec": {"spec": "1 Gbps Fiber → Fiber-to-RJ45 converter → ER605 WAN 1 (PPPoE)"}, "skills": [], "t": "isp 1 (primary) {\"spec\": \"1 gbps fiber → fiber-to-rj45 converter → er605 wan 1 (pppoe)\"}"}, {"id": "n-16", "type": "isp", "name": "ISP 2 (Secondary)", "spec": {"spec": "30 Mbps → ISP Router → ER605 WAN 2 (Dynamic IP)"}, "skills": [], "t": "isp 2 (secondary) {\"spec\": \"30 mbps → isp router → er605 wan 2 (dynamic ip)\"}"}, {"id": "n-17", "type": "vlan", "name": "VLAN 10", "spec": {"role": "High-speed — uses ISP 1 primarily", "subnet": "192.168.10.0/24"}, "skills": [], "t": "vlan 10 {\"role\": \"high-speed — uses isp 1 primarily\", \"subnet\": \"192.168.10.0/24\"}"}, {"id": "n-18", "type": "vlan", "name": "VLAN 20", "spec": {"role": "Low-speed / IoT — uses ISP 2 primarily", "subnet": "192.168.20.0/24"}, "skills": [], "t": "vlan 20 {\"role\": \"low-speed / iot — uses isp 2 primarily\", \"subnet\": \"192.168.20.0/24\"}"}, {"id": "n-19", "type": "switch", "name": "TP-Link TL-SG108E", "spec": {"role": "Central VLAN 10 distribution", "type": "8-Port Gigabit · Managed", "ports": ["P1 ER605 LAN1 uplink", "P2 → room switch", "P3 Raspberry Pi", "P4 Proxmox node", "P5 Brother's PC", "P6 EX220 WiFi 6 AP"], "anchor": "sg108e"}, "skills": [], "t": "tp-link tl-sg108e {\"role\": \"central vlan 10 distribution\", \"type\": \"8-port gigabit · managed\", \"ports\": [\"p1 er605 lan1 uplink\", \"p2 → room switch\", \"p3 raspberry pi\", \"p4 proxmox node\", \"p5 brother's pc\", \"p6 ex220 wifi 6 ap\"], \"anchor\": \"sg108e\"}"}, {"id": "n-20", "type": "switch", "name": "TP-Link LS105G", "spec": {"role": "My room switch (VLAN 10)", "type": "5-Port Gigabit · Unmanaged", "ports": ["Uplink from SG108E P2", "P2 My PC", "P3 AX10 WiFi 6 AP", "P4 Office laptop"], "anchor": "ls105g"}, "skills": [], "t": "tp-link ls105g {\"role\": \"my room switch (vlan 10)\", \"type\": \"5-port gigabit · unmanaged\", \"ports\": [\"uplink from sg108e p2\", \"p2 my pc\", \"p3 ax10 wifi 6 ap\", \"p4 office laptop\"], \"anchor\": \"ls105g\"}"}, {"id": "n-21", "type": "switch", "name": "Tenda 8-Port", "spec": {"role": "VLAN 20 IoT distribution", "type": "100 Mbps · Unmanaged", "ports": ["Uplink from ER605 LAN3", "P2 Camera DVR", "P3 Secondary router AP (Floor 2)"], "anchor": "tenda"}, "skills": [], "t": "tenda 8-port {\"role\": \"vlan 20 iot distribution\", \"type\": \"100 mbps · unmanaged\", \"ports\": [\"uplink from er605 lan3\", \"p2 camera dvr\", \"p3 secondary router ap (floor 2)\"], \"anchor\": \"tenda\"}"}], "t": "dual-isp vlan-segmented network a dual-isp home network on a tp-link er605 gateway with bidirectional wan failover between a 1 gbps fiber pppoe link and a 30 mbps secondary isp. vlan 10 (high-speed) and vlan 20 (iot / cameras) are segmented across managed and unmanaged switches and wifi 6 aps."}], "skills": [{"name": "Cloud & Data Warehousing", "skills": [{"l": "Amazon Redshift", "n": 4}, {"l": "Redshift Spectrum", "n": 1}, {"l": "AWS S3", "n": 3}, {"l": "AWS Glue (Catalog & Jobs)", "n": 2}, {"l": "AWS Secrets Manager", "n": 1}, {"l": "KMS", "n": 1}, {"l": "IAM", "n": 0}]}, {"name": "Languages", "skills": [{"l": "Python 3", "n": 5}, {"l": "SQL", "n": 2}, {"l": "PL/pgSQL", "n": 3}, {"l": "Bash", "n": 0}, {"l": "Java", "n": 3}, {"l": "C++", "n": 1}]}, {"name": "Data Engineering", "skills": [{"l": "ETL pipeline design", "n": 1}, {"l": "MERGE / UPSERT patterns", "n": 0}, {"l": "MERGE REMOVE DUPLICATES", "n": 1}, {"l": "EXCEPT-based dedup", "n": 0}, {"l": "Watermark incremental loads", "n": 0}, {"l": "DISTKEY / SORTKEY tuning", "n": 0}, {"l": "MPP query optimization", "n": 0}, {"l": "Manifest-based bulk loads", "n": 0}]}, {"name": "Python Ecosystem", "skills": [{"l": "psycopg2 (ThreadedConnectionPool)", "n": 1}, {"l": "boto3", "n": 0}, {"l": "concurrent.futures", "n": 0}, {"l": "argparse", "n": 0}, {"l": "configparser", "n": 0}, {"l": "cryptography (Fernet)", "n": 0}, {"l": "NumPy", "n": 1}, {"l": "Pandas", "n": 1}]}, {"name": "Automation & Orchestration", "skills": [{"l": "Jenkins", "n": 0}, {"l": "n8n", "n": 1}, {"l": "systemd", "n": 0}, {"l": "cron", "n": 0}, {"l": "GEMINI scheduler", "n": 0}, {"l": "ServiceNow integration", "n": 1}]}, {"name": "Infrastructure & DevOps", "skills": [{"l": "Docker / Compose", "n": 8}, {"l": "Proxmox VE", "n": 1}, {"l": "LXC containers", "n": 1}, {"l": "Proxmox Backup Server", "n": 2}, {"l": "Linux (Debian/Ubuntu)", "n": 2}, {"l": "Tailscale", "n": 0}, {"l": "Cloudflare Tunnel", "n": 2}, {"l": "Prometheus / Grafana", "n": 3}, {"l": "cAdvisor / Node Exporter", "n": 3}]}, {"name": "AI-Assisted Development", "skills": [{"l": "Claude Code", "n": 0}, {"l": "Gemini CLI", "n": 0}, {"l": "OpenCode", "n": 0}, {"l": "Claude / Gemini / Grok chat", "n": 0}]}, {"name": "Tooling", "skills": [{"l": "Git / GitHub", "n": 0}, {"l": "Confluence", "n": 0}, {"l": "Jira", "n": 0}, {"l": "VS Code / Code-Server", "n": 1}]}, {"name": "Databases & BI", "skills": [{"l": "SQL Server", "n": 1}, {"l": "Tableau", "n": 1}]}, {"name": "Embedded & Control Systems", "skills": [{"l": "Arduino", "n": 1}, {"l": "Control Systems", "n": 1}, {"l": "Fuzzy Logic", "n": 1}, {"l": "MATLAB", "n": 1}, {"l": "Simulink", "n": 1}]}, {"name": "Java Ecosystem", "skills": [{"l": "Hibernate", "n": 1}, {"l": "JSP", "n": 1}, {"l": "Spring", "n": 2}]}]};
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+const S={picked:new Set(),mode:'all',vis:'hide',q:'',open:new Set(),view:'public'};
+const tokens=()=>S.q.toLowerCase().split(/\s+/).filter(Boolean);
+const txtOK=t=>tokens().every(k=>t.includes(k));
+const skOK=sk=>!S.picked.size||(S.mode==='all'?[...S.picked].every(s=>sk.includes(s)):[...S.picked].some(s=>sk.includes(s)));
+const M=e=>skOK(e.skills)&&txtOK(e.t);
+const active=()=>S.picked.size>0||tokens().length>0;
+
+/* Every homelab item counts as a match if it, or anything below it, matches. */
+const devKids=h=>({cts:h.containers.filter(M),svs:h.services.filter(M),nets:h.network.filter(M)});
+const devMatch=h=>{const k=devKids(h); return M(h)||k.cts.length||k.svs.length||k.nets.length;};
+
+const chip=(l)=>`<button class="chip ${S.picked.has(l)?'on':''}" data-skill="${esc(l)}" title="Filter by ${esc(l)}">${esc(l)}</button>`;
+const chips=(e)=>(e.skills&&e.skills.length||e.tags&&e.tags.length)?`<div class="chips">${(e.skills||[]).map(chip).join('')}${(e.tags||[]).map(t=>`<span class="chip tag" title="Free-text tag, not linked to a skill">${esc(t)}</span>`).join('')}</div>`:'';
+const editBtn=(what)=>`<button class="btn sm edit int-only" data-edit="${esc(what)}">Edit</button>`;
+const shown=(e,fn)=>{ const m=fn?fn(e):M(e); return S.vis==='hide'?m:true; };
+const dimCls=(e,fn)=>{ const m=fn?fn(e):M(e); return (!m&&S.vis==='dim')?' dim':''; };
+const sec=(id,title,count,body,edit)=>body.startsWith('<div class="none">')?`<section class="sec empty" id="${id}"><div class="sec-h"><h2 class="tape">${title}</h2><span class="rule"></span><span class="ct">no matches</span></div></section>`:`<section class="sec" id="${id}"><div class="sec-h"><h2 class="tape">${title}</h2><span class="rule"></span><span class="ct">${count}</span>${edit?`<button class="btn sm int-only" data-edit="${esc(title)}: add">Add</button>`:''}</div>${body}</section>`;
+
+function hasHit(list){ return tokens().length && list.some(x=>txtOK(x.toLowerCase())); }
+function highlights(e){
+  const open=S.open.has('h:'+e.id)||hasHit(e.highlights);
+  return `<details data-k="h:${e.id}" ${open?'open':''}><summary>${e.highlights.length} highlights</summary><ul class="hl">${e.highlights.map(h=>`<li class="${tokens().length&&txtOK(h.toLowerCase())?'hit':''}">${esc(h)}</li>`).join('')}</ul></details>`;
+}
+
+function renderAbout(){
+  const p=D.profile, m=!active()||M(p);
+  if(!m&&S.vis==='hide') return sec('about','About','hidden by filter','<div class="none">About is not linked to any skill. Clear the filter to read it.</div>');
+  return sec('about','About','',`<div class="about${dimCls(p)}"><div class="about-text"><h1>${esc(p.name)}</h1><div class="lede"><b>${esc(p.title)}</b> &middot; ${esc(p.tagline)}</div>
+   <div class="meta"><span>${esc(p.location)}</span><span>${esc(p.status)}</span><span>${esc(p.brand)}</span></div>
+   ${p.bio.map(b=>`<p class="lede">${esc(b)}</p>`).join('')}</div>
+   <div class="stats">${p.stats.map(s=>`<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div><div class="s">${esc(s.sub)}</div></div>`).join('')}</div></div>`,0);
+}
+function renderExp(){
+  const all=D.experience, list=all.filter(e=>shown(e));
+  const body=list.length?`<div class="cols">`+list.map(e=>`<article class="card${dimCls(e)}" id="${e.id}">${editBtn('Experience: '+e.role)}<h3>${esc(e.role)}</h3><div class="role-meta"><span>${esc(e.company)}</span><span class="when">${esc(e.duration)}</span><span>${esc(e.location)}</span></div><div class="role-meta" style="margin-top:-6px"><span>Client: ${esc(e.client)}</span></div><p style="margin:0">${esc(e.summary)}</p>${highlights(e)}${chips(e)}</article>`).join('')+`</div>`:'<div class="none">No role matches this filter.</div>';
+  return sec('experience','Experience',`${all.filter(M).length} of ${all.length}`,body,1);
+}
+function renderProjects(){
+  const all=D.projects, list=all.filter(p=>shown(p)), fl=list.filter(p=>p.kind==='flagship'), sm=list.filter(p=>p.kind!=='flagship');
+  const flag=fl.map(p=>{
+    const c=p.case, dl=p.deliverables.filter(x=>!tokens().length||txtOK((x.title+' '+x.tag+' '+x.body).toLowerCase()));
+    return `<article class="card${dimCls(p)}" id="${p.id}">${editBtn('Project: '+p.title)}<div class="eyebrow">Flagship &middot; ${esc(c.duration)} &middot; ${esc(c.client)}</div><h3 style="margin-top:2px">${esc(p.title)}</h3><p style="margin:8px 0 0">${esc(p.description)}</p>
+    <details data-k="c:${p.id}" ${S.open.has('c:'+p.id)?'open':''}><summary>Context and results</summary><p>${esc(c.context)}</p><div class="tablewrap"><table><thead><tr><th>Metric</th><th>Before</th><th>After</th></tr></thead><tbody>${c.metrics.map(m=>`<tr><td>${esc(m.label)}</td><td>${esc(m.before||'')}</td><td class="after ${m.emphasis==='accent'?'accent':''}">${esc(m.after||'')}</td></tr>`).join('')}</tbody></table></div></details>
+    <details data-k="d:${p.id}" ${(S.open.has('d:'+p.id)||tokens().length&&dl.length)?'open':''}><summary>${dl.length} deliverable${dl.length===1?'':'s'}${dl.length<p.deliverables.length?' of '+p.deliverables.length:''}</summary><ul class="dl">${dl.map(x=>`<li><div class="t">${esc(x.title)} <span class="chip tag">${esc(x.tag)}</span></div><p>${esc(x.body)}</p></li>`).join('')}</ul></details>${chips(p)}</article>`;
+  }).join('');
+  const small=sm.length?`<div class="sub-h">Other projects</div><div class="grid3">${sm.map(p=>`<article class="card${dimCls(p)}" id="${p.id}">${editBtn('Project: '+p.title)}<div class="eyebrow">${esc(p.type)}</div><h3 style="margin-top:2px;font-size:1rem">${esc(p.title)}</h3><p style="margin:6px 0 0;font-size:14px">${esc(p.description)}</p>${chips(p)}${p.repo?`<p style="margin:10px 0 0"><a href="#" data-link="${esc(p.repo)}" class="mono" style="font-size:12.5px">Source on GitHub &nearr;</a></p>`:''}</article>`).join('')}</div>`:'';
+  return sec('projects','Projects',`${all.filter(M).length} of ${all.length}`,(flag+small)||'<div class="none">No project matches this filter.</div>',1);
+}
+function renderEdu(){
+  const all=D.education, list=all.filter(e=>shown(e)), types=['Degree','Publication','Certification'];
+  if(!list.length) return sec('education','Education',`0 of ${all.length}`,'<div class="none">Education items are not linked to skills. Clear the skill filter, or search by text.</div>',1);
+  return sec('education','Education',`${all.filter(M).length} of ${all.length}`,`<div class="edu">${types.map(t=>{const r=list.filter(e=>e.type===t); return r.length?`<div><div class="sub-h" style="margin-top:0">${t}s</div><ul>${r.map(e=>`<li class="${dimCls(e).trim()}"><div class="t">${esc(e.title)}</div><div class="m">${esc(e.inst)} &middot; ${esc(e.date)}</div>${e.desc?`<div class="m">${esc(e.desc)}</div>`:''}</li>`).join('')}</ul></div>`:'';}).join('')}</div>`,1);
+}
+function renderLab(){
+  const devs=D.homelab, vis=devs.filter(h=>S.vis==='hide'?devMatch(h):true);
+  const body=vis.length?vis.map(h=>{
+    const k=devKids(h), hide=S.vis==='hide';
+    const cts=hide?k.cts:h.containers, svs=hide?k.svs:h.services, nets=hide?k.nets:h.network;
+    const g=t=>nets.filter(n=>n.type===t);
+    return `<article class="dev card${(!devMatch(h)&&S.vis==='dim')?' dim':''}" id="${h.id}">${editBtn('Homelab: '+h.name)}<header><h3>${esc(h.name)}</h3>${h.ip?`<span class="mono" style="color:var(--muted);font-size:13px">${esc(h.ip)}</span>`:''}</header><p style="margin:0">${esc(h.summary)}</p>
+      ${h.hw.length?`<dl class="hw">${h.hw.map(x=>`<div><dt>${esc(x.component)}</dt><dd>${esc(x.spec)}</dd></div>`).join('')}</dl>`:''}
+      ${chips(h)}
+      ${cts.length?`<div class="sub-h">Containers <span class="badge-new" title="Skill links for homelab items are a proposed addition">skills linked: proposed</span></div><div class="grid3">${cts.map(c=>`<div class="card${dimCls(c)}" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(c.name)}</b><span class="state ${c.status==='Active'?'up':'warn'}">${esc(c.status)}</span></div><div class="kv"><span>ID</span><span class="mono">${esc(c.id.replace('lxc-',''))}</span></div><div class="kv"><span>Purpose</span><span>${esc(c.purpose)}</span></div><div class="kv"><span>Resources</span><span class="mono">${esc(c.res)}</span></div>${chips(c)}</div>`).join('')}</div>`:''}
+      ${svs.length?`<div class="sub-h">Services</div><div class="grid3">${svs.map(s=>`<div class="card${dimCls(s)}" style="padding:12px 14px"><b>${esc(s.name)}</b><div class="kv"><span>Function</span><span style="text-align:right">${esc(s.fn)}</span></div><div class="kv"><span>Container</span><span class="mono">${esc(s.ct)}</span></div><div class="kv"><span>Port</span><span class="mono">${esc(s.port)}</span></div>${chips(s)}</div>`).join('')}</div>`:''}
+      ${g('isp').length?`<div class="sub-h">Uplinks</div><div class="grid2">${g('isp').map(n=>`<div class="card" style="padding:12px 14px"><b>${esc(n.name)}</b><div style="color:var(--muted);font-size:13.5px">${esc(n.spec.spec)}</div></div>`).join('')}</div>`:''}
+      ${g('vlan').length?`<div class="sub-h">VLANs</div><div class="grid2">${g('vlan').map(n=>`<div class="card" style="padding:12px 14px"><b>${esc(n.name)}</b><div class="kv"><span>Subnet</span><span class="mono">${esc(n.spec.subnet)}</span></div><div class="kv"><span>Role</span><span style="text-align:right">${esc(n.spec.role)}</span></div></div>`).join('')}</div>`:''}
+      ${g('switch').length?`<div class="sub-h">Switches</div><div class="grid3">${g('switch').map(n=>`<div class="card" style="padding:12px 14px"><b>${esc(n.name)}</b><div class="kv"><span>Type</span><span>${esc(n.spec.type)}</span></div><div class="kv"><span>Role</span><span style="text-align:right">${esc(n.spec.role)}</span></div></div>`).join('')}</div>`:''}
+    </article>`;
+  }).join(''):'<div class="none">No homelab item matches this filter.</div>';
+  const total=devs.reduce((a,h)=>a+1+h.containers.length+h.services.length,0), hit=devs.reduce((a,h)=>{const k=devKids(h);return a+(M(h)?1:0)+k.cts.length+k.svs.length},0);
+  return sec('homelab','Homelab',`${hit} of ${total}`,body,1);
+}
+function renderContact(){
+  const p=D.profile, s=p.socials, m=!active()||M(p);
+  if(!m&&S.vis==='hide') return sec('contact','Contact','hidden by filter','<div class="none">Contact details are not linked to any skill.</div>');
+  return sec('contact','Contact','',`<div class="contact ${dimCls(p).trim()}"><div><div class="eyebrow">Email</div><div class="v">${esc(p.email)}</div></div><div><div class="eyebrow">Phone</div><div class="v">${esc(p.phone)}</div></div><div><div class="eyebrow">GitHub</div><a class="v" href="#" data-link="${esc(s.github)}">${esc(s.githubLabel)}</a></div><div><div class="eyebrow">LinkedIn</div><a class="v" href="#" data-link="${esc(s.linkedin)}">${esc(s.linkedinLabel)}</a></div></div>`,0);
+}
+
+function banner(){
+  const el=[];
+  if(S.view==='internal') el.push(`<div class="ribbon"><span><b>Editing view.</b> Saves publish to the public site (port 3011) within seconds. Last publish 12 s ago.</span><button class="btn" data-view-btn="public">Preview as public</button></div>`);
+  if(active()){
+    const cnt={Experience:D.experience.filter(M).length,Projects:D.projects.filter(M).length,Education:D.education.filter(M).length,Homelab:D.homelab.reduce((a,h)=>{const k=devKids(h);return a+(M(h)?1:0)+k.cts.length+k.svs.length},0)};
+    const none=Object.entries(cnt).filter(([,n])=>!n).map(([k])=>k);
+    el.push(`<div class="banner" role="status"><div class="row"><b>Showing what matches</b>${[...S.picked].map(chip).join('')}${tokens().length?`<span class="chip tag">text: ${esc(S.q)}</span>`:''}<span>&middot; ${Object.entries(cnt).filter(([,n])=>n).map(([k,n])=>`${k} ${n}`).join(' &middot; ')||'nothing'}</span><button class="linkbtn" data-clear>Clear all</button></div>${none.length?`<div class="hid">No matches in: ${none.join(', ')}${S.vis==='hide'?' (collapsed)':''}</div>`:''}</div>`);
+  }
+  return el.join('');
+}
+function renderContent(){
+  $('#content').innerHTML=banner()+renderAbout()+renderExp()+renderProjects()+renderEdu()+renderLab()+renderContact();
+  const N={experience:D.experience.filter(M).length,projects:D.projects.filter(M).length,education:D.education.filter(M).length,homelab:D.homelab.reduce((a,h)=>{const k=devKids(h);return a+(M(h)?1:0)+k.cts.length+k.svs.length},0)};
+  $('#subnavIn').innerHTML=[['about','About'],['experience','Experience'],['projects','Projects'],['education','Education'],['homelab','Homelab'],['contact','Contact']].map(([id,l])=>`<a href="#${id}" data-sec="${id}">${l}${active()&&N[id]!=null?`<span class="n">${N[id]}</span>`:''}</a>`).join('');
+  markHere();
+}
+
+/* ---- Skill panel ---- */
+function renderPanel(){
+  const qt=tokens(), matched=[]; D.experience.filter(M).forEach(e=>matched.push(...e.skills)); D.projects.filter(M).forEach(e=>matched.push(...e.skills));
+  D.homelab.forEach(h=>{ if(M(h)) matched.push(...h.skills); const k=devKids(h); k.cts.forEach(c=>matched.push(...c.skills)); k.svs.forEach(c=>matched.push(...c.skills)); });
+  const rel=new Set(matched);
+  const nameOK=l=>!qt.length||qt.every(t=>l.toLowerCase().includes(t));
+  let any=false;
+  $('#groups').innerHTML=D.skills.map(g=>{
+    const list=g.skills.filter(s=>nameOK(s.l)); if(!list.length) return ''; any=true;
+    const open=list.some(s=>S.picked.has(s.l))||S.open.has('g:'+g.name)||(qt.length>0);
+    return `<details class="pgroup" data-k="g:${esc(g.name)}" ${open?'open':''}><summary>${esc(g.name)}<span class="c">${g.skills.filter(s=>s.n).length}/${g.skills.length}</span></summary><div class="chips">${list.map(s=>`<button class="sk ${s.n?'':'zero'} ${S.picked.size&&rel.has(s.l)&&!S.picked.has(s.l)?'rel':''}" data-skill="${esc(s.l)}" aria-pressed="${S.picked.has(s.l)}" title="${s.n?s.n+' linked item'+(s.n===1?'':'s'):'No linked content yet'}">${esc(s.l)}<span class="n">${s.n||'—'}</span></button>`).join('')}</div></details>`;
+  }).join('') || `<div class="none">No skill name matches “${esc(S.q)}”. The page text filter still applies.</div>`;
+  $('#active').innerHTML=[...S.picked].map(chip).map(h=>h.replace('class="chip on"','class="chip on" aria-label="Remove"')).join('');
+  const total=D.skills.reduce((a,g)=>a+g.skills.length,0), cov=D.skills.reduce((a,g)=>a+g.skills.filter(s=>s.n).length,0);
+  $('#pfoot').textContent=`${cov} of ${total} skills have linked content. Dashed skills are listed but not linked to any role, project or homelab item yet.`;
+  const n=S.picked.size+(qt.length?1:0); $('#railBd').textContent=n; $('#fabN').textContent=n?'· '+n:'';
+  $$('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===S.mode)); $$('[data-vis]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.vis===S.vis));
+}
+function all(){ renderContent(); renderPanel(); }
+document.addEventListener('toggle',e=>{const k=e.target.dataset&&e.target.dataset.k; if(!k) return; e.target.open?S.open.add(k):S.open.delete(k);},true);
+
+/* ---- Interactions ---- */
+let tt; function toast(m){const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,3600);}
+document.addEventListener('click',e=>{
+  const sk=e.target.closest('[data-skill]'); if(sk){const s=sk.dataset.skill; S.picked.has(s)?S.picked.delete(s):S.picked.add(s); all(); return;}
+  if(e.target.closest('[data-clear]')){S.picked.clear(); S.q=''; $('#psearch').value=''; all(); return;}
+  const mo=e.target.closest('[data-mode]'); if(mo){S.mode=mo.dataset.mode; all(); return;}
+  const vi=e.target.closest('[data-vis]'); if(vi){S.vis=vi.dataset.vis; all(); return;}
+  const ed=e.target.closest('[data-edit]'); if(ed){toast('Mockup: would open the editor for “'+ed.dataset.edit+'”.'); return;}
+  const lk=e.target.closest('[data-link]'); if(lk){e.preventDefault(); toast('Would open '+lk.dataset.link+' in a new tab.'); return;}
+  const vb=e.target.closest('[data-view-btn]'); if(vb){setView(vb.dataset.viewBtn); return;}
+  const sc=e.target.closest('.subnav a'); if(sc){ /* native anchor scroll */ }
+});
+$('#psearch').addEventListener('input',e=>{S.q=e.target.value; all();});
+function setCollapsed(c){ $('#page').classList.toggle('collapsed',c); $('#collapse').textContent=c?'«':'»'; store.set('hub-panel',c?'1':'0'); }
+$('#collapse').onclick=()=>{ if(matchMedia('(max-width:900px)').matches) closeDrawer(); else setCollapsed(true); };
+$('#rail').onclick=()=>setCollapsed(false);
+function openDrawer(){ $('#panel').classList.add('open'); $('#scrim').classList.add('show'); }
+function closeDrawer(){ $('#panel').classList.remove('open'); $('#scrim').classList.remove('show'); }
+$('#fab').onclick=openDrawer; $('#scrim').onclick=closeDrawer;
+
+function setView(v){ S.view=v; document.body.dataset.view=v; $$('[data-view-btn]').forEach(b=>b.closest('.mockbar')&&b.setAttribute('aria-pressed',b.dataset.viewBtn===v)); all(); }
+function setTheme(t){ if(t==='system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme=t; $$('[data-theme-btn]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.themeBtn===t)); store.set('hub-theme',t); }
+$$('[data-theme-btn]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeBtn));
+const DEMO={none:()=>{S.picked.clear();S.q='';},py:()=>{S.picked=new Set(['Python 3','Amazon Redshift']);S.q='';S.mode='all';},docker:()=>{S.picked=new Set(['Docker / Compose']);S.q='';},dead:()=>{S.picked.clear();S.q='deadlock';}};
+$$('[data-demo]').forEach(b=>b.onclick=()=>{DEMO[b.dataset.demo](); $('#psearch').value=S.q; all(); window.scrollTo({top:0});});
+
+/* Sticky offsets follow the real height of the mockup bar and section nav */
+function measure(){ const mb=$('#mockbar').offsetHeight; document.documentElement.style.setProperty('--mb',mb+'px'); document.documentElement.style.setProperty('--stick',(mb+$('#subnav').offsetHeight+10)+'px'); }
+new ResizeObserver(measure).observe($('#mockbar')); window.addEventListener('resize',measure);
+function markHere(){ const y=window.scrollY+parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stick'))+40; let cur='about'; ['about','experience','projects','education','homelab','contact'].forEach(id=>{const el=document.getElementById(id); if(el&&el.offsetTop<=y) cur=id;}); $$('.subnav a').forEach(a=>a.classList.toggle('here',a.dataset.sec===cur)); }
+window.addEventListener('scroll',markHere,{passive:true});
+
+/* Palette */
+const INDEX=[...[['about','About'],['experience','Experience'],['projects','Projects'],['education','Education'],['homelab','Homelab'],['contact','Contact']].map(([id,t])=>({g:'Sections',t,d:'Jump to',jump:id})),
+ ...D.experience.map(e=>({g:'Experience',t:e.role,d:e.company,jump:e.id})),...D.projects.map(p=>({g:'Projects',t:p.title,d:p.kind,jump:p.id})),
+ ...D.homelab.map(h=>({g:'Homelab',t:h.name,d:h.ip||'',jump:h.id})),
+ ...D.skills.flatMap(g=>g.skills.map(s=>({g:'Skills',t:s.l,d:s.n?s.n+' linked':'no linked content',skill:s.l})))];
+let sel=0,shownR=[];
+function drawPal(){ const t=$('#q').value.toLowerCase().split(/\s+/).filter(Boolean); shownR=INDEX.filter(x=>t.every(k=>(x.t+' '+x.d+' '+x.g).toLowerCase().includes(k))).slice(0,t.length?30:12); sel=Math.min(sel,Math.max(0,shownR.length-1)); let last=''; $('#res').innerHTML=shownR.length?shownR.map((x,i)=>{const h=x.g!==last?`<div class="gl">${x.g}</div>`:''; last=x.g; return h+`<button role="option" data-i="${i}" aria-selected="${i===sel}"><span>${esc(x.t)}</span><span class="hint">${esc(x.d)}</span></button>`}).join(''):'<div class="gl">No matches</div>'; }
+function openPal(){ $('#paletteOv').hidden=false; $('#q').value=''; sel=0; drawPal(); $('#q').focus(); }
+function closePal(){ $('#paletteOv').hidden=true; }
+function run(x){ closePal(); if(x.skill){S.picked.add(x.skill); all(); if(matchMedia('(min-width:901px)').matches) setCollapsed(false); return;} if(x.jump){ S.picked.clear(); S.q=''; $('#psearch').value=''; all(); setTimeout(()=>document.getElementById(x.jump)?.scrollIntoView({behavior:'smooth',block:'start'}),30);} }
+$('#openPalette').onclick=openPal; $('#q').addEventListener('input',()=>{sel=0;drawPal()});
+$('#res').addEventListener('click',e=>{const b=e.target.closest('[data-i]'); if(b) run(shownR[+b.dataset.i]);});
+$('#paletteOv').addEventListener('mousedown',e=>{ if(e.target===e.currentTarget) closePal(); });
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); $('#paletteOv').hidden?openPal():closePal(); return;}
+  if(e.key==='Escape'){ if(!$('#paletteOv').hidden) closePal(); else closeDrawer(); return; }
+  if($('#paletteOv').hidden) return;
+  if(e.key==='ArrowDown'){e.preventDefault(); sel=Math.min(sel+1,shownR.length-1); drawPal(); $('[aria-selected="true"]',$('#res'))?.scrollIntoView({block:'nearest'});}
+  if(e.key==='ArrowUp'){e.preventDefault(); sel=Math.max(sel-1,0); drawPal(); $('[aria-selected="true"]',$('#res'))?.scrollIntoView({block:'nearest'});}
+  if(e.key==='Enter'&&shownR[sel]){e.preventDefault(); run(shownR[sel]);}
+});
+
+setTheme(store.get('hub-theme','system')); setCollapsed(store.get('hub-panel','0')==='1'); measure(); all();
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""A fake `docker` CLI for the Docker page's browser tests and local demos (docs/design-history/docker-feature-plan.md).
+
+It understands exactly the commands the hub sends (ps, stats, logs, start/stop/restart/rm, run, network ls/rm, image ls,
+inspect, rmi, compose config/up/pull/stop/down) and keeps its containers in $MOCK_DOCKER_STATE/state.json, so actions change what the page
+shows. Test tool only: it never talks to a real Docker daemon.
+"""
+import hashlib
+import json
+import os
+import random
+import re
+import sys
+import time
+
+STATE_DIR = os.environ.get("MOCK_DOCKER_STATE", os.path.expanduser("~/.mock-docker"))
+STATE = os.path.join(STATE_DIR, "state.json")
+NOW = time.strftime("%Y-%m-%d %H:%M:%S +0000 UTC", time.gmtime())
+
+
+def cid(name):
+    return hashlib.sha256(("mock-container:" + name + ":" + str(time.time())).encode()).hexdigest()
+
+
+def image_id(image):
+    """A stable id per image name, so the images a container uses are recognised as in use."""
+    return "sha256:" + hashlib.sha256(("mock-image:" + image).encode()).hexdigest()
+
+
+def initial_images(containers):
+    imgs = {}
+    for c in containers:
+        repo, _, tag = c["image"].rpartition(":") if ":" in c["image"].split("/")[-1] else (c["image"], "", "latest")
+        imgs.setdefault(image_id(c["image"]), {"id": image_id(c["image"]), "tags": [f"{repo}:{tag}"], "size": "245MB", "created": "3 weeks ago"})
+    imgs[image_id("nginx:1.25")] = {"id": image_id("nginx:1.25"), "tags": ["nginx:1.25", "nginx:stable"], "size": "187MB", "created": "5 months ago"}
+    imgs[image_id("redis:7")] = {"id": image_id("redis:7"), "tags": ["redis:7"], "size": "117MB", "created": "2 months ago"}
+    imgs[image_id("<none>:old-build")] = {"id": image_id("<none>:old-build"), "tags": [], "size": "52.4MB", "created": "9 days ago"}
+    return list(imgs.values())
+
+
+def initial():
+    home = os.path.expanduser("~")
+    media = os.path.join(home, "stacks", "media")
+
+    def c(name, image, state="running", status="Up 3 days", ports="", project="", service="", workdir="", files="", self_=""):
+        return {"id": cid(name), "name": name, "image": image, "state": state, "status": status, "ports": ports, "created": NOW,
+                "runningFor": "3 days ago", "project": project, "service": service, "workdir": workdir, "configFiles": files, "self": self_}
+    return {"containers": [
+        c("hub-internal", "homelab-hub-internal:local", status="Up 2 days (healthy)", project="deploy", service="hub-internal",
+          workdir="/home/pi/homelab-hub/deploy", files="/home/pi/homelab-hub/deploy/docker-compose.yml", self_="true"),
+        c("hub-public", "homelab-hub-public:local", status="Up 2 days (healthy)", ports="0.0.0.0:3011->3011/tcp, [::]:3011->3011/tcp",
+          project="deploy", service="hub-public", workdir="/home/pi/homelab-hub/deploy", files="/home/pi/homelab-hub/deploy/docker-compose.yml", self_="true"),
+        c("pihole", "pihole/pihole:2026.09.0", status="Up 6 days (healthy)", ports="0.0.0.0:53->53/udp, 0.0.0.0:8081->80/tcp"),
+        c("jellyfin", "jellyfin/jellyfin:10.11", status="Up 3 hours (healthy)", ports="0.0.0.0:8096->8096/tcp, [::]:8096->8096/tcp",
+          project="media", service="jellyfin", workdir=media, files=os.path.join(media, "compose.yaml")),
+        c("media-qbittorrent-1", "lscr.io/linuxserver/qbittorrent:latest", status="Up 3 hours (unhealthy)", ports="0.0.0.0:8080->8080/tcp",
+          project="media", service="qbittorrent", workdir=media, files=os.path.join(media, "compose.yaml")),
+        c("watchtower", "containrrr/watchtower", status="Up 6 days"),
+        c("old-backup", "alpine:3.20", state="exited", status="Exited (0) 2 weeks ago"),
+    ], "networks": ["bridge", "host", "none", "proxy", "old-net"]}
+
+
+def load():
+    if not os.path.exists(STATE):
+        os.makedirs(STATE_DIR, exist_ok=True)
+        media = os.path.join(os.path.expanduser("~"), "stacks", "media")
+        os.makedirs(media, exist_ok=True)
+        with open(os.path.join(media, "compose.yaml"), "w") as f:
+            f.write("services:\n  jellyfin:\n    image: jellyfin/jellyfin:10.11\n    container_name: jellyfin\n    restart: unless-stopped\n"
+                    "    ports:\n      - \"8096:8096\"\n  qbittorrent:\n    image: lscr.io/linuxserver/qbittorrent:latest\n"
+                    "    environment:\n      PUID: ${PUID}\n")
+        with open(os.path.join(media, ".env"), "w") as f:
+            f.write("PUID=1000\n")
+        save(initial())
+    with open(STATE) as f:
+        s = json.load(f)
+    # state files from before clean up existed get its parts on first use
+    if "images" not in s:
+        s["images"] = initial_images(s["containers"])
+        s["unused_networks"] = ["old-net"]
+        if "old-net" not in s["networks"]:
+            s["networks"].append("old-net")
+    return s
+
+
+def save(s):
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(s, f, indent=1)
+    os.replace(tmp, STATE)
+
+
+def find(s, ref):
+    for c in s["containers"]:
+        if c["id"] == ref or c["id"].startswith(ref) or c["name"] == ref:
+            return c
+    print(f"Error response from daemon: No such container: {ref}", file=sys.stderr)
+    sys.exit(1)
+
+
+def ps(s, args):
+    for c in s["containers"]:
+        print(c["id"] if "-aq" in args else json.dumps(c))
+
+
+def image_ls(s, args):
+    for i in s["images"]:
+        for ref in i["tags"] or ["<none>:<none>"]:
+            repo, _, tag = ref.rpartition(":")
+            print(json.dumps({"ID": i["id"], "Repository": repo, "Tag": tag, "Size": i["size"], "CreatedSince": i["created"]}))
+
+
+def inspect(s, args):
+    ids = [a for a in args if not a.startswith("-") and a not in ("container", "{{.Image}}")]
+    for ref in ids:
+        print(image_id(find(s, ref)["image"]))
+
+
+def rmi(s, refs):
+    used = {image_id(c["image"]) for c in s["containers"]}
+    code = 0
+    for ref in refs:
+        img = next((i for i in s["images"] if i["id"] == ref or ref in i["tags"]), None)
+        if img is None:
+            print(f"Error response from daemon: No such image: {ref}", file=sys.stderr)
+            code = 1
+            continue
+        if img["id"] in used:
+            print(f"Error response from daemon: conflict: unable to remove repository reference \"{ref}\" - container is using its referenced image", file=sys.stderr)
+            code = 1
+            continue
+        if ref in img["tags"]:
+            img["tags"].remove(ref)
+            print(f"Untagged: {ref}")
+        if not img["tags"] or ref == img["id"]:
+            s["images"].remove(img)
+            print(f"Deleted: {img['id']}")
+    save(s)
+    sys.exit(code)
+
+
+def network(s, args):
+    if args[:1] == ["rm"]:
+        for n in args[1:]:
+            if n not in s["unused_networks"]:
+                print(f"Error response from daemon: error while removing network: {n} has active endpoints", file=sys.stderr)
+                sys.exit(1)
+            s["unused_networks"].remove(n)
+            s["networks"].remove(n)
+            print(n)
+        save(s)
+    elif "dangling=true" in args:
+        for n in s["unused_networks"]:
+            print(json.dumps({"Name": n, "Driver": "bridge", "Scope": "local", "CreatedAt": NOW}))
+    else:
+        print("\n".join(s["networks"]))
+
+
+def stats(s, args):
+    for c in s["containers"]:
+        up = c["state"] == "running"
+        cpu = random.uniform(0.1, 35) if up else 0
+        mem = random.uniform(20, 900) if up else 0
+        print(json.dumps({"ID": c["id"], "Name": c["name"], "CPUPerc": f"{cpu:.2f}%", "MemPerc": f"{mem / 38:.2f}%",
+                          "MemUsage": f"{mem:.1f}MiB / 3.704GiB" if up else "0B / 0B", "NetIO": "1.2MB / 800kB", "BlockIO": "10MB / 2MB",
+                          "PIDs": str(random.randint(3, 40) if up else 0)}))
+
+
+MESSAGES = ["GET /health 200 2ms", "Scheduled job finished", "Connection from 192.168.1.23 accepted", "Cache warmed (412 entries)",
+            "WARN slow query took 1450ms", "Config reloaded", "GET /api/items 200 18ms", "ERROR upstream timed out, retrying"]
+
+
+def stamp(t=None):
+    t = time.time() if t is None else t
+    return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t)) + ".%09dZ" % int((t % 1) * 1e9)
+
+
+def logs(s, args):
+    follow = "--follow" in args or "-f" in args
+    tail = int(args[args.index("--tail") + 1]) if "--tail" in args else 100
+    c = find(s, args[-1])
+    start = time.time() - tail * 7
+    n = min(tail, 600)
+    for i in range(n):
+        print(f"{stamp(start + i * 7)} [{c['name']}] {MESSAGES[(i * 5 + len(c['name'])) % len(MESSAGES)]} (#{i})")
+    sys.stdout.flush()
+    i = 0
+    while follow:
+        time.sleep(0.7)
+        i += 1
+        print(f"{stamp()} [{c['name']}] live: {MESSAGES[i % len(MESSAGES)]}", flush=True)
+
+
+def lifecycle(s, verb, ref):
+    c = find(s, ref)
+    if verb == "start":
+        c["state"], c["status"] = "running", "Up Less than a second"
+    elif verb == "stop":
+        time.sleep(0.4)
+        c["state"], c["status"] = "exited", "Exited (0) Less than a second ago"
+    elif verb == "restart":
+        time.sleep(0.4)
+        c["state"], c["status"] = "running", "Up Less than a second"
+    elif verb == "rm":
+        if c["state"] == "running":
+            print(f"Error response from daemon: cannot remove container \"/{c['name']}\": container is running", file=sys.stderr)
+            sys.exit(1)
+        s["containers"].remove(c)
+    save(s)
+    print(c["id"] if verb != "rm" else c["name"])
+
+
+def run(s, args):
+    name, ports_ = None, []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--name", "--restart", "--network", "-p", "-v", "--env-file"):
+            if a == "--name":
+                name = args[i + 1]
+            if a == "-p":
+                ports_.append(args[i + 1])
+            if a == "--env-file" and args[i + 1] == "/dev/stdin":
+                sys.stdin.read()
+            i += 2
+            continue
+        if a == "-d":
+            i += 1
+            continue
+        break
+    image = args[i]
+    name = name or f"mock_{random.randint(1000, 9999)}"
+    if any(c["name"] == name for c in s["containers"]):
+        print(f"docker: Error response from daemon: Conflict. The container name \"/{name}\" is already in use.", file=sys.stderr)
+        sys.exit(125)
+    print(f"Unable to find image '{image}' locally", file=sys.stderr)
+    for layer in ("a1b2c3", "d4e5f6"):
+        print(f"{layer}: Pull complete", file=sys.stderr, flush=True)
+        time.sleep(0.3)
+    pub = ", ".join(f"0.0.0.0:{p.split(':')[-2]}->{p.split(':')[-1]}" + ("" if "/" in p else "/tcp") for p in ports_)
+    c = {"id": cid(name), "name": name, "image": image, "state": "running", "status": "Up Less than a second", "ports": pub, "created": NOW,
+         "runningFor": "Less than a second ago", "project": "", "service": "", "workdir": "", "configFiles": "", "self": ""}
+    s["containers"].append(c)
+    save(s)
+    print(c["id"])
+
+
+def services(path):
+    """Service names and images from a compose file, read naively (no YAML library needed)."""
+    out, cur, in_services = [], None, False
+    for line in open(path):
+        if re.match(r"^services:\s*$", line):
+            in_services = True
+            continue
+        if in_services and re.match(r"^\S", line):
+            in_services = False
+        m = re.match(r"^  ([A-Za-z0-9_.-]+):\s*$", line)
+        if in_services and m:
+            cur = {"service": m.group(1), "image": "unknown", "name": None}
+            out.append(cur)
+            continue
+        m = re.match(r"^    image:\s*(\S+)", line)
+        if in_services and cur and m:
+            cur["image"] = m.group(1).strip("\"'")
+        m = re.match(r"^    container_name:\s*(\S+)", line)
+        if in_services and cur and m:
+            cur["name"] = m.group(1).strip("\"'")
+    return out
+
+
+def compose(s, args):
+    project, workdir, files, env_file, rest = None, None, [], None, []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "-p":
+            project = args[i + 1]; i += 2
+        elif a == "--project-directory":
+            workdir = args[i + 1]; i += 2
+        elif a == "-f":
+            files.append(args[i + 1]); i += 2
+        elif a == "--env-file":
+            env_file = args[i + 1]; i += 2
+        else:
+            rest.append(a); i += 1
+    workdir = os.path.abspath(workdir or ".")
+    files = files or [os.path.join(workdir, "compose.yaml")]
+    sub = rest[0] if rest else ""
+    if sub == "config":
+        text = open(files[0]).read()
+        if "services:" not in text:
+            print("validating compose.yaml: (root) Additional property " + (text.split(":")[0].strip() or "?") + " is not allowed")
+            sys.exit(15)
+        if "\t" in text:
+            print("yaml: line 2: found character that cannot start any token")
+            sys.exit(15)
+        return
+    mine = [c for c in s["containers"] if c["project"] == project]
+    if sub == "pull":
+        for svc in services(files[0]):
+            print(f" {svc['service']} Pulling", flush=True)
+            time.sleep(0.4)
+            print(f" {svc['service']} Pulled", flush=True)
+    elif sub == "up":
+        targets = [x for x in rest[1:] if not x.startswith("-")]
+        for svc in services(files[0]):
+            if targets and svc["service"] not in targets:
+                continue
+            name = svc["name"] or f"{project}-{svc['service']}-1"
+            c = next((c for c in s["containers"] if c["name"] == name), None)
+            if c is None:
+                c = {"id": cid(name), "name": name, "created": NOW, "ports": "", "self": ""}
+                s["containers"].append(c)
+                print(f" Container {name} Created", flush=True)
+            else:
+                print(f" Container {name} Recreated", flush=True)
+            c.update({"image": svc["image"], "state": "running", "status": "Up Less than a second", "runningFor": "Less than a second ago",
+                      "project": project, "service": svc["service"], "workdir": workdir, "configFiles": ",".join(os.path.abspath(f) for f in files)})
+            time.sleep(0.3)
+            print(f" Container {name} Started", flush=True)
+        save(s)
+    elif sub == "stop":
+        for c in mine:
+            c["state"], c["status"] = "exited", "Exited (0) Less than a second ago"
+            print(f" Container {c['name']} Stopped", flush=True)
+        save(s)
+    elif sub == "down":
+        for c in mine:
+            s["containers"].remove(c)
+            print(f" Container {c['name']} Removed", flush=True)
+        if "-v" in rest:
+            print(f" Volume {project}_data Removed")
+        save(s)
+    else:
+        print(f"unknown compose command: {' '.join(rest)}", file=sys.stderr)
+        sys.exit(2)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        print("mock docker", file=sys.stderr)
+        sys.exit(2)
+    s = load()
+    cmd, rest = args[0], args[1:]
+    if cmd == "ps":
+        ps(s, rest)
+    elif cmd == "stats":
+        stats(s, rest)
+    elif cmd == "logs":
+        logs(s, rest)
+    elif cmd in ("start", "stop", "restart", "rm"):
+        lifecycle(s, cmd, rest[-1])
+    elif cmd == "run":
+        run(s, rest)
+    elif cmd == "network":
+        network(s, rest)
+    elif cmd == "image":
+        image_ls(s, rest)
+    elif cmd == "inspect":
+        inspect(s, rest)
+    elif cmd == "rmi":
+        rmi(s, rest)
+    elif cmd == "compose":
+        compose(s, rest)
+    else:
+        print(f"docker: '{cmd}' is not a docker command.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except BrokenPipeError:
+        pass

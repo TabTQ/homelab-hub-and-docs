@@ -1,0 +1,122 @@
+# The Docs app on its own Proxmox LXC (docs plan D-L1). Run from the repository root on the LXC:
+#   docker compose -f deploy/docs/docker-compose.yml --env-file deploy/docs/.env up -d --build
+#
+#   docs-internal  editor + API + login. Port 3020 on the LXC, for the LAN and `tailscale serve` only (firewall it).
+#   docs-public    the shared pages. NO host port: only cloudflared reaches it, over the "edge" network.
+#   hub-public     the public PORTFOLIO (moved here from the Pi). NO host port, "edge" network. Reads the snapshot docs-internal writes.
+#   cloudflared    the separate "docs" Cloudflare Tunnel. Public hostnames: *.domain.com -> http://docs-public:3011, and the
+#                  portfolio's own hostname -> http://hub-public:3011 (an explicit hostname wins over the wildcard).
+# cloudflared shares no network with docs-internal, so even a wrong tunnel rule cannot expose the editor.
+#
+# INDEPENDENCE: no service depends_on another. Each starts, restarts and stays up by itself, so stopping docs-internal
+# (docker compose ... stop docs-internal) keeps the public portfolio and the public Docs pages online.
+services:
+  docs-internal:
+    build: { context: ../.., dockerfile: deploy/docs/Dockerfile, target: docs-internal }
+    image: homelab-docs-internal:local
+    container_name: docs-internal
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    ports:
+      - "${DOCS_PORT:-3020}:3020"
+    environment:
+      DOCS_PORT: 3020
+      DOCS_PASSWORD_HASH: "${DOCS_PASSWORD_HASH:?set DOCS_PASSWORD_HASH in deploy/docs/.env (see the Docs setup guide)}"
+      DOCS_AUTH_MODE: ${DOCS_AUTH_MODE:-all}
+      DOCS_ALLOWED_HOSTS: ${DOCS_ALLOWED_HOSTS:-}
+      DOCS_SECURE_COOKIES: ${DOCS_SECURE_COOKIES:-false}
+      DOCS_HUB_URL: ${DOCS_HUB_URL:-}
+      DOCS_DOMAINS: ${DOCS_DOMAINS:-}
+      DOCS_PORTFOLIO_URL: ${DOCS_PORTFOLIO_URL:-}
+      DOCS_MAX_ASSET_MB: ${DOCS_MAX_ASSET_MB:-20}
+      DOCS_MAX_BUNDLE_MB: ${DOCS_MAX_BUNDLE_MB:-25}
+      JAVA_TOOL_OPTIONS: ${DOCS_INTERNAL_JAVA_OPTS:--Xmx256m -XX:+UseSerialGC -Xss512k}
+    volumes:
+      - ${DOCS_DATA:-./data}/internal:/data   # docs.db, blobs/, backups/  (include DOCS_DATA in the Proxmox backup)
+      - docs-snapshot:/snapshot
+      - portfolio-snapshot:/portfolio-snapshot   # the public portfolio's snapshot.json; hub-public reads it
+    read_only: true
+    # exec is needed: sqlite-jdbc unpacks its native library into /tmp and loads it from there
+    tmpfs: ["/tmp:rw,exec,nosuid,size=96m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3020/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  docs-public:
+    build: { context: ../.., dockerfile: deploy/docs/Dockerfile, target: docs-public }
+    image: homelab-docs-public:local
+    container_name: docs-public
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    # no ports: only cloudflared reaches it
+    environment:
+      DOCS_PUBLIC_PORT: 3011
+      JAVA_TOOL_OPTIONS: ${DOCS_PUBLIC_JAVA_OPTS:--Xmx128m -XX:+UseSerialGC -Xss512k}
+    volumes:
+      - docs-snapshot:/snapshot:ro
+    read_only: true
+    tmpfs: ["/tmp:rw,exec,nosuid,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3011/api/public/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+
+  hub-public:
+    build: { context: ../.., dockerfile: deploy/docs/Dockerfile, target: hub-public }
+    image: homelab-hub-public:local
+    container_name: hub-public
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    # no ports: only cloudflared reaches it
+    environment:
+      HUB_PUBLIC_PORT: 3011
+      JAVA_TOOL_OPTIONS: ${HUB_PUBLIC_JAVA_OPTS:--Xmx160m -XX:+UseSerialGC -Xss512k}
+    volumes:
+      - portfolio-snapshot:/snapshot:ro
+    read_only: true
+    tmpfs: ["/tmp:rw,exec,nosuid,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3011/api/public/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    container_name: docs-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${TUNNEL_TOKEN:?set TUNNEL_TOKEN (the docs tunnel's token) in deploy/docs/.env}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge]
+
+volumes:
+  # Written by docs-internal (uid 10003), read by docs-public (uid 10004): files are created world-readable.
+  docs-snapshot: {}
+  # Written by docs-internal (uid 10003), read by hub-public (uid 10002): snapshot.json is created world-readable.
+  portfolio-snapshot: {}
+
+networks:
+  backend: {}
+  edge: {}

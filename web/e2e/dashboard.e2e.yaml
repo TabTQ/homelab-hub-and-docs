@@ -1,0 +1,31 @@
+version: 1
+title: E2E Lab
+defaults: {status: none, interval: 10}
+widgets:
+  - resources: {cpu: true, memory: true, disk: /, cputemp: true, uptime: true, network: true}
+  - search: {provider: duckduckgo}
+pinned: [wake-test, apps]
+docs: {url: "http://127.0.0.1:3920/", portfolioUrl: "http://127.0.0.1:3911/"}
+groups:
+  - name: Local services
+    items:
+      - {name: Hub internal, href: "http://127.0.0.1:3910/", icon: /images/profile.jpg, status: {tcp: "127.0.0.1:3910"}}
+      - name: Mock Proxmox
+        href: "http://127.0.0.1:8907/"
+        status: {http: "http://127.0.0.1:8907/api2/json/version", expect: 401}
+        widget: {type: proxmox, url: "http://127.0.0.1:8907", node: pve, username: "hub@pve!local", password: "${secret:MOCK_PVE}"}
+      - {name: Broken service, href: "http://127.0.0.1:1/", status: {tcp: "127.0.0.1:1"}}
+      - name: Nested things
+        items:
+          - {name: Mock Proxmox again, href: "http://127.0.0.1:8907/", status: {http: "http://127.0.0.1:8907/api2/json/version", expect: 401}}
+  - name: Power
+    items:
+      - {name: Wake test box, action: wake-test}
+      - {name: Shut down host, action: pve-off}
+      - {name: Apps LXC, action: apps}
+      - {name: Media LXC, action: media}
+actions:
+  - {id: wake-test, label: Wake test box, type: wol, mac: "AA:BB:CC:DD:EE:01", status: {icmp: 127.0.0.1}}
+  - {id: pve-off, label: Shutdown Proxmox, type: proxmox-node, node: pve, command: shutdown}
+  - {id: apps, label: Apps LXC, type: proxmox-guest, node: pve, kind: lxc, vmid: 100, status: {tcp: "127.0.0.1:3910"}}
+  - {id: media, label: Media LXC, type: proxmox-guest, node: pve, kind: lxc, vmid: 210}

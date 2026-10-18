@@ -1,0 +1,34 @@
+owner_type,owner_slug,source_text,status,proposed_skills,candidates,decision
+experience,genpact,AWS S3 / Glue,fuzzy,,AWS S3 (0.63),map:AWS S3;AWS Glue (Catalog & Jobs)
+experience,genpact,Python,fuzzy,,Python 3 (0.86),map:Python 3
+experience,genpact,psycopg2,fuzzy,,psycopg2 (ThreadedConnectionPool) (0.39),map:psycopg2 (ThreadedConnectionPool)
+experience,tcs-system-engineer,Python,fuzzy,,Python 3 (0.86),map:Python 3
+experience,tcs-system-engineer,ServiceNow,fuzzy,,ServiceNow integration (0.62),map:ServiceNow integration
+experience,tcs-trainee,ETL,fuzzy,,ETL pipeline design (0.27),map:ETL pipeline design
+experience,tcs-trainee,Python,fuzzy,,Python 3 (0.86),map:Python 3
+experience,tcs-trainee,SQL Server,fuzzy,,SQL (0.46),new:SQL Server|Databases & BI
+project,algo-trading-bot,Python,fuzzy,,Python 3 (0.86),map:Python 3
+experience,tcs-system-engineer,AWS Redshift,unmatched,,,map:Amazon Redshift
+experience,tcs-system-engineer,Tableau,unmatched,,,new:Tableau|Databases & BI
+experience,tcs-trainee,Amazon S3,unmatched,,,map:AWS S3
+experience,tcs-trainee,Java,unmatched,,,new:Java|Languages
+project,algo-trading-bot,Binance API,unmatched,,,free
+project,algo-trading-bot,NumPy,unmatched,,,new:NumPy|Python Ecosystem
+project,algo-trading-bot,Pandas,unmatched,,,new:Pandas|Python Ecosystem
+project,greenhouse-irrigation,Arduino,unmatched,,,new:Arduino|Embedded & Control Systems
+project,greenhouse-irrigation,C++,unmatched,,,new:C++|Languages
+project,greenhouse-irrigation,Control Systems,unmatched,,,new:Control Systems|Embedded & Control Systems
+project,greenhouse-irrigation,Fuzzy Logic,unmatched,,,new:Fuzzy Logic|Embedded & Control Systems
+project,greenhouse-irrigation,MATLAB,unmatched,,,new:MATLAB|Embedded & Control Systems
+project,greenhouse-irrigation,Simulink,unmatched,,,new:Simulink|Embedded & Control Systems
+project,spring-shopping-cart,Hibernate,unmatched,,,new:Hibernate|Java Ecosystem
+project,spring-shopping-cart,JSP,unmatched,,,new:JSP|Java Ecosystem
+project,spring-shopping-cart,Java,unmatched,,,new:Java|Languages
+project,spring-shopping-cart,Spring,unmatched,,,new:Spring|Java Ecosystem
+experience,genpact,Amazon Redshift,exact,Amazon Redshift,,accept
+experience,genpact,MERGE REMOVE DUPLICATES,exact,MERGE REMOVE DUPLICATES,,accept
+experience,genpact,PL/pgSQL,exact,PL/pgSQL,,accept
+experience,genpact,Redshift Spectrum,exact,Redshift Spectrum,,accept
+experience,tcs-system-engineer,PL/pgSQL,exact,PL/pgSQL,,accept
+experience,tcs-system-engineer,SQL,exact,SQL,,accept
+experience,tcs-trainee,Amazon Redshift,exact,Amazon Redshift,,accept

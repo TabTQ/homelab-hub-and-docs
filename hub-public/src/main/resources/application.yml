@@ -1,0 +1,14 @@
+server:
+  port: ${HUB_PUBLIC_PORT:3011}
+  error:
+    include-stacktrace: never
+    include-message: never
+hub:
+  snapshot:
+    dir: ${HUB_SNAPSHOT_DIR:./snapshot}
+spring:
+  main:
+    banner-mode: off
+logging:
+  level:
+    root: INFO

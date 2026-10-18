@@ -1,0 +1,66 @@
+server:
+  port: ${DOCS_PORT:3020}
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        # Not HUBSESSION: the hub and Docs keep separate sessions even if both are ever served from one name (D-L3).
+        name: DOCSSESSION
+        http-only: true
+        same-site: strict
+        secure: ${hub.security.secure-cookies:false}
+  error:
+    include-stacktrace: never
+    include-message: never
+  tomcat:
+    # Uploads are capped by the app (DOCS_MAX_ASSET_MB / DOCS_MAX_BUNDLE_MB); this only stops absurd bodies early.
+    max-swallow-size: 64MB
+
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    url: jdbc:sqlite:${DOCS_DATA_DIR:./data}/docs.db?foreign_keys=on&journal_mode=WAL&busy_timeout=5000&synchronous=NORMAL
+    hikari:
+      maximum-pool-size: 4
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 64MB
+      max-request-size: 64MB
+      file-size-threshold: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+# The login is the hub's (hub-auth), so its settings keep the hub.* names; the values come from DOCS_* variables.
+hub:
+  auth:
+    mode: ${DOCS_AUTH_MODE:all}
+    password-hash: ${DOCS_PASSWORD_HASH:}
+  security:
+    allowed-hosts: ${DOCS_ALLOWED_HOSTS:}
+    allowed-hosts-variable: DOCS_ALLOWED_HOSTS
+    secure-cookies: ${DOCS_SECURE_COOKIES:false}
+
+docs:
+  data-dir: ${DOCS_DATA_DIR:./data}
+  snapshot-dir: ${DOCS_SNAPSHOT_DIR:./snapshot}
+  hub-url: ${DOCS_HUB_URL:}
+  # Allowed suffixes for public hostnames (D16), comma separated. Empty = any valid hostname.
+  domains: ${DOCS_DOMAINS:}
+  max-asset-mb: ${DOCS_MAX_ASSET_MB:20}
+  max-bundle-mb: ${DOCS_MAX_BUNDLE_MB:25}
+  # The portfolio (moved here from the hub): docs-internal edits it and writes the snapshot that hub-public serves.
+  portfolio:
+    snapshot-dir: ${DOCS_PORTFOLIO_SNAPSHOT_DIR:./portfolio-snapshot}
+    public-url: ${DOCS_PORTFOLIO_URL:}
+  publish-retry-millis: 30000
+  gc-delay-seconds: 60
+  backup:
+    keep: 14
+    cron: "0 40 3 * * *"
