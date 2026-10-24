@@ -15,6 +15,23 @@ export function safeHref(url: string | null | undefined): string | undefined {
   }
 }
 
+export interface PortfolioLink { label: string; href: string }
+
+/** A project's outbound links in display order (live page first). Anything that is not http(s) is dropped. */
+export function projectLinks(p: { repo: string | null; live: string | null }): PortfolioLink[] {
+  const out: PortfolioLink[] = [];
+  const live = safeHref(p.live), repo = safeHref(p.repo);
+  if (live) out.push({ label: "Live page", href: live });
+  if (repo) out.push({ label: "Source on GitHub", href: repo });
+  return out;
+}
+
+/** The public page a homelab device links to, if it has one. */
+export function deviceLinks(d: { url?: string | null }): PortfolioLink[] {
+  const href = safeHref(d.url);
+  return href ? [{ label: "Interactive page", href }] : [];
+}
+
 export function fmtBytes(n: number): string {
   if (!Number.isFinite(n)) return "-";
   const u = ["B", "KB", "MB", "GB", "TB"];

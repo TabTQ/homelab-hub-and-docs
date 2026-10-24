@@ -188,6 +188,7 @@ public class PortfolioReader {
             m.put("name", rs.getString("name"));
             m.put("ip", rs.getString("ip_address"));
             m.put("summary", rs.getString("summary"));
+            m.put("url", deviceUrl(jsonMap(rs.getString("extra"))));
             m.put("hw", jsonList(rs.getString("hardware")));
             return m;
         }).list()) {
@@ -331,6 +332,11 @@ public class PortfolioReader {
         } catch (JsonProcessingException e) {
             return List.of();
         }
+    }
+
+    /** The public page a homelab device links to: extra.url, and only when it is an http(s) address. */
+    static String deviceUrl(Map<String, Object> extra) {
+        return extra.get("url") instanceof String u && (u.startsWith("https://") || u.startsWith("http://")) ? u : null;
     }
 
     static Map<String, Object> jsonMap(String s) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ago, fmtBytes, fmtRate, fmtUptime, initials, safeHref } from "./util";
+import { ago, deviceLinks, fmtBytes, fmtRate, fmtUptime, initials, projectLinks, safeHref } from "./util";
 
 describe("util", () => {
   it("makes initials from names and symbols", () => {
@@ -49,5 +49,26 @@ describe("slugify", () => {
     expect(slugify("Réseau & VPN")).toBe("reseau-vpn");
     expect(slugify("---")).toBe("");
     expect(slugify("x".repeat(100)).length).toBeLessThanOrEqual(64);
+  });
+});
+
+describe("portfolio links", () => {
+  it("lists a project's live page before its source, and drops what is missing", () => {
+    expect(projectLinks({ repo: "https://github.com/x/y", live: "https://demo.example.org/" })).toEqual([
+      { label: "Live page", href: "https://demo.example.org/" },
+      { label: "Source on GitHub", href: "https://github.com/x/y" },
+    ]);
+    expect(projectLinks({ repo: "https://github.com/x/y", live: null })).toEqual([{ label: "Source on GitHub", href: "https://github.com/x/y" }]);
+    expect(projectLinks({ repo: null, live: null })).toEqual([]);
+  });
+  it("never turns a non-http(s) project or device link into a link", () => {
+    expect(projectLinks({ repo: "javascript:alert(1)", live: "data:text/html,x" })).toEqual([]);
+    expect(deviceLinks({ url: "javascript:alert(1)" })).toEqual([]);
+    expect(deviceLinks({ url: "ftp://example.org/x" })).toEqual([]);
+  });
+  it("gives a homelab device one interactive-page link when it has a url", () => {
+    expect(deviceLinks({ url: "https://pve.example.org/" })).toEqual([{ label: "Interactive page", href: "https://pve.example.org/" }]);
+    expect(deviceLinks({})).toEqual([]);
+    expect(deviceLinks({ url: null })).toEqual([]);
   });
 });
