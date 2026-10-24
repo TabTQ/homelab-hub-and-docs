@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { deviceKids, deviceMatches, isActive, matches, sectionCounts, textOk, homelabCount, toggle, tokens, type FilterState } from "../filter";
-import { safeHref } from "../util";
+import { safeHref, projectLinks, deviceLinks, type PortfolioLink } from "../util";
 import type { Device, Portfolio } from "../types";
 import { Palette, usePaletteHotkey, type PaletteItem } from "./Palette";
 import { SkillPanel, type Visibility } from "./SkillPanel";
@@ -82,6 +82,11 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
   };
 
   const chip = (l: string) => <button key={l} className={"chip" + (filter.picked.has(l) ? " on" : "")} title={`Filter by ${l}`} onClick={() => pickSkill(l)}>{l}</button>;
+  const linksRow = (links: PortfolioLink[]) => links.length > 0 && (
+    <p className="plinks" style={{ margin: "10px 0 0", display: "flex", flexWrap: "wrap", gap: "6px 18px" }}>
+      {links.map((l) => <a key={l.label} href={l.href} className="mono" style={{ fontSize: 12.5 }} target="_blank" rel="noopener noreferrer">{l.label} ↗</a>)}
+    </p>
+  );
   const chips = (e: { skills: string[]; tags?: string[] }) =>
     (e.skills.length > 0 || (e.tags?.length ?? 0) > 0) && (
       <div className="chips">
@@ -169,6 +174,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
             {c && <div className="eyebrow">Flagship · {c.duration} · {c.client}</div>}
             <h3 style={{ marginTop: 2 }}>{x.title}</h3>
             <p style={{ margin: "8px 0 0" }}>{x.description}</p>
+            {linksRow(projectLinks(x))}
             {c && (
               <details open={isOpen("c:" + x.id)} onToggle={onToggle("c:" + x.id)}>
                 <summary>Context and results</summary>
@@ -198,7 +204,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
                 <h3 style={{ marginTop: 2, fontSize: "1rem" }}>{x.title}</h3>
                 <p style={{ margin: "6px 0 0", fontSize: 14 }}>{x.description}</p>
                 {chips(x)}
-                {safeHref(x.repo) && <p style={{ margin: "10px 0 0" }}><a href={safeHref(x.repo)} className="mono" style={{ fontSize: 12.5 }} target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></p>}
+                {linksRow(projectLinks(x))}
               </article>
             ))}
           </div>
@@ -239,6 +245,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
         {editBtn(d.name, "homelab-devices", d.dbId)}
         <header><h3>{d.name}</h3>{d.ip && <span className="mono" style={{ color: "var(--muted)", fontSize: 13 }}>{d.ip}</span>}</header>
         <p style={{ margin: 0 }}>{d.summary}</p>
+        {linksRow(deviceLinks(d))}
         {d.hw.length > 0 && <dl className="hw">{d.hw.map((h, i) => <div key={i}><dt>{h.component}</dt><dd>{h.spec}</dd></div>)}</dl>}
         {chips(d)}
         {cts.length > 0 && (<><div className="sub-h">Containers</div>

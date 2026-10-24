@@ -23,7 +23,7 @@ export interface Container { dbId: number; id: string; name: string; ip: string 
 export interface Service { dbId: number; id: string; name: string; ct: string | null; port: string | null; fn: string | null; skills: string[]; t: string }
 export interface NetEntity { dbId: number; id: string; type: string; name: string; spec: Record<string, unknown>; skills: string[]; t: string }
 export interface Device {
-  dbId: number; id: string; key: string; cat: string; name: string; ip: string | null; summary: string | null; hw: HwRow[]; skills: string[]; t: string;
+  dbId: number; id: string; key: string; cat: string; name: string; ip: string | null; summary: string | null; url?: string | null; hw: HwRow[]; skills: string[]; t: string;
   containers: Container[]; services: Service[]; network: NetEntity[];
 }
 export interface SkillRef { id: number; l: string; n: number }
