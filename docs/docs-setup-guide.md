@@ -407,3 +407,15 @@ and point `<portfolio-host>` back at the Pi's tunnel (reverse step 4). Edits mad
 - The LXC runs one more JVM (`hub-public`, `-Xmx160m`): check `docker stats --no-stream`; 2 GB is enough on paper.
 - Old links: the hub's `#/portfolio` and an installed app's old "Portfolio" shortcut now land on the dashboard, whose card links to Docs.
 - To drop the unused portfolio tables from `hub.db` later, do it as a separate step once you are happy (the schema only moves forward).
+
+## 18. Automatic Cloudflare routes (optional)
+
+By default a page's hostname only works because the tunnel and DNS hold a wildcard (`*.domain.com`). With `DOCS_CF_AUTOMATION_ENABLED=true`, docs-internal creates and removes the per-host entries itself, so the wildcard can be dropped:
+
+- **Publish** (or a hostname change) adds a tunnel rule `host -> http://docs-public:3011` (before the wildcard and the final 404 rule) and a proxied `CNAME host -> <tunnel-id>.cfargotunnel.com` with the comment `managed-by=homelab-docs`. **Unpublish, delete or rename** removes them.
+- Only DNS records with that comment are ever deleted, and only tunnel rules that point at docs-public with nothing but `hostname` and `service`. Every other rule (the portfolio, the wildcard, the 404 catch-all) is written back untouched.
+- Names must be one label under `DOCS_CF_ZONE_NAME`; wildcards, the apex, names starting with `_` and reserved names (`www`, `mail`, `vpn`, ... plus `DOCS_CF_RESERVED_LABELS`) are refused.
+- A start-up pass compares hosts.json with Cloudflare and fixes drift. The top bar shows "Address not reachable yet" with a **Retry** button when a route failed; `GET /api/admin/docs/routes` has the per-host state (pending / live / error).
+- Create a token with only `Account > Cloudflare Tunnel: Edit` and `Zone > DNS: Edit`, restricted to the one account and zone. Put it in `deploy/docs/.env` as `DOCS_CF_API_TOKEN`. cloudflared still shares no network with docs-internal; docs-internal only needs outbound HTTPS to `api.cloudflare.com`.
+- Try `DOCS_CF_DRY_RUN=true` first: the planned API calls are logged and nothing is sent.
+- Every change is recorded in the audit log (`cf-ingress-add`, `cf-ingress-remove`, `cf-dns-add`, `cf-dns-remove`).

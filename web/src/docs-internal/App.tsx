@@ -21,6 +21,8 @@ interface AuthStatus { authenticated: boolean; mode: "all" | "edit" | "none"; pa
 
 type Route = { name: "home" } | { name: "portfolio" } | { name: "page" | "edit" | "history" | "publish"; id: number } | { name: "trash" };
 
+interface RouteInfo { enabled: boolean; dryRun: boolean; configError: string | null; hosts: { host: string; state: "pending" | "live" | "error" | "planned"; message: string }[] }
+
 export function parseRoute(hash: string): Route {
   const m = /^#\/p\/(\d+)(?:\/(edit|history|publish))?$/.exec(hash);
   if (m) return { name: (m[2] as "edit" | "history" | "publish" | undefined) ?? "page", id: Number(m[1]) };
@@ -66,6 +68,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
   const [publishInfo, setPublishInfo] = useState<{ upToDate: boolean; lastError: string | null } | null>(null);
   const [portfolioInfo, setPortfolioInfo] = useState<{ upToDate: boolean; lastError: string | null } | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -77,7 +80,15 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     loadTree().then(setItems).catch(fail);
     api(`${A}/publish-status`).then(setPublishInfo).catch(() => setPublishInfo(null));
     api("/api/admin/portfolio/publish-status").then(setPortfolioInfo).catch(() => setPortfolioInfo(null));
+    api<RouteInfo>(`${A}/routes`).then(setRouteInfo).catch(() => setRouteInfo(null));
   }, [fail]);
+  // Cloudflare routes settle a few seconds after a publish: keep looking while one is pending or failed.
+  useEffect(() => {
+    if (!routeInfo?.enabled || !routeInfo.hosts.some((h) => h.state !== "live")) return;
+    const t = setInterval(() => api<RouteInfo>(`${A}/routes`).then(setRouteInfo).catch(() => {}), 5000);
+    return () => clearInterval(t);
+  }, [routeInfo]);
+  const retryRoutes = () => api<RouteInfo>(`${A}/routes/retry`, { method: "POST" }).then(setRouteInfo).catch(fail);
   useEffect(() => {
     refresh(); api<DocsConfig>(`${A}/config`).then(setConfig).catch(fail);
     api<{ publicUrl: string }>("/api/admin/portfolio/config").then((c) => setPortfolioUrl(c.publicUrl)).catch(() => setPortfolioUrl(""));
@@ -160,6 +171,15 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
         <a className="btn sm ghost" href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
         <span className="grow" />
         {portfolioInfo && !portfolioInfo.upToDate && <a className="dx-warn" href="#/portfolio" title={portfolioInfo.lastError ?? ""}>Portfolio out of date</a>}
+        {routeInfo?.enabled && routeInfo.configError && <span className="dx-warn" title={routeInfo.configError}>Cloudflare not configured</span>}
+        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "error") && (
+          <span className="dx-warn" title={routeInfo.hosts.filter((h) => h.state === "error").map((h) => `${h.host}: ${h.message}`).join("\n")}>
+            Address not reachable yet: {routeInfo.hosts.filter((h) => h.state === "error").length} <button className="btn sm" onClick={retryRoutes}>Retry</button>
+          </span>
+        )}
+        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
+          <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
+        )}
         {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
         <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
         <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>

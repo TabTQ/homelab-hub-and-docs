@@ -59,6 +59,17 @@ docs:
   portfolio:
     snapshot-dir: ${DOCS_PORTFOLIO_SNAPSHOT_DIR:./portfolio-snapshot}
     public-url: ${DOCS_PORTFOLIO_URL:}
+  # Cloudflare route automation (tunnel ingress rule + DNS CNAME per published hostname). Off by default.
+  cloudflare:
+    enabled: ${DOCS_CF_AUTOMATION_ENABLED:false}
+    dry-run: ${DOCS_CF_DRY_RUN:false}
+    api-token: ${DOCS_CF_API_TOKEN:}
+    account-id: ${DOCS_CF_ACCOUNT_ID:}
+    zone-id: ${DOCS_CF_ZONE_ID:}
+    tunnel-id: ${DOCS_CF_TUNNEL_ID:}
+    zone-name: ${DOCS_CF_ZONE_NAME:}
+    # extra names that can never be claimed, comma separated (the built-in list covers www, mail, vpn, ...)
+    reserved-labels: ${DOCS_CF_RESERVED_LABELS:}
   publish-retry-millis: 30000
   gc-delay-seconds: 60
   backup:
