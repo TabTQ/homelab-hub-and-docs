@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.homelabhub.docs.cloudflare.CloudflareRoutes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,11 +52,13 @@ public class DocsService {
     private final DocsPublisher publisher;
     private final DocsProperties props;
     private final DocsAudit audit;
+    private final CloudflareRoutes routes;
     private final Object writeLock = new Object();
 
     public DocsService(JdbcClient jdbc, TransactionTemplate tx, ObjectMapper json, Clock clock, BlobStore blobs,
-                       DocsPublisher publisher, DocsProperties props, DocsAudit audit) {
+                       DocsPublisher publisher, DocsProperties props, DocsAudit audit, CloudflareRoutes routes) {
         this.audit = audit;
+        this.routes = routes;
         this.jdbc = jdbc;
         this.tx = tx;
         this.json = json;
@@ -466,6 +469,12 @@ public class DocsService {
             m.put("message", r.error());
             return m;
         }
+        String routeError = routes.hostError(r.host()); // null unless Cloudflare automation is on
+        if (routeError != null) {
+            m.put("ok", false);
+            m.put("message", routeError);
+            return m;
+        }
         Optional<PageRow> owner = jdbc.sql("SELECT " + PAGE_COLS + " FROM doc_pages WHERE public_host = ?").param(r.host()).query(PageRow.class).optional();
         boolean taken = owner.isPresent() && !Objects.equals(owner.get().id(), pageId);
         m.put("ok", !taken);
@@ -583,6 +592,7 @@ public class DocsService {
         audit.record("publish", "page " + id + " " + r.get("publicHost"), "ok", "v" + r.get("publishedVersion"), ip, ua);
         Map<String, Object> out = new LinkedHashMap<>(r);
         out.put("live", publisher.publish());
+        out.put("route", routes.routeInfo((String) r.get("publicHost")));
         return out;
     }
 

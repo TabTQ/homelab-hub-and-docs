@@ -31,6 +31,15 @@ services:
       DOCS_PORTFOLIO_URL: ${DOCS_PORTFOLIO_URL:-}
       DOCS_MAX_ASSET_MB: ${DOCS_MAX_ASSET_MB:-20}
       DOCS_MAX_BUNDLE_MB: ${DOCS_MAX_BUNDLE_MB:-25}
+      # Cloudflare route automation: needs only outbound HTTPS to api.cloudflare.com. Off unless DOCS_CF_AUTOMATION_ENABLED=true.
+      DOCS_CF_AUTOMATION_ENABLED: ${DOCS_CF_AUTOMATION_ENABLED:-false}
+      DOCS_CF_DRY_RUN: ${DOCS_CF_DRY_RUN:-false}
+      DOCS_CF_API_TOKEN: ${DOCS_CF_API_TOKEN:-}
+      DOCS_CF_ACCOUNT_ID: ${DOCS_CF_ACCOUNT_ID:-}
+      DOCS_CF_ZONE_ID: ${DOCS_CF_ZONE_ID:-}
+      DOCS_CF_TUNNEL_ID: ${DOCS_CF_TUNNEL_ID:-}
+      DOCS_CF_ZONE_NAME: ${DOCS_CF_ZONE_NAME:-}
+      DOCS_CF_RESERVED_LABELS: ${DOCS_CF_RESERVED_LABELS:-}
       JAVA_TOOL_OPTIONS: ${DOCS_INTERNAL_JAVA_OPTS:--Xmx256m -XX:+UseSerialGC -Xss512k}
     volumes:
       - ${DOCS_DATA:-./data}/internal:/data   # docs.db, blobs/, backups/  (include DOCS_DATA in the Proxmox backup)
@@ -100,7 +109,7 @@ services:
       start_period: 45s
 
   cloudflared:
-    image: cloudflare/cloudflared:2026.9.3
+    image: cloudflare/cloudflared:2026.10.6
     container_name: docs-cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run

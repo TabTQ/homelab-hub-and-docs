@@ -71,7 +71,10 @@ export function PublishDialog({ page, items, config, onClose, onChanged, fail }:
       }
       if (what === "publish") {
         const r = await api(`${A}/pages/${page.id}/publish`, { method: "POST", body: { publicHost: host, version: await withVersion() } });
-        toast(r.live ? `Published: https://${r.publicHost}/` : "Published, but the public site could not be updated yet. It retries every 30 s.");
+        toast(!r.live ? "Published, but the public site could not be updated yet. It retries every 30 s."
+          : r.route?.state === "error" ? `Published, but the address is not reachable yet: ${r.route.message} Use Retry in the top bar.`
+          : r.route?.state === "pending" ? `Published: https://${r.publicHost}/ (connecting the address, this takes a few seconds)`
+          : `Published: https://${r.publicHost}/`);
       } else if (what === "unpublish") {
         await api(`${A}/pages/${page.id}/unpublish`, { method: "POST", body: { version: await withVersion() } });
         toast("Unpublished: the address now gives 404.");

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import com.homelabhub.docs.cloudflare.CloudflareRoutes;
 
 /** The editor's API (plan 5.3). Login and CSRF apply in every auth mode except none (/api/admin/** is protected in edit mode too). */
 @RestController
@@ -35,14 +36,17 @@ class DocsController {
     private final BlobStore blobs;
     private final DocsAudit audit;
     private final DocsProperties props;
+    private final CloudflareRoutes routes;
 
-    DocsController(DocsService docs, DocsPublisher publisher, PreviewTokens tokens, BlobStore blobs, DocsAudit audit, DocsProperties props) {
+    DocsController(DocsService docs, DocsPublisher publisher, PreviewTokens tokens, BlobStore blobs, DocsAudit audit, DocsProperties props,
+                   CloudflareRoutes routes) {
         this.docs = docs;
         this.publisher = publisher;
         this.tokens = tokens;
         this.blobs = blobs;
         this.audit = audit;
         this.props = props;
+        this.routes = routes;
     }
 
     record CreateRequest(Long parentId, Long afterId, String kind, String title) {}
@@ -217,6 +221,18 @@ class DocsController {
         String token = tokens.mint(b.sha256());
         return Map.of("url", "/docs-preview/" + token + "/" + b.sha256() + "/index.html", "base", "/docs-preview/" + token + "/" + b.sha256() + "/",
                 "settings", docs.settingsOfBundle(b), "seq", b.seq());
+    }
+
+    /** Cloudflare route state per public hostname (pending / live / error); empty and disabled unless DOCS_CF_AUTOMATION_ENABLED. */
+    @GetMapping("/routes")
+    Map<String, Object> routes() {
+        return routes.overview();
+    }
+
+    @PostMapping("/routes/retry")
+    Map<String, Object> retryRoutes() {
+        routes.retry();
+        return routes.overview();
     }
 
     @GetMapping("/publish-status")

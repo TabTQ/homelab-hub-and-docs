@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.homelabhub.docs.cloudflare.CloudflareRoutes;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -61,6 +62,7 @@ public class DocsPublisher {
     private final BlobStore blobs;
     private final Path dir;
     private final Duration gcDelay;
+    private final CloudflareRoutes routes;
     private final ReentrantLock lock = new ReentrantLock();
     private final Map<Path, Instant> garbageSince = new HashMap<>();
     private volatile Status status = new Status(false, null, "not published yet", null);
@@ -68,13 +70,15 @@ public class DocsPublisher {
     /** Test hook: throw after this step (1 = blobs, 2 = page files, 3 = hosts.json) to simulate a crash. */
     volatile int failAfterStep = 0;
 
-    public DocsPublisher(JdbcClient jdbc, ObjectMapper json, Clock clock, BlobStore blobs, DocsProperties props) {
+    public DocsPublisher(JdbcClient jdbc, ObjectMapper json, Clock clock, BlobStore blobs, DocsProperties props,
+                          CloudflareRoutes routes) {
         this.jdbc = jdbc;
         this.json = json;
         this.clock = clock;
         this.blobs = blobs;
         this.dir = Path.of(props.snapshotDir());
         this.gcDelay = Duration.ofSeconds(props.gcDelaySeconds());
+        this.routes = routes;
     }
 
     public Path dir() {
@@ -96,8 +100,10 @@ public class DocsPublisher {
         try {
             Instant now = clock.instant();
             try {
-                write(build(), now);
+                Build b = build();
+                write(b, now);
                 status = new Status(true, now, null, now);
+                routes.requestSync(b.hosts().keySet()); // queued: a Cloudflare problem never fails the snapshot
                 return true;
             } catch (IOException | RuntimeException e) {
                 log.error("Could not update the public docs in {}: {}", dir, e.toString());
