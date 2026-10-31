@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class RouteHostsTest {
 
-    final RouteHosts rules = new RouteHosts("example.test", List.of("portfolio", "n8n-api"));
+    final RouteHosts rules = new RouteHosts("example.test", List.of("portfolio", "other-app"));
 
     @Test
     void acceptsASingleLowercaseLabelUnderTheZone() {
@@ -42,7 +42,7 @@ class RouteHostsTest {
 
     @Test
     void reservedLabelsAreNeverClaimable() {
-        for (String l : List.of("www", "vpn", "email", "mail", "smtp", "ftp", "autodiscover", "_domainconnect", "portfolio", "n8n-api")) {
+        for (String l : List.of("www", "vpn", "email", "mail", "smtp", "ftp", "autodiscover", "_domainconnect", "portfolio", "other-app")) {
             assertThat(rules.error(l + ".example.test")).as(l).isNotNull();
         }
         assertThat(rules.error("_anything.example.test")).contains("_");

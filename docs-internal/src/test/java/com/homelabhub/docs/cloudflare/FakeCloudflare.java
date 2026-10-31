@@ -55,7 +55,7 @@ final class FakeCloudflare implements AutoCloseable {
     }
 
     CloudflareProperties props(boolean dryRun) {
-        return new CloudflareProperties(true, dryRun, TOKEN, baseUrl(), ACCOUNT, ZONE, TUNNEL, ZONE_NAME, null, "portfolio,n8n-api");
+        return new CloudflareProperties(true, dryRun, TOKEN, baseUrl(), ACCOUNT, ZONE, TUNNEL, ZONE_NAME, null, "portfolio,other-app");
     }
 
     static ObjectNode record(String id, String type, String name, String content, String comment) {
