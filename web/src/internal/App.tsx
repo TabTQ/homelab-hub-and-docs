@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../shared/api";
 import { Palette, openPalette, usePaletteHotkey, type PaletteItem } from "../shared/components/Palette";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
 import { ActionRunner, useRunAction } from "./components/ActionRunner";
 import { useDashboard, useStatus } from "./hooks";
 import { Dashboard } from "./pages/Dashboard";
@@ -69,7 +70,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
   const header = (
     <div className="wrap">
       <header className="top">
-        <div className="brand"><i aria-hidden="true" />Homelab Hub</div>
+        <div className="brand"><Crest className="crest" />Homelab Hub</div>
         <nav className="nav" aria-label="Main">
           {(["dashboard", "config", "budget", ...(dash.data?.features?.docker ? ["docker"] : []), ...(dash.data?.features?.terminal ? ["terminal"] : [])] as Route[]).map((r) => (
             <a key={r} href={r === "dashboard" ? "#/" : `#/${r}`} aria-current={route === r ? "page" : undefined}>{r === "dashboard" ? "Dashboard" : r === "config" ? "Config" : r === "budget" ? "Budget" : r === "docker" ? "Docker" : "Terminal"}</a>
@@ -78,7 +79,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
         </nav>
         <span className="grow" />
         <span className="scope" title="This app is only reachable from your LAN and Tailscale"><b>●</b> Internal · LAN + Tailscale</span>
-        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
         {auth.mode !== "none" && auth.authenticated && <button className="btn" onClick={onLogout}>Sign out</button>}
         <button className="kbd-search" onClick={openPalette} aria-label="Search"><span>Search services and actions</span><kbd>Ctrl K</kbd></button>
       </header>

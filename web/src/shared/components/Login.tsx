@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, ApiError } from "../api";
+import { Crest } from "./Crest";
 
 /** The sign-in form of the hub and of Docs (each with its own password and session, docs plan D-L3). */
 export function Login({ passwordConfigured, onLoggedIn, brand = "Homelab Hub", hashVariable = "HUB_PASSWORD_HASH" }: {
@@ -30,13 +31,14 @@ export function Login({ passwordConfigured, onLoggedIn, brand = "Homelab Hub", h
   return (
     <div className="wrap">
       <form className="login" onSubmit={submit}>
-        <div className="brand"><i aria-hidden="true" />{brand}</div>
-        <h2 style={{ marginTop: 18 }}>Sign in</h2>
+        <Crest className="crest" />
+        <h1>{brand}</h1>
+        <h2 className="eyebrow" style={{ marginTop: 6 }}>Sign in</h2>
         {!passwordConfigured && <p className="sub">The server has no password configured, so nobody can sign in yet.</p>}
         <label htmlFor="pw">Password</label>
         <input id="pw" type="password" autoComplete="current-password" autoFocus value={pw} onChange={(e) => setPw(e.target.value)} />
         <div className="err" role="alert">{err}</div>
-        <div style={{ marginTop: 14 }}><button className="btn pri" type="submit" disabled={busy || pw === ""}>{busy ? "Signing in…" : "Sign in"}</button></div>
+        <button className="btn pri" type="submit" disabled={busy || pw === ""} style={{ marginTop: 6 }}>{busy ? "Signing in…" : "Sign in"}</button>
       </form>
     </div>
   );

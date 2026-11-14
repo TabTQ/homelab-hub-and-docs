@@ -7,7 +7,8 @@ import { DocRenderer, type RenderContext } from "../shared/docs/DocRenderer";
 import { useCurrentTheme } from "../shared/docs/theme";
 import type { PublicPage } from "../shared/docs/types";
 import { WebappFrame } from "../shared/docs/WebappFrame";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
 
 // The public view of one shared page (docs plan 5.5, D5): exactly this page, read-only. No tree, no search, no other pages.
 // It only ever calls /api/public/page; files come from /a/<sha> and webapps from /app/<bundle>/ on this same hostname.
@@ -61,8 +62,8 @@ function App() {
   return (
     <>
       <header className="dx-pubhead">
-        <span className="t">{page.title}</span>
-        <button className="btn" onClick={() => setChoice(nextTheme(choice))} aria-label="Change theme">◐ Theme</button>
+        <span className="brand"><Crest className="crest" /><span className="t">{page.title}</span></span>
+        <button className="btn" onClick={() => setChoice(nextTheme(choice))} aria-label="Change theme">Theme: {themeLabel(choice)}</button>
       </header>
       <main className="dx-pubbody">
         <h1 className="title">{page.title}</h1>

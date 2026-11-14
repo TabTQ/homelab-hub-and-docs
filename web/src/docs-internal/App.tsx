@@ -3,7 +3,8 @@ import { api } from "../shared/api";
 import { Login } from "../shared/components/Login";
 import { Palette, openPalette, usePaletteHotkey, type PaletteItem } from "../shared/components/Palette";
 import { useToast } from "../shared/components/Toast";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
 import { A, go, loadTree, type DocsConfig } from "./docsApi";
 import { DeleteDialog, MoveDialog, NewPageDialog, RenameDialog } from "./Dialogs";
 import { PageView } from "./PageView";
@@ -112,7 +113,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     const header = (
       <div className="wrap">
         <header className="top">
-          <div className="brand"><i aria-hidden="true" />Docs</div>
+          <div className="brand"><Crest className="crest" />Docs</div>
           <nav className="nav" aria-label="Main">
             <a href="#/">Pages</a>
             <a href="#/portfolio" aria-current="page">Portfolio</a>
@@ -120,7 +121,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
           </nav>
           <span className="grow" />
           {portfolioUrl && <a className="btn" href={portfolioUrl} target="_blank" rel="noopener noreferrer">Open public site</a>}
-          <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+          <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
           {auth.mode !== "none" && auth.authenticated && <button className="btn" onClick={onLogout}>Sign out</button>}
           <button className="kbd-search" onClick={openPalette} aria-label="Search"><span>Search portfolio</span><kbd>Ctrl K</kbd></button>
         </header>
@@ -166,7 +167,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     <div className="dx-app">
       <header className="dx-bar">
         <button className="btn sm dx-menu" onClick={() => setDrawer((d) => !d)} aria-label="Pages" aria-expanded={drawer}>☰</button>
-        <a className="brand" href="#/"><i aria-hidden="true" />Docs</a>
+        <a className="brand" href="#/"><Crest className="crest" />Docs</a>
         {config?.hubUrl && <a className="btn sm ghost" href={config.hubUrl} title="Back to the Homelab Hub">← Hub</a>}
         <a className="btn sm ghost" href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
         <span className="grow" />
@@ -182,7 +183,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
         )}
         {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
         <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
-        <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+        <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
         {auth.mode !== "none" && auth.authenticated && <button className="btn sm" onClick={onLogout}>Sign out</button>}
       </header>
       <div className="dx-layout">

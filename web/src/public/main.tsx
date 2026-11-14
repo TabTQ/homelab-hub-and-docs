@@ -5,7 +5,8 @@ import "../shared/styles.css";
 import { PortfolioPage } from "../shared/components/PortfolioPage";
 import { openPalette } from "../shared/components/Palette";
 import { ToastProvider } from "../shared/components/Toast";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
 import type { Portfolio, SnapshotEnvelope } from "../shared/types";
 
 function App() {
@@ -33,9 +34,9 @@ function App() {
   const header = (
     <div className="wrap">
       <header className="top">
-        <div className="brand"><i aria-hidden="true" />{data.profile.name}</div>
+        <div className="brand"><Crest className="crest" />{data.profile.name}</div>
         <span className="grow" />
-        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
         <button className="kbd-search" onClick={openPalette} aria-label="Search portfolio"><span>Search portfolio</span><kbd>Ctrl K</kbd></button>
       </header>
     </div>
