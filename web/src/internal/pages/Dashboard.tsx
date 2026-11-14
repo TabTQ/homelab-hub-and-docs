@@ -10,6 +10,7 @@ import { useState as useS } from "react";
 import type { WidgetResponse } from "../../shared/types";
 
 const dotClass = (s: LightState | undefined) => "dot " + (s ?? "unknown");
+const gemClass = (s: LightState | undefined) => "dot " + (s ?? "unknown");
 
 function countItems(entries: EntryView[], statuses: Map<string, StatusEntry>): { up: number; total: number } {
   let up = 0, total = 0;
@@ -71,11 +72,18 @@ function Group({ g, actions, statuses, filter, nested }: { g: GroupView; actions
   );
   if (nested) return body;
   return (
-    <section className="grp" aria-label={g.name}>
-      <header><h2 className="tape">{g.name}</h2>{c.total > 0 && <span className="count">{c.up}/{c.total} up</span>}</header>
+    <section className="panel hp grp" aria-label={g.name}>
+      <header><h3>{g.name}</h3>{c.total > 0 && <span className="count">{c.up}/{c.total} up</span>}</header>
       {body}
     </section>
   );
+}
+
+/** Ten-segment bar. Warn from 75 percent, bad from 90 percent. */
+function Seg({ pct }: { pct: number }) {
+  const n = Math.round(Math.max(0, Math.min(100, pct)) / 10);
+  const tone = pct >= 90 ? "bad" : pct >= 75 ? "warn" : "accent";
+  return <div className={"seg " + tone} aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < n ? "f" : ""} />)}</div>;
 }
 
 function Resources({ options }: { options: Record<string, string> }) {
@@ -94,10 +102,10 @@ function Resources({ options }: { options: Record<string, string> }) {
   return (
     <section className="widgets" aria-label="Host resources">
       {cells.map((c) => (
-        <div className="w" key={c.k}>
-          <div className="k">{c.k}</div>
-          <div className="v">{c.v}<small>{c.small}</small></div>
-          {c.pct != null && <div className="bar"><i style={{ width: `${Math.min(100, c.pct)}%` }} /></div>}
+        <div className="panel hp w" key={c.k}>
+          <div className="eyebrow k">{c.k}</div>
+          <div className="v"><span className="num">{c.v}</span><small>{c.small}</small></div>
+          {c.pct != null && <Seg pct={c.pct} />}
         </div>
       ))}
     </section>
@@ -108,16 +116,16 @@ function Resources({ options }: { options: Record<string, string> }) {
 function PortfolioCard({ docsUrl, portfolioUrl }: { docsUrl: string | null; portfolioUrl: string | null }) {
   const editUrl = docsUrl ? `${docsUrl.replace(/\/+$/, "")}/#/portfolio` : null;
   return (
-    <div className="portfolio-card">
+    <section className="panel hp portfolio-card" aria-label="Portfolio">
       <div>
-        <h2>Portfolio</h2>
+        <h3>Portfolio</h3>
         <p>{editUrl ? "Edited in Docs and served from the Docs LXC." : <>Moved to Docs. Add <span className="mono">docs: {"{url: …}"}</span> in Config to get the link here.</>}</p>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {editUrl && <a className="btn solid" href={editUrl}>Edit in Docs</a>}
+        {editUrl && <a className="btn pri" href={editUrl}>Edit in Docs</a>}
         {portfolioUrl && <a className="btn" href={portfolioUrl} target="_blank" rel="noopener noreferrer">Open public site</a>}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -142,10 +150,15 @@ export function Dashboard({ view, statuses, live, refresh, gotoConfig }: {
 
   return (
     <>
-      <h1>{view.title}</h1>
+      <div className="screen-title">
+        <div>
+          <div className="eyebrow">{totals.total > 0 ? `${new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} · ${totals.up} of ${totals.total} monitored services up` : "No status checks configured yet"}</div>
+          <h1 className="display">Settlement</h1>
+        </div>
+        {totals.total > 0 && <div className="power" aria-hidden="true"><div className="eyebrow">Services up</div><div className="num">{totals.up}</div></div>}
+      </div>
       <p className="sub">
-        {totals.total > 0 ? `${totals.up} of ${totals.total} monitored services up` : "No status checks configured yet"}
-        {" · "}<span title={live ? "Updates arrive live" : "Live updates are reconnecting"}>{live ? "live" : "reconnecting…"}</span>
+        {" "}<span title={live ? "Updates arrive live" : "Live updates are reconnecting"}>{live ? "live" : "reconnecting…"}</span>
         {" · "}<button className="linkbtn" onClick={refresh}>Recheck now</button>
       </p>
       {c.health !== "ok" && (
@@ -165,7 +178,7 @@ export function Dashboard({ view, statuses, live, refresh, gotoConfig }: {
             const a = actions.get(id);
             if (!a) return null;
             const st = a.statusId ? statuses.get(a.statusId)?.state : undefined;
-            return <button key={id} className="chip-act" onClick={() => run(id)}>{a.statusId && <span className={dotClass(st)} />}{a.label}</button>;
+            return <button key={id} className="btn" onClick={() => run(id)}>{a.statusId && <span className={gemClass(st)} />}{a.label}</button>;
           })}
         </div>
       )}

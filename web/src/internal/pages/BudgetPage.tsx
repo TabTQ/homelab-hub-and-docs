@@ -51,20 +51,27 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
 
   const title = monthLabel(month);
   const monthBar = (
-    <div className="bud-monthbar">
-      <button className="iconbtn bud-arrow" aria-label="Previous month" onClick={() => go(addMonths(month, -1))}>‹</button>
-      <h1 className="bud-title"><span className="bud-long">{title}</span><span className="bud-short">{monthLabel(month, true)}</span></h1>
-      <button className="iconbtn bud-arrow" aria-label="Next month" onClick={() => go(addMonths(month, 1))}>›</button>
-      <input className="bud-pick" type="month" aria-label="Pick a month" value={pickText} pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
-        onChange={(e) => { setPickText(e.target.value); if (parseMonth(e.target.value)) go(e.target.value); }} />
-      <span className="grow" />
-      <div className="bud-actions">
-        <button className="btn" onClick={() => setDialog({ kind: "people" })}>People</button>
-        <button className="btn" onClick={() => setDialog({ kind: "recurring" })}>Recurring</button>
-        <button className="btn" onClick={() => setDialog({ kind: "export" })} disabled={!view}>Export PDF</button>
-        <button className="btn pri" onClick={() => setDialog({ kind: "expense" })} disabled={!view || view.people.every((p) => p.archived)}>+ Add expense</button>
+    <>
+      <div className="screen-title">
+        <div>
+          <div className="eyebrow">{title}</div>
+          <h1 className="display">Ledger</h1>
+        </div>
+        <div className="bud-actions">
+          <button className="btn" onClick={() => setDialog({ kind: "people" })}>People</button>
+          <button className="btn" onClick={() => setDialog({ kind: "recurring" })}>Recurring</button>
+          <button className="btn" onClick={() => setDialog({ kind: "export" })} disabled={!view}>Export PDF</button>
+          <button className="btn pri" onClick={() => setDialog({ kind: "expense" })} disabled={!view || view.people.every((p) => p.archived)}>+ Add expense</button>
+        </div>
       </div>
-    </div>
+      <div className="bud-monthbar">
+        <button className="iconbtn bud-arrow" aria-label="Previous month" onClick={() => go(addMonths(month, -1))}>‹</button>
+        <h2 className="bud-title"><span className="bud-long">{title}</span><span className="bud-short">{monthLabel(month, true)}</span></h2>
+        <button className="iconbtn bud-arrow" aria-label="Next month" onClick={() => go(addMonths(month, 1))}>›</button>
+        <input className="bud-pick" type="month" aria-label="Pick a month" value={pickText} pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
+          onChange={(e) => { setPickText(e.target.value); if (parseMonth(e.target.value)) go(e.target.value); }} />
+      </div>
+    </>
   );
 
   if (error && !view) {
@@ -79,8 +86,9 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
     <div className="bud">
       {monthBar}
       {error && <div className="banner bad" role="alert">{error}</div>}
+      {people.length > 0 && <Summary view={view} />}
       {people.length === 0 ? (
-        <div className="card bud-card">
+        <div className="panel hp bud-card">
           <h2>Start with the people</h2>
           <p className="sub">Add everyone who shares expenses. They appear in every form, and you can add more at any time.</p>
           <button className="btn pri" onClick={() => setDialog({ kind: "people" })}>Add people</button>
@@ -108,12 +116,29 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
 
 // ---------------------------------------------------------------- cards
 
+/** Four tiles at the top: what was spent, how many expenses, who still has to pay, and how much of the spending is already settled. */
+function Summary({ view }: { view: MonthView }) {
+  const s = view.statement;
+  const owed = s.transfers.reduce((a, t) => a + t.paise, 0);
+  const settledPct = s.expenseTotalPaise > 0 ? Math.min(100, Math.round((Math.max(0, s.totals.settledPaise) / s.expenseTotalPaise) * 100)) : 0;
+  const filled = Math.round(settledPct / 10);
+  return (
+    <div className="bud-sum" aria-label="Month summary">
+      <div className="panel hp"><div className="eyebrow">Spent</div><div className="num">{num(s.expenseTotalPaise)}</div></div>
+      <div className="panel hp"><div className="eyebrow">Expenses</div><div className="num">{s.expenseCount}</div></div>
+      <div className="panel hp" style={owed > 0 ? { borderColor: "var(--accent)" } : undefined}><div className="eyebrow">Still to pay</div><div className="num" style={owed > 0 ? { color: "var(--accent)" } : undefined}>{num(owed)}</div></div>
+      <div className="panel hp"><div className="eyebrow">Settled</div><div className="num">{settledPct}<small>%</small></div>
+        <div className="seg accent" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < filled ? "f" : ""} />)}</div></div>
+    </div>
+  );
+}
+
 function TransfersCard({ view, name, onMarkPaid }: { view: MonthView; name: (id: number) => string; onMarkPaid: (t: Transfer) => void }) {
   const s = view.statement;
   const n = s.transfers.length;
   return (
-    <section className="card bud-card" aria-labelledby="bud-h-who">
-      <header><h2 className="tape" id="bud-h-who">Who pays whom</h2>{n > 0 && <span className="bud-hint">{n} payment{n === 1 ? "" : "s"} settle{n === 1 ? "s" : ""} everything</span>}</header>
+    <section className="panel hp bud-card" aria-labelledby="bud-h-who">
+      <header><h3 id="bud-h-who">Who pays whom</h3>{n > 0 && <span className="bud-hint">{n} payment{n === 1 ? "" : "s"} settle{n === 1 ? "s" : ""} everything</span>}</header>
       {n === 0 && <p className="none">Nobody owes anything.</p>}
       {s.transfers.map((t) => (
         <div className="bud-xfer" key={`${t.fromId}-${t.toId}`}>
@@ -133,8 +158,8 @@ function PeopleCard({ view, name }: { view: MonthView; name: (id: number) => str
   const s = view.statement;
   const settled = s.hasSettlements;
   return (
-    <section className="card bud-card" aria-labelledby="bud-h-people">
-      <header><h2 className="tape" id="bud-h-people">People</h2><span className="bud-hint">+ is owed money · − owes</span></header>
+    <section className="panel hp bud-card" aria-labelledby="bud-h-people">
+      <header><h3 id="bud-h-people">People</h3><span className="bud-hint">+ is owed money · − owes</span></header>
       <div className="bud-scrollx bud-wide">
         <table className="bud-table bud-compact">
           <thead><tr><th>Person</th><th className="bud-num">Paid</th><th className="bud-num">Share</th><th className="bud-num">This month</th>
@@ -177,8 +202,8 @@ function SettlementsCard({ view, name, onChanged, onUnauthorized }: { view: Mont
   const remove = (id: number) => api(`${BUDGET}/settlements/${id}`, { method: "DELETE" }).then(() => onChanged("Payment removed."))
     .catch((e) => { const d = describeError(e); if (d.unauthorized) onUnauthorized(); else setError(d.message); });
   return (
-    <section className="card bud-card" aria-labelledby="bud-h-settled">
-      <header><h2 className="tape" id="bud-h-settled">Settlements</h2><span className="bud-hint">payments marked as paid in {monthLabel(view.month, true)}</span></header>
+    <section className="panel hp bud-card" aria-labelledby="bud-h-settled">
+      <header><h3 id="bud-h-settled">Settlements</h3><span className="bud-hint">payments marked as paid in {monthLabel(view.month, true)}</span></header>
       {error && <div className="err" role="alert">{error}</div>}
       <ul className="bud-list">
         {view.settlements.map((x) => (
@@ -203,8 +228,8 @@ function HistoryCard({ view }: { view: MonthView }) {
   months.forEach((m) => Object.keys(m.paidPaise).forEach((k) => ids.add(Number(k))));
   const cols: PersonRef[] = view.people.filter((p) => ids.has(p.id) || !p.archived);
   return (
-    <section className="card bud-card" aria-labelledby="bud-h-history">
-      <header><h2 className="tape" id="bud-h-history">What everyone paid each month</h2></header>
+    <section className="panel hp bud-card" aria-labelledby="bud-h-history">
+      <header><h3 id="bud-h-history">What everyone paid each month</h3></header>
       <div className="bud-scrollx">
         <table className="bud-table">
           <thead><tr><th>Month</th>{cols.map((p) => <th key={p.id} className="bud-num">{p.name}</th>)}<th className="bud-num">Total</th></tr></thead>
@@ -231,8 +256,8 @@ function ExpensesCard({ view, name, month, onEdit, onAdd }: { view: MonthView; n
   };
   const s = view.statement;
   return (
-    <section className="card bud-card" aria-labelledby="bud-h-expenses">
-      <header><h2 className="tape" id="bud-h-expenses">Expenses · {monthLabel(month).split(" ")[0]}</h2>
+    <section className="panel hp bud-card" aria-labelledby="bud-h-expenses">
+      <header><h3 id="bud-h-expenses">Expenses · {monthLabel(month).split(" ")[0]}</h3>
         <span className="bud-hint">{s.expenseCount} entr{s.expenseCount === 1 ? "y" : "ies"} · {formatRupees(s.expenseTotalPaise)}</span></header>
       {view.expenses.length === 0 ? (
         <p className="none">No expenses in {monthLabel(month)} yet. <button className="linkbtn" onClick={onAdd}>Add one</button>.</p>

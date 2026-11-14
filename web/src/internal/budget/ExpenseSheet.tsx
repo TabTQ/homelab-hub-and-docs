@@ -117,7 +117,7 @@ export function ExpenseSheet({ month, people: initialPeople, expense, onClose, o
         <div className="bud-row">
           <input id="bud-x-month" type="month" className="bud-grow" value={m} pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
             onChange={(e) => changeMonth(e.target.value)} aria-invalid={!!errors.month || undefined} />
-          <div className="seg" role="group" aria-label="Day or month only">
+          <div className="pillseg" role="group" aria-label="Day or month only">
             <button type="button" aria-pressed={dayMode === "none"} onClick={() => setDayMode("none")}>No day</button>
             <button type="button" aria-pressed={dayMode === "day"} onClick={() => setDayMode("day")}>Pick day</button>
           </div>

@@ -417,7 +417,7 @@ export function ExportDialog({ month, today, onClose, onUnauthorized }: { month:
       </>
     )}>
       <div className="field">
-        <div className="seg bud-seg" role="group" aria-label="What to export">
+        <div className="pillseg bud-seg" role="group" aria-label="What to export">
           <button type="button" aria-pressed={mode === "this"} onClick={() => setMode("this")}>This month</button>
           <button type="button" aria-pressed={mode === "month"} onClick={() => setMode("month")}>Choose month</button>
           <button type="button" aria-pressed={mode === "range"} onClick={() => setMode("range")}>Choose range</button>

@@ -25,9 +25,9 @@ const highlight = HighlightStyle.define([
 ]);
 
 const theme = EditorView.theme({
-  "&": { backgroundColor: "var(--surface)", color: "var(--ink)" },
+  "&": { backgroundColor: "var(--ed-bg, var(--surface))", color: "var(--ed-ink, var(--ink))" },
   ".cm-content": { fontFamily: "var(--f-mono)", caretColor: "var(--accent)" },
-  ".cm-gutters": { backgroundColor: "var(--surface2)", color: "var(--muted)", border: "none" },
+  ".cm-gutters": { backgroundColor: "var(--ed-bg, var(--surface2))", color: "var(--muted)", borderRight: "1px solid var(--line)" },
   ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--accent-soft) 45%, transparent)" },
   ".cm-activeLineGutter": { backgroundColor: "var(--accent-soft)" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": { backgroundColor: "var(--accent-soft)" },
@@ -171,7 +171,12 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
   const health = server?.health ?? "ok";
   return (
     <>
-      <h1>Config</h1>
+      <div className="screen-title">
+        <div>
+          <div className="eyebrow">dashboard.yaml</div>
+          <h1 className="display">Runestone</h1>
+        </div>
+      </div>
       <p className="sub">This is <span className="mono">dashboard.yaml</span>. It is checked before it is saved, kept in a version history, and a mistake never takes the dashboard down: the last working version keeps being used.</p>
       {health !== "ok" && server && (
         <div className="banner bad" role="alert"><b>The file on disk has errors.</b> {health === "using_default" ? "The starter dashboard is being shown." : "The last working version is being shown."} Fix the marked lines below and save.</div>
@@ -198,9 +203,9 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
             {issues.length === 0 && <li style={{ color: "var(--muted)" }}>No problems found.</li>}
           </ul>
         </div>
-        <aside>
-          <h2 className="tape">Versions</h2>
-          <p className="sub" style={{ margin: "8px 0" }}>The last 50 saved versions. Restoring one is itself a saved change.</p>
+        <aside className="panel hp cfg-side">
+          <header><h3>History</h3><span className="count">{versions.length} version{versions.length === 1 ? "" : "s"}</span></header>
+          <p className="sub" style={{ margin: "0 0 8px" }}>The last 50 saved versions. Restoring one is itself a saved change.</p>
           <ul className="vlist">
             {versions.map((v, idx) => (
               <li key={v.id}>
@@ -258,7 +263,7 @@ export function DiffView({ lines }: { lines: DiffLine[] }) {
     skipped = false;
     rows.push(<div key={i} className={l.type === "add" ? "add" : l.type === "del" ? "del" : ""}>{l.type === "add" ? "+ " : l.type === "del" ? "− " : "  "}{l.text || " "}</div>);
   });
-  return <pre className="diff-pre" style={{ margin: 0, padding: 10, background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 4, font: "12px/1.5 var(--f-mono)", overflow: "auto", maxHeight: "50vh", whiteSpace: "pre-wrap" }}>
+  return <pre className="diff-pre" style={{ margin: 0, padding: 10, background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 0, font: "12px/1.5 var(--f-mono)", overflow: "auto", maxHeight: "50vh", whiteSpace: "pre-wrap" }}>
     {style()}{rows}
   </pre>;
 }

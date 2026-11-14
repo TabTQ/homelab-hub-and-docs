@@ -23,9 +23,9 @@ const highlight = HighlightStyle.define([
 ]);
 
 const theme = EditorView.theme({
-  "&": { backgroundColor: "var(--surface)", color: "var(--ink)" },
+  "&": { backgroundColor: "var(--ed-bg, var(--surface))", color: "var(--ed-ink, var(--ink))" },
   ".cm-content": { fontFamily: "var(--f-mono)", caretColor: "var(--accent)" },
-  ".cm-gutters": { backgroundColor: "var(--surface2)", color: "var(--muted)", border: "none" },
+  ".cm-gutters": { backgroundColor: "var(--ed-bg, var(--surface2))", color: "var(--muted)", borderRight: "1px solid var(--line)" },
   ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--accent-soft) 45%, transparent)" },
   ".cm-activeLineGutter": { backgroundColor: "var(--accent-soft)" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": { backgroundColor: "var(--accent-soft)" },
@@ -155,7 +155,7 @@ export default function StackEditor({ host, initial, onClose, onSaved, onStackAc
           <div className={nameOk || !name ? "help" : "err"}>Lower-case letters, digits, - and _. Stored on the host as <span className="mono">~{host.user}/stacks/{name || "<name>"}/</span></div>
         </div>
       )}
-      <div className="seg dk-tabs" role="tablist" aria-label="File">
+      <div className="pillseg dk-tabs" role="tablist" aria-label="File">
         <button role="tab" aria-pressed={tab === "compose"} aria-selected={tab === "compose"} onClick={() => setTab("compose")}>compose.yaml</button>
         <button role="tab" aria-pressed={tab === "env"} aria-selected={tab === "env"} onClick={() => setTab("env")}>.env</button>
       </div>

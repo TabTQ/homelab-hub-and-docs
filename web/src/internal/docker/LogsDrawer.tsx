@@ -72,7 +72,7 @@ export function LogsDrawer({ host, container, onClose, onUnauthorized }: {
           <button className="btn" onClick={onClose} aria-label="Close logs">Close</button>
         </header>
         <div className="dk-logbar">
-          <div className="seg" role="group" aria-label="Lines">
+          <div className="pillseg" role="group" aria-label="Lines">
             {TAILS.map((t) => <button key={t} aria-pressed={tail === t} onClick={() => setTail(t)}>{t}</button>)}
           </div>
           <label className="dk-check"><input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} /> Follow</label>
