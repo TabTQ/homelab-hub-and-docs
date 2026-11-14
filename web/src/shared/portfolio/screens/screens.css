@@ -1,0 +1,70 @@
+/* Quests, Inventory, World and Codex screens. Classes start with sc- to stay clear of the shared sheets. */
+.sc { display: grid; gap: 4px; }
+.sc .sub { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+.sc-h { font: 600 1.7rem var(--f-display); letter-spacing: 0.06em; margin: 2px 0 0; }
+.sc-h2 { font: 600 1.35rem var(--f-display); letter-spacing: 0.05em; margin: 0; }
+.sc-meta { margin: 2px 0 0 !important; font-size: 14px; }
+.sc-text { max-width: 72ch; margin: 10px 0; }
+.sc-detail { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.sc-detail > header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.sc-perks { gap: 10px; }
+.sc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-chips .chip { cursor: pointer; font: inherit; font-size: 12.5px; color: var(--ink); }
+.sc-chips .chip.on { color: var(--accent); }
+.sc-chips .chip.tag { cursor: default; }
+.sc-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 0; font-size: 13px; }
+.sc-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; }
+.sc-filter .chip { cursor: pointer; color: var(--accent); font: inherit; font-size: 12.5px; }
+.sc-dim { opacity: 0.35; }
+.sc-dim:hover, .sc-dim:focus-within { opacity: 0.8; }
+.sc * { font-variant-numeric: lining-nums; }
+.sc .rows > li > button { font: inherit; color: inherit; cursor: pointer; }
+.sc .rows > li > button .t b, .sc .rows > li > .row .t b { font-size: 1.05rem; }
+.sc-more { padding: 10px 12px 12px 36px; display: grid; gap: 8px; border-left: 1px solid var(--line); margin-left: 16px; min-width: 0; }
+.sc-more p { margin: 0; overflow-wrap: anywhere; }
+.sc-more .stats dd { font-size: 1rem; overflow-wrap: anywhere; }
+
+/* inventory */
+.sc-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 30px 18px; padding-top: 14px; }
+.sc-cards .card { min-width: 0; }
+.sc-cards .card-body { display: grid; gap: 10px; align-content: start; }
+.sc-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-cards .card-foot { flex-wrap: wrap; gap: 6px 14px; }
+.sc-cards .card-foot button.hint { background: none; border: 0; cursor: pointer; font: inherit; color: inherit; padding: 0; }
+.sc-cards .stats dd { font-size: 1rem; text-align: right; overflow-wrap: anywhere; }
+.sc > .sc-detail { margin-top: 24px; }
+.sc-table { overflow-x: auto; }
+.sc-table table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.sc-table th, .sc-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.sc-table th { color: var(--muted); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.sc-after { color: var(--accent); font-weight: 600; }
+.sc-dl { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sc-dl p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+/* world */
+.sc-banners { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 4px 0 22px; }
+.sc-banner { cursor: pointer; border: 0; width: 110px; }
+.sc-banner svg { color: var(--bg); }
+.sc-devs { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; }
+.sc-dev { min-width: 0; }
+.sc-dev > header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sc-eb { margin: 2px 0 10px; }
+.sc-sub { margin: 16px 0 8px; }
+.sc-hw dd { font-size: 0.95rem; overflow-wrap: anywhere; }
+.sc-ip { color: var(--muted); font-size: 13px; }
+
+/* codex */
+.sc-codex { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+@media (max-width: 860px) { .sc-codex { grid-template-columns: 1fr; } }
+.sc-raven { margin-top: 22px; }
+.sc-raven .btn { justify-content: center; text-decoration: none; }
+.sc-raven .card-body { display: grid; gap: 10px; }
+@media (max-width: 560px) { .sc-detail > header { flex-direction: column; } .sc-h { font-size: 1.4rem; } }
+.sc-chips button.chip { background: var(--surface); border: 1px solid var(--line); }
+.sc-chips button.chip.on, .sc-filter button.chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* The skill filter drawer in styles.css also uses .panel (sticky, fixed on phones). Reset it to the plain stone panel here. */
+.sc .panel { position: relative; top: auto; bottom: auto; right: auto; width: auto; max-height: none; overflow: visible; transform: none; z-index: auto; border: 1px solid var(--line); border-radius: 0; box-shadow: none; transition: none; background: linear-gradient(180deg, color-mix(in srgb, var(--surface2) 80%, transparent), color-mix(in srgb, var(--surface) 92%, transparent)); padding: 16px 18px; }
+
+/* Long titles wrap on small screens instead of being cut off. */
+@media (max-width: 760px) { .sc .rows .t b, .sc .rows .t span { white-space: normal; } }

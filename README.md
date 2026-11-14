@@ -6,7 +6,7 @@ terminal, a Docker manager, and a Confluence-style knowledge base whose pages (i
 to the internet one hostname at a time. Java 17 / Spring Boot, SQLite, React; it runs on a Raspberry Pi 4 and a small Proxmox LXC.
 
 > **Status.** This is a personal project built for one homelab (a Raspberry Pi 4 plus a Proxmox host) and published as a reference
-> and a starting point. It is tested (see [Build and test](#build-and-test)) but opinionated: expect to adapt `dashboard.yaml`,
+> and a starting point. It is tested (see [Design](#design) · [Build and test](#build-and-test)) but opinionated: expect to adapt `dashboard.yaml`,
 > the compose files and the host assumptions to your setup. Nothing in the repository contains real credentials; every secret
 > is read from `secrets.env`, environment variables or a `deploy/.env` you create (examples only are committed). Read the
 > [Security](#security) section and the "must do" hardening list before exposing anything.
@@ -118,6 +118,23 @@ serves nothing public. The **Docs LXC** runs `docs-internal` (the Docs editor an
 - **Webapp pages**: upload an `index.html` or a ZIP; it runs in a sandboxed iframe that cannot see Docs, its cookies or its API.
 - Pages are internal until they get a **public hostname** (`page1.domain.com`) and are published: a visitor on that hostname sees
   exactly that one page, read-only, never indexed. Everything else is a plain 404.
+
+## Design
+
+The four web apps share one look, inspired by Norse game menus: dark carved stone with a boreal turquoise accent (the
+default theme, "Stone"), a parchment-and-ink light theme ("Parchment"), a serif display face for titles and numerals, and
+a DIN-style sans for labels. Every graphic, including the crest, is original.
+
+- Tokens, fonts and shared components live in `web/src/shared/styles.css`, `web/src/shared/valhalla.css` and
+  `web/src/shared/fonts.ts` (self-hosted Cormorant Garamond, Barlow and IBM Plex Mono, latin subsets).
+- The **public portfolio** is a tabbed app: Character, Skills (a constellation of skill groups), Quests (experience),
+  Inventory (projects), World (homelab), Codex (education and contact) and Summary (everything on one page with the skill
+  filter). Q and E switch tabs, and the **? Guide** button runs a 10 second navigation tour.
+- The **hub on the Raspberry Pi** uses CSS only for the look: no canvas, no images, no extra JavaScript.
+- **Avatar.** The character screen shows `/avatar.webp`. The repository ships a neutral placeholder
+  (`web/src/public/public/avatar.webp`). To use your own portrait without committing it, put it at
+  `web/src/public/public/avatar.private.webp` (git-ignored) before building; the public build serves it in place of the
+  placeholder. A cut-out portrait with a transparent background, about 1100 px square, works best.
 
 ## Architecture
 
@@ -699,6 +716,10 @@ starting `docs-internal` while both public sites keep answering; in the browser,
 `blobs/` folder (images, attachments, app files) is **not** in that copy: include `DOCS_DATA` in the Proxmox backup of the LXC.
 
 ## Known limitations and what is not verified
+
+- **After the redesign:** the browser end-to-end suites (`web/e2e/`) had their renamed headings and the theme test
+  updated but were not re-run, and the portfolio flows in `docs.e2e.mjs` still assume the single-page layout in places.
+  Run `scripts/e2e.sh` and fix what it reports before relying on them.
 
 - **Legacy routes are open by design** (no login), so anyone on your LAN can call `/toggle/...`. Cross-site requests from a browser are refused, and every call is audited and locked per target.
 - Over plain HTTP on the LAN the session cookie cannot be `Secure`. Serving the dashboard through Tailscale HTTPS (`tailscale serve`) and setting `HUB_SECURE_COOKIES=true` fixes that (see *Install on a phone*).
