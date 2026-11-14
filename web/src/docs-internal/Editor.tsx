@@ -114,7 +114,7 @@ export default function Editor({ id, items, config, onChanged, fail }: {
     ],
     content: null,
     editorProps: {
-      attributes: { class: "doc dx-prose", "aria-label": "Page content" },
+      attributes: { class: "doc dx-paper dx-prose", "aria-label": "Page content" },
       handleKeyDown: (_view, e) => {
         const st = slashRef.current;
         if (!st.s || !st.items.length) return false;

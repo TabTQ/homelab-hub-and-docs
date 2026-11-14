@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { deviceKids, deviceMatches, isActive, matches, sectionCounts, textOk, homelabCount, toggle, tokens, type FilterState } from "../filter";
 import { safeHref, projectLinks, deviceLinks, type PortfolioLink } from "../util";
 import type { Device, Portfolio } from "../types";
 import { Palette, usePaletteHotkey, type PaletteItem } from "./Palette";
 import { SkillPanel, type Visibility } from "./SkillPanel";
 import { useToast } from "./Toast";
+import { PortfolioContext } from "../portfolio/context";
 
 export interface PortfolioEditHooks {
   onEdit: (resource: string, id?: number) => void;
@@ -12,7 +13,11 @@ export interface PortfolioEditHooks {
 }
 
 interface Props {
-  data: Portfolio; hooks?: PortfolioEditHooks; header: ReactNode; ribbon?: ReactNode;
+  data: Portfolio; hooks?: PortfolioEditHooks; header?: ReactNode; ribbon?: ReactNode;
+  /** The public shell's Summary tab: the filter comes from the shell, and the shell owns the header and the palette. */
+  embedded?: boolean;
+  /** Shown above the section subnav (the Summary tab uses it for the name, role and key numbers). */
+  hero?: ReactNode;
   /** extra palette entries (the internal app adds services and actions) */
   extraPalette?: PaletteItem[]; paletteRef?: { open: () => void };
 }
@@ -26,9 +31,13 @@ function store(key: string, value?: string): string | null {
   } catch { return null; }
 }
 
-export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }: Props) {
+export function PortfolioPage({ data, hooks, header, ribbon, embedded = false, hero, extraPalette = [] }: Props) {
   const toast = useToast();
-  const [filter, setFilter] = useState<FilterState>({ picked: new Set(), mode: "all", q: "" });
+  const shell = useContext(PortfolioContext);
+  const [localFilter, setLocalFilter] = useState<FilterState>({ picked: new Set(), mode: "all", q: "" });
+  const shared = embedded && shell;
+  const filter = shared ? shell.filter : localFilter;
+  const setFilter = shared ? shell.setFilter : setLocalFilter;
   const [vis, setVis] = useState<Visibility>("hide");
   const [collapsed, setCollapsed] = useState(() => store("hub-panel") === "1");
   const [drawer, setDrawer] = useState(false);
@@ -38,12 +47,13 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
   const [here, setHere] = useState("about");
   const subnav = useRef<HTMLElement>(null);
   const editable = !!hooks;
+  const Body = embedded ? "div" : "main";
 
   const active = isActive(filter);
   const counts = useMemo(() => sectionCounts(filter, data), [filter, data]);
 
   const setCollapsedPersist = (c: boolean) => { setCollapsed(c); store("hub-panel", c ? "1" : "0"); };
-  const togglePalette = useCallback(() => setPaletteOpen((o) => !o), []);
+  const togglePalette = useCallback(() => { if (!embedded) setPaletteOpen((o) => !o); }, [embedded]);
   usePaletteHotkey(togglePalette);
 
   useEffect(() => {
@@ -55,9 +65,9 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
     const ro = new ResizeObserver(measure);
     if (subnav.current) ro.observe(subnav.current);
     const spy = () => {
-      const y = window.scrollY + (subnav.current?.offsetHeight ?? 44) + 50;
+      const y = (subnav.current?.offsetHeight ?? 44) + 50;
       let cur = "about";
-      for (const [id] of SECTIONS) { const el = document.getElementById(id); if (el && el.offsetTop <= y) cur = id; }
+      for (const [id] of SECTIONS) { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= y) cur = id; }
       setHere(cur);
     };
     window.addEventListener("scroll", spy, { passive: true });
@@ -123,16 +133,16 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
   const about = !aboutMatch && vis === "hide" ? section("about", "About", "", null, { empty: true }) : (
     <section className="sec" id="about" key="about">
       <div className="sec-h"><h2 className="tape">About</h2><span className="rule" />{editable && <button className="btn sm" onClick={() => hooks!.onEdit("profile", 1)}>Edit profile</button>}</div>
-      <div className={"about" + (!aboutMatch ? " dim" : "")}>
+      <div className={"about" + (!aboutMatch ? " dim" : "") + (embedded ? " solo" : "")}>
         <div>
-          <h1>{p.name}</h1>
-          <div className="lede"><b>{p.title}</b>{p.tagline ? <> · {p.tagline}</> : null}</div>
+          {!embedded && <h1>{p.name}</h1>}
+          {!embedded && <div className="lede"><b>{p.title}</b>{p.tagline ? <> · {p.tagline}</> : null}</div>}
           <div className="meta">{p.location && <span>{p.location}</span>}{p.status && <span>{p.status}</span>}{p.brand && <span>{p.brand}</span>}</div>
           {p.bio.map((b, i) => <p className="lede" key={i}>{b}</p>)}
         </div>
-        <div className="stats">
+        {!embedded && <div className="stats">
           {p.stats.map((s, i) => <div className="stat" key={i}><div className="v">{s.value}</div><div className="l">{s.label}</div><div className="s">{s.sub}</div></div>)}
-        </div>
+        </div>}
       </div>
     </section>
   );
@@ -305,6 +315,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
   return (
     <>
       {header}
+      {hero && <div className="wrap">{hero}</div>}
       <nav className="subnav" ref={subnav} aria-label="Sections">
         <div className="wrap">
           {SECTIONS.map(([id, label]) => (
@@ -316,7 +327,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
       </nav>
       <div className="wrap">
         <div className={"page" + (collapsed ? " collapsed" : "")}>
-          <main id="content">
+          <Body id={embedded ? undefined : "content"}>
             {ribbon}
             {active && (
               <div className="banner" role="status">
@@ -331,7 +342,7 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
               </div>
             )}
             {about}{experience}{projects}{education}{homelab}{contact}
-          </main>
+          </Body>
           <SkillPanel data={data} filter={filter} vis={vis} openGroups={openGroups} drawerOpen={drawer} collapsed={collapsed}
             onToggleSkill={pickSkill} onMode={(mode) => setFilter((f) => ({ ...f, mode }))} onVis={setVis} onQuery={(q) => setFilter((f) => ({ ...f, q }))}
             onGroupToggle={(name, open) => setOpenGroups((s) => { const n = new Set(s); if (open) n.add(name); else n.delete(name); return n; })}
@@ -340,8 +351,8 @@ export function PortfolioPage({ data, hooks, header, ribbon, extraPalette = [] }
       </div>
       <button className="fab" aria-label="Open skill filter" onClick={() => setDrawer(true)}>Skills{filter.picked.size + (tokens(filter.q).length ? 1 : 0) > 0 ? ` · ${filter.picked.size + (tokens(filter.q).length ? 1 : 0)}` : ""}</button>
       <div className={"scrim" + (drawer ? " show" : "")} onClick={() => setDrawer(false)} />
-      <Palette items={paletteItems} open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <PaletteTrigger onOpen={() => setPaletteOpen(true)} toast={toast} />
+      {!embedded && <Palette items={paletteItems} open={paletteOpen} onClose={() => setPaletteOpen(false)} />}
+      {!embedded && <PaletteTrigger onOpen={() => setPaletteOpen(true)} toast={toast} />}
     </>
   );
 }

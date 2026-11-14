@@ -60,15 +60,17 @@ function App() {
 
   const updated = formatDate(page.updatedAt);
   return (
-    <>
-      <header className="dx-pubhead">
-        <span className="brand"><Crest className="crest" /><span className="t">{page.title}</span></span>
-        <button className="btn" onClick={() => setChoice(nextTheme(choice))} aria-label="Change theme">Theme: {themeLabel(choice)}</button>
+    <div className="dx-pubpage">
+      <header className="vh-top dx-pubhead">
+        <span className="vh-brand"><Crest className="crest" /><span className="t">{page.title}</span></span>
+        <div className="vh-actions">
+          <button className="btn sm" onClick={() => setChoice(nextTheme(choice))} aria-label="Change theme">Theme: {themeLabel(choice)}</button>
+        </div>
       </header>
       <main className="dx-pubbody">
+        {updated && <div className="eyebrow">Updated {updated}</div>}
         <h1 className="title">{page.title}</h1>
-        {updated && <div className="updated">Updated {updated}</div>}
-        <article className="doc">
+        <article className="doc dx-paper">
           {page.kind === "rich" ? <DocRenderer doc={page.body} ctx={ctx} /> : (
             <>
               <DocRenderer doc={page.intro} ctx={ctx} />
@@ -77,8 +79,11 @@ function App() {
           )}
         </article>
       </main>
-      <footer className="dx-pubfoot"><span>{updated ? `Last updated ${updated}` : ""}</span><span>Shared page · read only</span></footer>
-    </>
+      <footer className="dx-pubfoot">
+        <div className="rule" aria-hidden="true"><i /><i /><i /></div>
+        <span>{updated ? `Last updated ${updated} · ` : ""}Shared page, read only</span>
+      </footer>
+    </div>
   );
 }
 

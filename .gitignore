@@ -24,3 +24,4 @@ __pycache__/
 # Terminal page: SSH keys (the mock SSH tool writes throwaway ones; never commit a real one)
 *.key
 hub_terminal_ed25519*
+web/src/public/public/avatar.private.webp

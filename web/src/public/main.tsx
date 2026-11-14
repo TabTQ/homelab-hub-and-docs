@@ -2,18 +2,16 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../shared/fonts";
 import "../shared/styles.css";
-import { PortfolioPage } from "../shared/components/PortfolioPage";
-import { openPalette } from "../shared/components/Palette";
 import { ToastProvider } from "../shared/components/Toast";
-import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
-import { Crest } from "../shared/components/Crest";
+import { PortfolioShell } from "../shared/portfolio/PortfolioShell";
+import { applyTheme, loadTheme } from "../shared/theme";
 import type { Portfolio, SnapshotEnvelope } from "../shared/types";
 
 function App() {
   const [data, setData] = useState<Portfolio | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<ThemeChoice>(loadTheme);
-  useEffect(() => applyTheme(theme), [theme]);
+  // Apply the stored theme right away, so the loading and error screens are themed too. The shell takes over after that.
+  useEffect(() => applyTheme(loadTheme()), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,17 +29,7 @@ function App() {
   if (error) return <div className="wrap"><div className="login" role="alert"><h2>Portfolio unavailable</h2><p className="sub">{error}</p></div></div>;
   if (!data) return <div className="wrap"><p className="sub" style={{ marginTop: 40 }}>Loading…</p></div>;
 
-  const header = (
-    <div className="wrap">
-      <header className="top">
-        <div className="brand"><Crest className="crest" />{data.profile.name}</div>
-        <span className="grow" />
-        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
-        <button className="kbd-search" onClick={openPalette} aria-label="Search portfolio"><span>Search portfolio</span><kbd>Ctrl K</kbd></button>
-      </header>
-    </div>
-  );
-  return <PortfolioPage data={data} header={header} />;
+  return <PortfolioShell data={data} />;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><ToastProvider><App /></ToastProvider></StrictMode>);

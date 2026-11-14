@@ -159,32 +159,39 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
       {items ? <Tree items={items} currentId={currentId} onAction={onAction} onMove={onMove} />
         : <p className="hint">Loading pages…</p>}
       <div className="dx-legend"><span><i className="dx-dot pub" />public</span><span><i className="dx-dot draft" />unpublished changes</span><span><i className="dx-dot" />internal</span></div>
-      <a className="dx-trashlink" href="#/trash">🗑 Trash</a>
+      <a className="dx-trashlink" href="#/trash">Trash</a>
     </aside>
   );
 
   return (
     <div className="dx-app">
-      <header className="dx-bar">
-        <button className="btn sm dx-menu" onClick={() => setDrawer((d) => !d)} aria-label="Pages" aria-expanded={drawer}>☰</button>
-        <a className="brand" href="#/"><Crest className="crest" />Docs</a>
-        {config?.hubUrl && <a className="btn sm ghost" href={config.hubUrl} title="Back to the Homelab Hub">← Hub</a>}
-        <a className="btn sm ghost" href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
-        <span className="grow" />
-        {portfolioInfo && !portfolioInfo.upToDate && <a className="dx-warn" href="#/portfolio" title={portfolioInfo.lastError ?? ""}>Portfolio out of date</a>}
-        {routeInfo?.enabled && routeInfo.configError && <span className="dx-warn" title={routeInfo.configError}>Cloudflare not configured</span>}
-        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "error") && (
-          <span className="dx-warn" title={routeInfo.hosts.filter((h) => h.state === "error").map((h) => `${h.host}: ${h.message}`).join("\n")}>
-            Address not reachable yet: {routeInfo.hosts.filter((h) => h.state === "error").length} <button className="btn sm" onClick={retryRoutes}>Retry</button>
-          </span>
-        )}
-        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
-          <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
-        )}
-        {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
-        <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
-        <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
-        {auth.mode !== "none" && auth.authenticated && <button className="btn sm" onClick={onLogout}>Sign out</button>}
+      <header className="vh-top dx-bar">
+        <div className="dx-brandrow">
+          <button className="btn sm dx-menu" onClick={() => setDrawer((d) => !d)} aria-label="Pages" aria-expanded={drawer}>☰</button>
+          <a className="vh-brand" href="#/"><Crest className="crest" />Docs</a>
+        </div>
+        <nav className="vh-tabs" aria-label="Main">
+          <a href="#/" aria-current={route.name === "trash" ? undefined : "page"}>Pages</a>
+          <a href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
+          <a href="#/trash" aria-current={route.name === "trash" ? "page" : undefined}>Trash</a>
+          {config?.hubUrl && <a href={config.hubUrl} title="Back to the Homelab Hub">← Hub</a>}
+        </nav>
+        <div className="vh-actions">
+          {portfolioInfo && !portfolioInfo.upToDate && <a className="dx-warn" href="#/portfolio" title={portfolioInfo.lastError ?? ""}>Portfolio out of date</a>}
+          {routeInfo?.enabled && routeInfo.configError && <span className="dx-warn" title={routeInfo.configError}>Cloudflare not configured</span>}
+          {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "error") && (
+            <span className="dx-warn" title={routeInfo.hosts.filter((h) => h.state === "error").map((h) => `${h.host}: ${h.message}`).join("\n")}>
+              Address not reachable yet: {routeInfo.hosts.filter((h) => h.state === "error").length} <button className="btn sm" onClick={retryRoutes}>Retry</button>
+            </span>
+          )}
+          {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
+            <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
+          )}
+          {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
+          <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
+          <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
+          {auth.mode !== "none" && auth.authenticated && <button className="btn sm" onClick={onLogout}>Sign out</button>}
+        </div>
       </header>
       <div className="dx-layout">
         {drawer && <div className="dx-scrim" onClick={() => setDrawer(false)} />}
