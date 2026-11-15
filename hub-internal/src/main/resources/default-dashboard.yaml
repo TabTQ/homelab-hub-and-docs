@@ -21,6 +21,29 @@ groups:
 actions: []
 pinned: []
 
+# Machines (optional): the dashboard can group services by the host, VM or container they run on ("By machine" switch).
+# An item is placed by its own `on:`, else by the host of its href matching an address or a match glob. Addresses are
+# tried before globs, machines in file order. `in` nests a machine inside one other machine. `power` and `toggle` name
+# ids from `actions:`.
+# machines:
+#   - id: "pve"
+#     name: "Proxmox host"
+#     addresses:
+#       - "192.0.2.20"
+#     power:
+#       - "wol-pve"
+#   - id: "apps"
+#     name: "Apps"
+#     in: "pve"
+#     addresses:
+#       - "192.0.2.30"
+#     toggle: "toggle-apps"
+#   - id: "tailnet"
+#     name: "Tailnet"
+#     match:
+#       - "*.ts.net"
+# A service can name its machine directly: add `on: "apps"` under its `href:` line.
+
 # Terminal page (off unless HUB_TERMINAL_ENABLED=true; see README "Terminal setup"). Uncomment and fill in to use it:
 # terminals:
 #   - id: pi

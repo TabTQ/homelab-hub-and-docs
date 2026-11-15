@@ -372,6 +372,48 @@ actions:
 - Widget types: `resources`, `search`, `proxmox`, `proxmoxbackupserver`, `filebrowser`, `qbittorrent`.
 - Action types: `wol`, `proxmox-node` (`shutdown` | `reboot`), `proxmox-guest` (`lxc` | `qemu`).
 - Unknown keys, bad URLs, duplicate action ids, actions referenced but missing, and plaintext credentials are reported with line numbers.
+- Optional `machines:` groups the dashboard by the host, VM or container each service runs on. The dashboard has a "By machine / By group"
+  switch; without `machines:` nothing changes. An item is placed on the first rule that fits:
+  1. its `on: "<machine id>"`;
+  2. the host of its `href` (else its status check target, else its widget url) equals a machine's `addresses` (compared without regard to case)
+     or matches one of its `match` globs (only `*` is special). Addresses are tried on all machines before any glob; machines are tried in file order;
+  3. otherwise it is shown as unplaced.
+
+  An action tile is placed on the machine that lists its action in `power` or `toggle`. `in:` nests a machine inside one other machine (one
+  level only). `power` lists action ids shown in the machine's header; `toggle` is one action id used as its Start/Stop button. Duplicate or
+  malformed ids, an unknown `in`, `on`, `power` or `toggle`, are errors; the same address on two machines is a warning.
+
+```yaml
+machines:
+  - id: "pi"
+    name: "Raspberry Pi"
+    addresses:
+      - "192.0.2.10"
+  - id: "pve"
+    name: "Proxmox host"
+    addresses:
+      - "192.0.2.20"
+    power:
+      - "wol-pve"
+      - "shutdown-pve"
+  - id: "apps"
+    name: "Apps"
+    in: "pve"
+    addresses:
+      - "192.0.2.30"
+    toggle: "toggle-apps"
+  - id: "tailnet"
+    name: "Tailnet"
+    match:
+      - "*.ts.net"
+groups:
+  - name: "Apps"
+    items:
+      - name: "Wiki"
+        href: "https://wiki.example.test/"
+        on: "apps"
+```
+
 - Optional `terminals:` for the Terminal page (see *Terminal setup*). Only hosts listed here can ever be connected to; the key is a
   file **name** inside `$HUB_DATA/hub/ssh/`, never a path, and `hostKey` pins the server's SSH host key:
 

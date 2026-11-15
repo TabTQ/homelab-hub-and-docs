@@ -38,12 +38,20 @@ export interface Portfolio {
 export interface SnapshotEnvelope { schemaVersion: number; generatedAt: string; data: Portfolio }
 
 // ---- dashboard ----
-export interface ItemView { kind: "item"; id: string; name: string; href: string | null; icon: string | null; description: string | null; action: string | null; widget: string | null; statusId: string | null }
+export interface ItemView {
+  kind: "item"; id: string; name: string; href: string | null; icon: string | null; description: string | null; action: string | null; widget: string | null; statusId: string | null;
+  /** Id of the machine this entry belongs to, resolved by the server (explicit `on:`, else by address). Null or absent = unplaced. */
+  machine?: string | null;
+}
+/** A machine from dashboard.yaml `machines:`. `parent` is the host a container or VM lives in (null = a top-level machine). */
+export interface MachineView { id: string; name: string; parent: string | null; power: string[]; toggle: string | null }
 export interface GroupView { kind: "group"; id: string; name: string; entries: EntryView[] }
 export type EntryView = ItemView | GroupView;
 export interface ActionView { id: string; label: string; confirm: string; statusId: string | null; type: "wol" | "proxmox-node" | "proxmox-guest"; mac?: string; node?: string; command?: string; kind?: string; vmid?: number; stopMode?: string }
 export interface DashboardView {
   title: string; theme: string; widgets: { type: string; options: Record<string, string> }[]; pinned: string[]; groups: GroupView[]; actions: ActionView[];
+  /** dashboard.yaml machines (older servers and configs without the section omit it or send an empty list). */
+  machines?: MachineView[];
   config: { health: string; errors: number; warnings: number; missingSecrets: string[]; loadedAt: string };
   /** Optional pages the server has switched on (older servers omit it). */
   features?: { terminal: boolean; docker?: boolean };
