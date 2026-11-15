@@ -114,10 +114,6 @@ export function SkillsScreen() {
   const linkedCount = all.filter((s) => s.n > 0).length;
   const related = useMemo(() => relatedSkills(filter, data), [filter, data]);
   const picked = filter.picked;
-  const legend = (["raven", "bear", "wolf"] as const).map((b) => {
-    const names = groups.filter((_, i) => branchOf(i, groups.length) === b).map((g) => g.name);
-    return { b, text: names.length ? names[0] + (names.length > 1 ? ` + ${names.length - 1} more` : "") : "" };
-  }).filter((l) => l.text);
 
   // ---- view control ----
   const cancelAnim = useCallback(() => { if (raf.current) { cancelAnimationFrame(raf.current); raf.current = 0; } }, []);
@@ -357,11 +353,6 @@ export function SkillsScreen() {
           <circle cx={CENTRE.x} cy={CENTRE.y} r={23} fill="none" stroke="var(--ink)" strokeWidth={0.7} vectorEffect="non-scaling-stroke" />
           <path d={`M${CENTRE.x} ${CENTRE.y - 11}l11 11-11 11-11-11z`} fill="none" stroke="var(--ink)" strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
         </svg>
-        <div className="legend" aria-hidden="true">
-          {legend.map((l) => <span key={l.b}><i style={{ background: `var(--b-${l.b})` }} />{l.text}</span>)}
-          <span><i className="hollow" />Hollow star: listed, no linked work yet</span>
-          <span><i className="dots" />Faint dot: completes the shape</span>
-        </div>
         <div className="detail" aria-live="polite">
           {chosen?.skill && work && (
             <article className={`card ${tierOf(chosen.skill.n)}`}>

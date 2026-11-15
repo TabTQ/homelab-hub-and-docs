@@ -21,40 +21,6 @@ export function coreSkills<S extends CoreSkill>(groups: CoreGroup<S>[], count = 
 const pips = (n: number, max: number) => Math.max(1, Math.min(3, Math.ceil((n / Math.max(1, max)) * 3)));
 const Pips = ({ n }: { n: number }) => <span className="pips" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} />)}</span>;
 
-export function Avatar({ name }: { name: string }) {
-  // The editor does not ship the portrait, so it shows the crest in the same frame.
-  const editing = !!usePortfolio().edit;
-  const el = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const node = el.current;
-    if (!node || reducedMotion()) return;
-    const move = (e: PointerEvent) => {
-      node.style.setProperty("--px", ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
-      node.style.setProperty("--py", ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
-    };
-    const leave = () => { node.style.setProperty("--px", "0"); node.style.setProperty("--py", "0"); };
-    addEventListener("pointermove", move, { passive: true });
-    document.addEventListener("pointerleave", leave);
-    return () => { removeEventListener("pointermove", move); document.removeEventListener("pointerleave", leave); };
-  }, []);
-  const lit = { "--av": `url(${AVATAR})` } as CSSProperties;
-  return (
-    <div className="avatar" ref={el}>
-      <div className="halo" aria-hidden="true">
-        <svg viewBox="0 0 400 400" fill="none" stroke="currentColor"><circle cx="200" cy="200" r="190" strokeDasharray="1 9" strokeWidth="3" /><circle cx="200" cy="200" r="172" strokeWidth="0.8" /><circle cx="200" cy="200" r="128" strokeWidth="0.6" /><path d="M200 28 372 200 200 372 28 200Z" strokeWidth="0.6" /><path d="M78 78 322 322M322 78 78 322" strokeWidth="0.4" /></svg>
-      </div>
-      {editing ? <div className="fig-crest" aria-hidden="true"><Crest /></div> : (
-        <div className="fig" style={lit}>
-          <div className="body">
-            <img src={AVATAR} alt={`Portrait of ${name}`} width={900} height={900} />
-            <div className="lit shade" /><div className="lit rim" /><div className="lit fire" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** The portrait in the profile pane. The editor does not ship the photo, so it shows the placeholder silhouette there. */
 export function Portrait({ name }: { name: string }) {
   const editing = !!usePortfolio().edit;

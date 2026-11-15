@@ -26,9 +26,8 @@ const CENTRE_HALF = { w: 64, h: 54 };
 const LABEL_MIN_DY = 24;
 const LABEL_H = 54;
 const LABEL_CHAR_W = 14;
-/** Parts of the sky the page draws over (legend top left, corner badges), kept free of figures. */
+/** Parts of the sky the page draws over (the corner badges), kept free of figures. */
 const OBSTACLES: Rect[] = [
-  { x0: 0, y0: 0, x1: 400, y1: 215 },
   { x0: 0, y0: SKY_H - 140, x1: 330, y1: SKY_H },
   { x0: SKY_W - 330, y0: SKY_H - 140, x1: SKY_W, y1: SKY_H },
 ];

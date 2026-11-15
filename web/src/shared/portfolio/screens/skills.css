@@ -48,11 +48,6 @@
 .skills .perk-group { display: grid; gap: 4px; }
 .skills .card-foot { flex-direction: column; gap: 6px; }
 .skills .card-foot .hint { cursor: pointer; font: inherit; text-align: left; }
-.skills .legend { position: absolute; top: 4px; left: 0; display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); z-index: 1; }
-.skills .legend span { display: flex; align-items: center; gap: 8px; }
-.skills .legend i { width: 18px; height: 2px; display: block; }
-.skills .legend i.hollow { height: 0; background: none; border-top: 1px dashed var(--muted); }
-.skills .legend i.dots { height: 0; background: none; border-top: 2px dotted var(--muted); }
 .skills .listview { display: none; padding-bottom: 20px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .skills.list .sky-wrap { display: none; }
 .skills.list .listview { display: grid; }
@@ -64,8 +59,7 @@
 @media (max-width: 760px) {
   .skills .sky-wrap { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
   .skills svg.sky { position: relative; inset: auto; height: 62vh; }
-  .skills .legend, .skills .detail, .skills .badge { position: static; width: auto; }
-  .skills .detail .card { margin-top: 0; }
+    .skills .detail .card { margin-top: 0; }
   .skills .badge { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .skills .sky .grp { transition: none; } }

@@ -9,7 +9,7 @@ import type { Portfolio } from "../types";
 import { PortfolioContext, TABS, parseTab, type PortfolioContextValue, type PortfolioEditHooks, type TabKey } from "./context";
 import { Embers } from "./Embers";
 import { Tour } from "./Tour";
-import { CharacterScreen, Avatar } from "./screens/CharacterScreen";
+import { CharacterScreen, CrestRing, ringIcons } from "./screens/CharacterScreen";
 import { CodexScreen, InventoryScreen, QuestsScreen, SkillsScreen, WorldScreen } from "./screens";
 import "./portfolio.css";
 
@@ -58,7 +58,7 @@ function SummaryHero({ data }: { data: Portfolio }) {
           </div>
         )}
       </div>
-      <div className="port"><Avatar name={p.name} /></div>
+      <div className="port"><CrestRing icons={ringIcons(data.skills)} /></div>
     </div>
   );
 }
