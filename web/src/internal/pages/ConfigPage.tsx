@@ -326,7 +326,7 @@ function MachineForm({ machines, actions, onAdd, onCancel }: { machines: Machine
       <div className="field"><label htmlFor="mc-in">Inside (optional)</label>
         <select id="mc-in" value={inside} onChange={(e) => setInside(e.target.value)}><option value="">Nothing: a top-level machine</option>{tops.map((m) => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}</select>
         <div className="help">Pick the host when this is a container or VM.</div></div>
-      <div className="field"><label htmlFor="mc-a">Addresses (optional)</label><input id="mc-a" type="text" value={addr} placeholder="192.168.10.130, apps.lan" onChange={(e) => setAddr(e.target.value)} />
+      <div className="field"><label htmlFor="mc-a">Addresses (optional)</label><input id="mc-a" type="text" value={addr} placeholder="192.0.2.30, apps.lan" onChange={(e) => setAddr(e.target.value)} />
         <div className="help">Services whose link points at one of these are placed here. Separate with commas or spaces.</div></div>
       {actions.length > 0 && <>
         <div className="field"><span className="lbl" id="mc-p">Power actions (optional)</span>

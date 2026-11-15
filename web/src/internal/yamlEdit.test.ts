@@ -282,9 +282,9 @@ describe("new entries use the standard format", () => {
 describe("machines", () => {
   it("creates machines: above groups: and keeps the comment on top of groups", () => {
     const t = "version: 1\ntitle: Lab\n\n# the groups\ngroups: []\n";
-    const r = addMachine(t, { id: "pve", name: "Proxmox host", addresses: ["192.168.10.102"], power: ["wake"] });
+    const r = addMachine(t, { id: "pve", name: "Proxmox host", addresses: ["192.0.2.2"], power: ["wake"] });
     expect(r.reformatted).toBe(false);
-    expect(r.text).toBe('version: 1\ntitle: Lab\n\nmachines:\n  - id: "pve"\n    name: "Proxmox host"\n    addresses:\n      - "192.168.10.102"\n    power:\n      - "wake"\n\n# the groups\ngroups: []\n');
+    expect(r.text).toBe('version: 1\ntitle: Lab\n\nmachines:\n  - id: "pve"\n    name: "Proxmox host"\n    addresses:\n      - "192.0.2.2"\n    power:\n      - "wake"\n\n# the groups\ngroups: []\n');
   });
   it("appends to an existing section, with in: and toggle:", () => {
     const t = addMachine("version: 1\ngroups: []\n", { id: "pve", name: "Proxmox" }).text;
