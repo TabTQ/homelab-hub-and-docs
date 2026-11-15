@@ -150,9 +150,11 @@ export default function Editor({ id, items, config, onChanged, fail }: {
       if (p.kind !== "rich") { go(`#/p/${id}`); return; }
       setPage(p);
       setTitle(p.title);
-      editor?.commands.setContent(p.body as any, { emitUpdate: false });
+      // The page can arrive after this editor instance was replaced or closed: use the current one, and only while it is alive.
+      const ed = editorRef.current;
+      if (ed && !ed.isDestroyed) ed.commands.setContent(p.body as any, { emitUpdate: false });
       const l = readLocal(id);
-      if (l && (JSON.stringify(l.body) !== JSON.stringify(editor?.getJSON()) || l.title !== p.title)) setLocal(l); else writeLocal(id, null);
+      if (l && (JSON.stringify(l.body) !== JSON.stringify(ed && !ed.isDestroyed ? ed.getJSON() : p.body) || l.title !== p.title)) setLocal(l); else writeLocal(id, null);
     }).catch(fail);
   }, [id, editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
