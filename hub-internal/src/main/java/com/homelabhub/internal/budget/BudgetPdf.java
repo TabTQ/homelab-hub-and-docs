@@ -71,10 +71,15 @@ public final class BudgetPdf {
     }
 
     public static byte[] render(StatementView view, LocalDate generated) {
+        return render(view, generated, StatementFilter.NONE);
+    }
+
+    static byte[] render(StatementView full, LocalDate generated, StatementFilter filter) {
+        StatementView view = filter.apply(full);
         try (PDDocument doc = new PDDocument()) {
             PDType0Font regular = load(doc, REGULAR);
             PDType0Font bold = load(doc, BOLD);
-            new Writer(doc, regular, bold, view, generated).write();
+            new Writer(doc, regular, bold, view, generated, filter).write();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             doc.save(out);
             return out.toByteArray();
@@ -112,6 +117,7 @@ public final class BudgetPdf {
         private final PDType0Font bold;
         private final StatementView view;
         private final LocalDate generated;
+        private final StatementFilter filter;
         private final Map<Long, String> names = new HashMap<>();
         private final Map<Integer, Boolean> encodable = new HashMap<>();
         private final LocalDate from;
@@ -120,7 +126,8 @@ public final class BudgetPdf {
         private PDPageContentStream cs;
         private float y;
 
-        Writer(PDDocument doc, PDType0Font regular, PDType0Font bold, StatementView view, LocalDate generated) {
+        Writer(PDDocument doc, PDType0Font regular, PDType0Font bold, StatementView view, LocalDate generated, StatementFilter filter) {
+            this.filter = filter;
             this.doc = doc;
             this.regular = regular;
             this.bold = bold;
@@ -147,6 +154,9 @@ public final class BudgetPdf {
                     + LONG.format(generated) + " · All amounts in ₹", GREY);
             y -= 10;
             Statement s = view.statement();
+            if (filter.active()) {
+                paragraph("Filter: " + filter.describe(view.people()) + ". The entries list is filtered; balances and who pays whom cover all entries.", GREY);
+            }
 
             heading("Who pays whom");
             if (s.transfers().isEmpty()) {
@@ -200,14 +210,15 @@ public final class BudgetPdf {
             List<Col> ex = flex(List.of(new Col("Date", dateWidth, false), new Col("Payment", 0, false), new Col("Paid by", 80, false),
                     new Col("Split among", 150, false), new Col("Amount", 72, true)));
             if (view.expenses().isEmpty()) {
-                paragraph("No expenses in this period.", GREY);
+                paragraph(filter.active() ? "No expenses match this filter." : "No expenses in this period.", GREY);
             } else {
                 header(ex);
                 for (Expense e : view.expenses()) {
                     row(ex, List.of(when(e), e.name(), name(e.paidBy()), split(e), Money.plainSigned(e.amountPaise())), false);
                 }
-                row(ex, List.of("Total", "", "", s.expenseCount() + (s.expenseCount() == 1 ? " expense" : " expenses"),
-                        Money.plainSigned(s.expenseTotalPaise())), true);
+                long count = filter.active() ? view.expenses().size() : s.expenseCount();
+                long sum = filter.active() ? view.expenses().stream().mapToLong(Expense::amountPaise).sum() : s.expenseTotalPaise();
+                row(ex, List.of("Total", "", "", count + (count == 1 ? " expense" : " expenses"), Money.plainSigned(sum)), true);
             }
 
             heading("Payments marked as settled");

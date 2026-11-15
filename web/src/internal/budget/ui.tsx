@@ -52,9 +52,9 @@ export function amountError(text: string): string | null {
  * "Split among" chips with All / None and an inline "+ Add person" that saves the person to the People list and ticks
  * them (plan R4). `choices` are the people offered; archived people only appear when already ticked.
  */
-export function PeopleChips({ choices, selected, onChange, onPersonAdded, onUnauthorized, error, id }: {
+export function PeopleChips({ choices, selected, onChange, onPersonAdded, onUnauthorized, error, id, noAdd }: {
   choices: PersonRef[]; selected: number[]; onChange: (ids: number[]) => void; onPersonAdded: (p: PersonRef) => void;
-  onUnauthorized: () => void; error?: string; id: string;
+  onUnauthorized: () => void; error?: string; id: string; noAdd?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -87,7 +87,7 @@ export function PeopleChips({ choices, selected, onChange, onPersonAdded, onUnau
             {p.name}{p.archived ? " (archived)" : ""}
           </button>
         ))}
-        <button type="button" className="bud-chip add" aria-expanded={adding} onClick={() => setAdding(!adding)}>+ Add person</button>
+        {!noAdd && <button type="button" className="bud-chip add" aria-expanded={adding} onClick={() => setAdding(!adding)}>+ Add person</button>}
       </div>
       {adding && (
         <div className="bud-inline">

@@ -9,7 +9,10 @@ public final class BudgetModels {
 
     private BudgetModels() {}
 
-    public record Person(long id, String name, boolean archived, int version, long expenseCount, long recurringCount) {}
+    /** A login of a person (admin view only; members get {@code null}). Times are ISO instants or null. */
+    public record AccountInfo(boolean canAdd, boolean disabled, boolean mustChange, String resetRequestedAt, String lastLoginAt) {}
+
+    public record Person(long id, String name, boolean archived, int version, long expenseCount, long recurringCount, AccountInfo account) {}
 
     /** The short form used inside month views and statements. */
     public record PersonRef(long id, String name, boolean archived) {}
@@ -17,7 +20,13 @@ public final class BudgetModels {
     public record Share(long personId, long paise) {}
 
     public record Expense(long id, String name, long amountPaise, long paidBy, String date, boolean daySet,
-                          Long recurringId, String recurringMonth, int version, List<Share> shares) {}
+                          Long recurringId, String recurringMonth, int version, List<Share> shares, Long createdBy) {
+        /** An entry added by the admin or generated (no member created it). */
+        public Expense(long id, String name, long amountPaise, long paidBy, String date, boolean daySet, Long recurringId,
+                       String recurringMonth, int version, List<Share> shares) {
+            this(id, name, amountPaise, paidBy, date, daySet, recurringId, recurringMonth, version, shares, null);
+        }
+    }
 
     public record Recurring(long id, String name, long amountPaise, long paidBy, List<Long> splitIds, String startMonth,
                             String endMonth, Integer day, int version, boolean ended) {}

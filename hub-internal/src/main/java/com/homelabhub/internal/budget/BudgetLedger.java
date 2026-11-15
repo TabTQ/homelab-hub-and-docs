@@ -172,6 +172,19 @@ public class BudgetLedger {
                 s.settlements(), history(month, 6));
     }
 
+    /** The same view as {@link #openMonth} but read only: nothing is created, so recurring entries not yet opened are not in it. */
+    public MonthView viewMonth(YearMonth month) {
+        if (month.isAfter(latestOpenable())) {
+            throw new BudgetService.ValidationException(Map.of("month",
+                    "Months more than " + MAX_MONTHS_AHEAD + " months ahead cannot be opened."));
+        }
+        LocalDate from = month.atDay(1);
+        LocalDate to = month.atEndOfMonth();
+        StatementView s = statement(from, to);
+        return new MonthView(month.toString(), from.toString(), to.toString(), today().toString(), s.people(), s.expenses(), s.statement(),
+                s.settlements(), history(month, 6));
+    }
+
     /** A statement for [from, to] (both inclusive). Callers materialise first when they want recurring entries. */
     public StatementView statement(LocalDate from, LocalDate to) {
         List<PersonRef> people = people();
@@ -222,23 +235,23 @@ public class BudgetLedger {
                     shares.computeIfAbsent(rs.getLong(1), k -> new ArrayList<>()).add(new Share(rs.getLong(2), rs.getLong(3)));
                     return null;
                 }).list();
-        return jdbc.sql("SELECT id, name, amount_paise, paid_by, expense_date, day_set, recurring_id, recurring_month, version "
+        return jdbc.sql("SELECT id, name, amount_paise, paid_by, expense_date, day_set, recurring_id, recurring_month, version, created_by "
                         + "FROM budget_expenses WHERE expense_date BETWEEN ? AND ? ORDER BY expense_date, id")
                 .params(from.toString(), to.toString())
                 .query((rs, n) -> new Expense(rs.getLong(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getString(5),
                         rs.getInt(6) == 1, (Long) longOrNull(rs.getObject(7)), rs.getString(8), rs.getInt(9),
-                        shares.getOrDefault(rs.getLong(1), List.of())))
+                        shares.getOrDefault(rs.getLong(1), List.of()), (Long) longOrNull(rs.getObject(10))))
                 .list();
     }
 
     Expense expense(long id) {
         List<Share> shares = jdbc.sql("SELECT person_id, share_paise FROM budget_expense_shares WHERE expense_id = ? ORDER BY person_id")
                 .param(id).query((rs, n) -> new Share(rs.getLong(1), rs.getLong(2))).list();
-        return jdbc.sql("SELECT id, name, amount_paise, paid_by, expense_date, day_set, recurring_id, recurring_month, version "
+        return jdbc.sql("SELECT id, name, amount_paise, paid_by, expense_date, day_set, recurring_id, recurring_month, version, created_by "
                         + "FROM budget_expenses WHERE id = ?")
                 .param(id)
                 .query((rs, n) -> new Expense(rs.getLong(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getString(5),
-                        rs.getInt(6) == 1, (Long) longOrNull(rs.getObject(7)), rs.getString(8), rs.getInt(9), shares))
+                        rs.getInt(6) == 1, (Long) longOrNull(rs.getObject(7)), rs.getString(8), rs.getInt(9), shares, (Long) longOrNull(rs.getObject(10))))
                 .optional().orElseThrow(() -> new java.util.NoSuchElementException("No such expense"));
     }
 
