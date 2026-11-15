@@ -38,7 +38,8 @@ canvas.embers { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0
 .slot > svg { flex: none; color: var(--accent); }
 .slot .lbl { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; font-size: 10px; letter-spacing: 0.04em; line-height: 1.2; overflow-wrap: anywhere; text-wrap: balance; }
 .slots .slot .pips { top: 7px; right: 7px; bottom: auto; display: flex; gap: 3px; }
-.pf-res { align-self: start; padding-top: 6vh; display: grid; grid-auto-rows: 1fr; gap: 8px; width: min(100%, 300px); justify-self: end; }
+/* Centred in the right pane, so the block stays balanced however many stats there are. */
+.pf-res { align-self: center; padding-top: 0; display: grid; grid-auto-rows: 1fr; gap: 8px; width: min(100%, 300px); justify-self: end; }
 .pf-res .r { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 0 12px; align-items: center; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); padding: 10px 14px; }
 .pf-res .r b { font: 600 1.5rem/1 var(--f-display); font-variant-numeric: lining-nums; color: var(--ink); white-space: nowrap; text-align: left; }
 .pf-res .r .tx { display: grid; gap: 2px; min-width: 0; }
