@@ -4,8 +4,12 @@ import { useToast } from "../../shared/components/Toast";
 import { addMonths, dateLabel, entryDay, monthLabel, parseMonth, thisMonth } from "../budget/dates";
 import { ExpenseSheet } from "../budget/ExpenseSheet";
 import { formatRupees } from "../budget/money";
-import { ExportDialog, PeoplePanel, RecurringPanel, SettleDialog } from "../budget/Panels";
-import { BUDGET, type Expense, type MonthView, type PersonRef, type Transfer } from "../budget/types";
+import "../budget/ledger.css";
+import { FilterBar } from "../budget/FilterBar";
+import { cleanFilter, filterExpenses, filterLabel, isFiltered, loadFilter, saveFilter, type LedgerFilter } from "../budget/filter";
+import { ExportDialog, RecurringPanel, SettleDialog } from "../budget/Panels";
+import { PeoplePanel } from "../budget/PeoplePanel";
+import { BUDGET, type Expense, type MemberInfo, type MonthView, type PersonRef, type Transfer } from "../budget/types";
 import { describeError } from "../budget/ui";
 
 // The Budget page (plan 5.7): shared monthly expenses. Loaded lazily; it makes requests only when the owner acts:
@@ -27,28 +31,37 @@ function monthFromHash(): string {
 const num = (paise: number, sign = false) => formatRupees(paise, { sign, symbol: false });
 const tone = (paise: number) => (paise > 0 ? "bud-pos" : paise < 0 ? "bud-neg" : "bud-muted");
 
-export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => void }) {
+/**
+ * `member` is set for a member session: read-only unless `canAdd`, and no people, recurring, settle or month opening.
+ * A member reads the month with GET (opening a month writes recurring entries, which only the admin may do).
+ */
+export default function BudgetPage({ onUnauthorized, member }: { onUnauthorized: () => void; member?: MemberInfo }) {
   const toast = useToast();
   const [month, setMonth] = useState(monthFromHash);
   const [view, setView] = useState<MonthView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [pickText, setPickText] = useState(month);
+  const [filter, setFilterState] = useState<LedgerFilter>(loadFilter);
+  const setFilter = (f: LedgerFilter) => { setFilterState(f); saveFilter(f); };
 
   useEffect(() => { const h = () => setMonth(monthFromHash()); window.addEventListener("hashchange", h); return () => window.removeEventListener("hashchange", h); }, []);
   useEffect(() => setPickText(month), [month]);
 
   const load = useCallback(() => {
-    api<MonthView>(`${BUDGET}/months/${month}/open`, { method: "POST" })
+    api<MonthView>(member ? `${BUDGET}/months/${month}` : `${BUDGET}/months/${month}/open`, member ? undefined : { method: "POST" })
       .then((v) => { if (v.month === month) { setView(v); setError(null); } })
       .catch((e) => { const d = describeError(e); if (d.unauthorized) onUnauthorized(); else setError(d.fields.month ?? d.message); });
-  }, [month, onUnauthorized]);
+  }, [month, onUnauthorized, member]);
   useEffect(load, [load]);
 
   const go = (m: string) => { if (parseMonth(m)) location.hash = `#/budget/${m}`; };
   const close = () => setDialog(null);
   const saved = (msg: string) => { setDialog(null); toast(msg); load(); };
 
+  const canAdd = !member || member.canAdd;
+  // A member may change only what they added themselves; the admin may change everything.
+  const canEdit = (e: Expense) => !member || (member.canAdd && e.createdBy === member.personId);
   const title = monthLabel(month);
   const monthBar = (
     <>
@@ -58,10 +71,10 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
           <h1 className="display">Ledger</h1>
         </div>
         <div className="bud-actions">
-          <button className="btn" onClick={() => setDialog({ kind: "people" })}>People</button>
-          <button className="btn" onClick={() => setDialog({ kind: "recurring" })}>Recurring</button>
-          <button className="btn" onClick={() => setDialog({ kind: "export" })} disabled={!view}>Export PDF</button>
-          <button className="btn pri" onClick={() => setDialog({ kind: "expense" })} disabled={!view || view.people.every((p) => p.archived)}>+ Add expense</button>
+          {!member && <button className="btn" onClick={() => setDialog({ kind: "people" })}>People</button>}
+          {!member && <button className="btn" onClick={() => setDialog({ kind: "recurring" })}>Recurring</button>}
+          <button className="btn" onClick={() => setDialog({ kind: "export" })} disabled={!view}>{isFiltered(filter) ? "Export this view" : "Export PDF"}</button>
+          {canAdd && <button className="btn pri" onClick={() => setDialog({ kind: "expense" })} disabled={!view || view.people.every((p) => p.archived)}>+ Add expense</button>}
         </div>
       </div>
       <div className="bud-monthbar">
@@ -80,35 +93,41 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
   if (!view || view.month !== month) return <>{monthBar}<p className="sub">Loading {title}…</p></>;
 
   const people = view.people;
+  const active = cleanFilter(filter, people);
+  const shown = filterExpenses(view.expenses, active);
+  const on = isFiltered(active);
   const name = (id: number) => people.find((p) => p.id === id)?.name ?? `#${id}`;
 
   return (
     <div className="bud">
       {monthBar}
       {error && <div className="banner bad" role="alert">{error}</div>}
-      {people.length > 0 && <Summary view={view} />}
+      {people.length > 0 && <FilterBar filter={active} onChange={setFilter} people={people}
+        summary={on ? `${shown.length} of ${view.expenses.length} entries · ${num(shown.reduce((a, e) => a + e.amountPaise, 0))}` : undefined} />}
+      {people.length > 0 && <Summary view={view} shown={on ? shown : undefined} />}
+      {on && people.length > 0 && <p className="bud-hint bud-fnote" role="note">Filter on: {filterLabel(active, people)}. Spent, Expenses and the list follow it. Still to pay, Settled, who pays whom and balances always count everyone.</p>}
       {people.length === 0 ? (
         <div className="panel hp bud-card">
-          <h2>Start with the people</h2>
-          <p className="sub">Add everyone who shares expenses. They appear in every form, and you can add more at any time.</p>
-          <button className="btn pri" onClick={() => setDialog({ kind: "people" })}>Add people</button>
+          <h2>{member ? "Nothing here yet" : "Start with the people"}</h2>
+          <p className="sub">{member ? "The admin has not added anyone to the Ledger yet." : "Add everyone who shares expenses. They appear in every form, and you can add more at any time."}</p>
+          {!member && <button className="btn pri" onClick={() => setDialog({ kind: "people" })}>Add people</button>}
         </div>
       ) : (
         <div className="bud-cols">
           <div className="bud-stack">
-            <TransfersCard view={view} name={name} onMarkPaid={(t) => setDialog({ kind: "settle", transfer: t })} />
+            <TransfersCard view={view} name={name} onMarkPaid={member ? undefined : (t) => setDialog({ kind: "settle", transfer: t })} />
             <PeopleCard view={view} name={name} />
-            {view.settlements.length > 0 && <SettlementsCard view={view} name={name} onUnauthorized={onUnauthorized} onChanged={saved} />}
+            {view.settlements.length > 0 && <SettlementsCard view={view} name={name} readOnly={!!member} onUnauthorized={onUnauthorized} onChanged={saved} />}
             <HistoryCard view={view} />
           </div>
-          <ExpensesCard view={view} name={name} month={month} onEdit={(e) => setDialog({ kind: "expense", expense: e })} onAdd={() => setDialog({ kind: "expense" })} />
+          <ExpensesCard view={view} name={name} month={month} shown={shown} filtered={on} canEdit={canEdit} onEdit={(e) => setDialog({ kind: "expense", expense: e })} onAdd={canAdd ? () => setDialog({ kind: "expense" }) : undefined} />
         </div>
       )}
-      {dialog?.kind === "expense" && <ExpenseSheet key={dialog.expense?.id ?? "new"} month={month} people={people} expense={dialog.expense}
+      {dialog?.kind === "expense" && <ExpenseSheet key={dialog.expense?.id ?? "new"} month={month} people={people} expense={dialog.expense} member={!!member}
         onClose={(peopleAdded) => { close(); if (peopleAdded) load(); }} onSaved={saved} onUnauthorized={onUnauthorized} />}
       {dialog?.kind === "people" && <PeoplePanel onClose={(changed) => { close(); if (changed) load(); }} onUnauthorized={onUnauthorized} />}
       {dialog?.kind === "recurring" && <RecurringPanel people={people} month={month} onClose={(changed) => { close(); if (changed) load(); }} onUnauthorized={onUnauthorized} />}
-      {dialog?.kind === "export" && <ExportDialog month={month} today={view.today} onClose={close} onUnauthorized={onUnauthorized} />}
+      {dialog?.kind === "export" && <ExportDialog month={month} today={view.today} filter={active} people={people} onClose={close} onUnauthorized={onUnauthorized} />}
       {dialog?.kind === "settle" && <SettleDialog transfer={dialog.transfer} people={people} today={view.today} month={month} onClose={close} onSaved={saved} onUnauthorized={onUnauthorized} />}
     </div>
   );
@@ -117,15 +136,15 @@ export default function BudgetPage({ onUnauthorized }: { onUnauthorized: () => v
 // ---------------------------------------------------------------- cards
 
 /** Four tiles at the top: what was spent, how many expenses, who still has to pay, and how much of the spending is already settled. */
-function Summary({ view }: { view: MonthView }) {
+function Summary({ view, shown }: { view: MonthView; shown?: Expense[] }) {
   const s = view.statement;
   const owed = s.transfers.reduce((a, t) => a + t.paise, 0);
   const settledPct = s.expenseTotalPaise > 0 ? Math.min(100, Math.round((Math.max(0, s.totals.settledPaise) / s.expenseTotalPaise) * 100)) : 0;
   const filled = Math.round(settledPct / 10);
   return (
     <div className="bud-sum" aria-label="Month summary">
-      <div className="panel hp"><div className="eyebrow">Spent</div><div className="num">{num(s.expenseTotalPaise)}</div></div>
-      <div className="panel hp"><div className="eyebrow">Expenses</div><div className="num">{s.expenseCount}</div></div>
+      <div className="panel hp"><div className="eyebrow">Spent{shown && " · filtered"}</div><div className="num">{num(shown ? shown.reduce((a, e) => a + e.amountPaise, 0) : s.expenseTotalPaise)}</div></div>
+      <div className="panel hp"><div className="eyebrow">Expenses{shown && " · filtered"}</div><div className="num">{shown ? shown.length : s.expenseCount}</div></div>
       <div className="panel hp" style={owed > 0 ? { borderColor: "var(--accent)" } : undefined}><div className="eyebrow">Still to pay</div><div className="num" style={owed > 0 ? { color: "var(--accent)" } : undefined}>{num(owed)}</div></div>
       <div className="panel hp"><div className="eyebrow">Settled</div><div className="num">{settledPct}<small>%</small></div>
         <div className="seg accent" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < filled ? "f" : ""} />)}</div></div>
@@ -133,7 +152,7 @@ function Summary({ view }: { view: MonthView }) {
   );
 }
 
-function TransfersCard({ view, name, onMarkPaid }: { view: MonthView; name: (id: number) => string; onMarkPaid: (t: Transfer) => void }) {
+function TransfersCard({ view, name, onMarkPaid }: { view: MonthView; name: (id: number) => string; onMarkPaid?: (t: Transfer) => void }) {
   const s = view.statement;
   const n = s.transfers.length;
   return (
@@ -144,7 +163,7 @@ function TransfersCard({ view, name, onMarkPaid }: { view: MonthView; name: (id:
         <div className="bud-xfer" key={`${t.fromId}-${t.toId}`}>
           <div className="bud-grow"><b>{name(t.fromId)}</b> pays <b>{name(t.toId)}</b></div>
           <div className="bud-num bud-amt">{formatRupees(t.paise)}</div>
-          <button className="btn sm pri" aria-label={`Mark paid: ${name(t.fromId)} pays ${name(t.toId)}`} onClick={() => onMarkPaid(t)}>Mark paid</button>
+          {onMarkPaid && <button className="btn sm pri" aria-label={`Mark paid: ${name(t.fromId)} pays ${name(t.toId)}`} onClick={() => onMarkPaid(t)}>Mark paid</button>}
         </div>
       ))}
       {s.openingTransfers.length > 0 && (
@@ -196,7 +215,7 @@ function PeopleCard({ view, name }: { view: MonthView; name: (id: number) => str
   );
 }
 
-function SettlementsCard({ view, name, onChanged, onUnauthorized }: { view: MonthView; name: (id: number) => string; onChanged: (m: string) => void; onUnauthorized: () => void }) {
+function SettlementsCard({ view, name, readOnly, onChanged, onUnauthorized }: { view: MonthView; name: (id: number) => string; readOnly?: boolean; onChanged: (m: string) => void; onUnauthorized: () => void }) {
   const [confirm, setConfirm] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const remove = (id: number) => api(`${BUDGET}/settlements/${id}`, { method: "DELETE" }).then(() => onChanged("Payment removed."))
@@ -211,7 +230,7 @@ function SettlementsCard({ view, name, onChanged, onUnauthorized }: { view: Mont
             <span className="bud-grow"><span className="bud-mono">{dateLabel(x.date)}</span> · <b>{name(x.fromId)}</b> paid <b>{name(x.toId)}</b>
               {x.note && <span className="bud-hint"> · {x.note}</span>}</span>
             <span className="bud-num">{formatRupees(x.paise)}</span>
-            {confirm === x.id
+            {readOnly ? null : confirm === x.id
               ? <><button className="btn sm danger" onClick={() => remove(x.id)}>Remove</button><button className="btn sm" onClick={() => setConfirm(null)}>Keep</button></>
               : <button className="btn sm" aria-label={`Delete the payment of ${formatRupees(x.paise)} from ${name(x.fromId)}`} onClick={() => setConfirm(x.id)}>Delete</button>}
           </li>
@@ -248,33 +267,36 @@ function HistoryCard({ view }: { view: MonthView }) {
   );
 }
 
-function ExpensesCard({ view, name, month, onEdit, onAdd }: { view: MonthView; name: (id: number) => string; month: string; onEdit: (e: Expense) => void; onAdd: () => void }) {
+function ExpensesCard({ view, name, month, shown, filtered, canEdit, onEdit, onAdd }: {
+  view: MonthView; name: (id: number) => string; month: string; shown: Expense[]; filtered: boolean; canEdit: (e: Expense) => boolean; onEdit: (e: Expense) => void; onAdd?: () => void;
+}) {
   const active = view.people.filter((p) => !p.archived);
   const split = (e: Expense) => {
     const ids = e.shares.map((s) => s.personId);
     return ids.length === active.length && ids.length > 1 && active.every((p) => ids.includes(p.id)) ? `All ${ids.length}` : ids.map(name).join(", ");
   };
-  const s = view.statement;
+  const total = shown.reduce((a, e) => a + e.amountPaise, 0);
   return (
     <section className="panel hp bud-card" aria-labelledby="bud-h-expenses">
       <header><h3 id="bud-h-expenses">Expenses · {monthLabel(month).split(" ")[0]}</h3>
-        <span className="bud-hint">{s.expenseCount} entr{s.expenseCount === 1 ? "y" : "ies"} · {formatRupees(s.expenseTotalPaise)}</span></header>
-      {view.expenses.length === 0 ? (
-        <p className="none">No expenses in {monthLabel(month)} yet. <button className="linkbtn" onClick={onAdd}>Add one</button>.</p>
+        <span className="bud-hint">{shown.length} entr{shown.length === 1 ? "y" : "ies"} · {formatRupees(total)}{filtered ? ` (of ${view.expenses.length})` : ""}</span></header>
+      {shown.length === 0 ? (
+        filtered ? <p className="none">No entries match this filter in {monthLabel(month)}.</p>
+        : <p className="none">No expenses in {monthLabel(month)} yet.{onAdd && <> <button className="linkbtn" onClick={onAdd}>Add one</button>.</>}</p>
       ) : (
         <>
           <div className="bud-scrollx bud-wide">
             <table className="bud-table bud-compact">
               <thead><tr><th>Date</th><th>Payment</th><th>Paid by</th><th>Split among</th><th className="bud-num">Amount</th><th><span className="sr">Edit</span></th></tr></thead>
               <tbody>
-                {view.expenses.map((e) => (
+                {shown.map((e) => (
                   <tr key={e.id}>
                     <td className="bud-mono bud-nowrap">{e.daySet ? entryDay(e.date, true) : <>{entryDay(e.date, true).slice(3)}<span className="bud-pill grey">no day</span></>}</td>
                     <td>{e.name}{e.recurringId !== null && <span className="bud-pill">recurring</span>}</td>
                     <td>{name(e.paidBy)}</td>
                     <td>{split(e)}</td>
                     <td className="bud-num">{formatRupees(e.amountPaise)}</td>
-                    <td><button className="btn sm" aria-label={`Edit ${e.name}`} onClick={() => onEdit(e)}>Edit</button></td>
+                    <td>{canEdit(e) && <button className="btn sm" aria-label={`Edit ${e.name}`} onClick={() => onEdit(e)}>Edit</button>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -282,13 +304,20 @@ function ExpensesCard({ view, name, month, onEdit, onAdd }: { view: MonthView; n
           </div>
           {/* phones: two-line rows, tap to edit */}
           <ul className="bud-narrow bud-entries">
-            {view.expenses.map((e) => (
+            {shown.map((e) => (
               <li key={e.id}>
-                <button type="button" onClick={() => onEdit(e)} aria-label={`Edit ${e.name}`}>
-                  <span className="bud-t">{e.name}{e.recurringId !== null && <span className="bud-pill">recurring</span>}</span>
-                  <span className="bud-num">{formatRupees(e.amountPaise)}</span>
-                  <span className="bud-m">{entryDay(e.date, e.daySet)} · {name(e.paidBy)} paid · {split(e)}</span>
-                </button>
+                {(() => {
+                  const inner = (
+                    <>
+                      <span className="bud-t">{e.name}{e.recurringId !== null && <span className="bud-pill">recurring</span>}</span>
+                      <span className="bud-num">{formatRupees(e.amountPaise)}</span>
+                      <span className="bud-m">{entryDay(e.date, e.daySet)} · {name(e.paidBy)} paid · {split(e)}</span>
+                    </>
+                  );
+                  return canEdit(e)
+                    ? <button type="button" onClick={() => onEdit(e)} aria-label={`Edit ${e.name}`}>{inner}</button>
+                    : <div className="bud-ro">{inner}</div>;
+                })()}
               </li>
             ))}
           </ul>

@@ -78,9 +78,12 @@ public class BudgetService {
                   (SELECT COUNT(*) FROM budget_expenses e WHERE e.paid_by = p.id
                      OR EXISTS (SELECT 1 FROM budget_expense_shares s WHERE s.expense_id = e.id AND s.person_id = p.id)),
                   (SELECT COUNT(*) FROM budget_recurring r WHERE r.paid_by = p.id
-                     OR EXISTS (SELECT 1 FROM budget_recurring_people rp WHERE rp.recurring_id = r.id AND rp.person_id = p.id))
-                FROM budget_people p ORDER BY p.archived, p.id""")
-                .query((rs, n) -> new Person(rs.getLong(1), rs.getString(2), rs.getInt(3) == 1, rs.getInt(4), rs.getLong(5), rs.getLong(6)))
+                     OR EXISTS (SELECT 1 FROM budget_recurring_people rp WHERE rp.recurring_id = r.id AND rp.person_id = p.id)),
+                  a.person_id, a.can_add, a.disabled, a.must_change, a.reset_requested_at, a.last_login_at
+                FROM budget_people p LEFT JOIN budget_accounts a ON a.person_id = p.id ORDER BY p.archived, p.id""")
+                .query((rs, n) -> new Person(rs.getLong(1), rs.getString(2), rs.getInt(3) == 1, rs.getInt(4), rs.getLong(5), rs.getLong(6),
+                        rs.getObject(7) == null ? null : new BudgetModels.AccountInfo(rs.getInt(8) == 1, rs.getInt(9) == 1, rs.getInt(10) == 1,
+                                rs.getString(11), rs.getString(12))))
                 .list();
     }
 
@@ -196,10 +199,15 @@ public class BudgetService {
     }
 
     public Expense addExpense(Map<String, Object> body) {
+        return addExpense(body, null);
+    }
+
+    /** {@code createdBy} is the person id of the member who adds it, or null for the admin. */
+    public Expense addExpense(Map<String, Object> body, Long createdBy) {
         ExpenseInput in = expenseInput(body, null, new Check(body));
         long id = tx.execute(st -> {
-            jdbc.sql("INSERT INTO budget_expenses (name, amount_paise, paid_by, expense_date, day_set) VALUES (?, ?, ?, ?, ?)")
-                    .params(in.name(), in.amount(), in.paidBy(), in.date().toString(), in.daySet() ? 1 : 0).update();
+            jdbc.sql("INSERT INTO budget_expenses (name, amount_paise, paid_by, expense_date, day_set, created_by) VALUES (?, ?, ?, ?, ?, ?)")
+                    .params(in.name(), in.amount(), in.paidBy(), in.date().toString(), in.daySet() ? 1 : 0, createdBy).update();
             long newId = jdbc.sql("SELECT last_insert_rowid()").query(Long.class).single();
             ledger.insertShares(newId, Splitter.split(in.amount(), in.split()));
             return newId;

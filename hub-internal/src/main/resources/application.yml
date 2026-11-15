@@ -75,6 +75,10 @@ hub:
     log-follow-max-seconds: ${HUB_DOCKER_LOG_FOLLOW_MAX_SECONDS:1800}
     max-log-lines: 5000
     idle-session-seconds: 60
+  member:
+    # A second port for the people who share the ledger. 0 = off. It serves only the sign-in page, the Budget page and its
+    # allowlisted API; everything else answers 404. Plain http: use it on the home network only.
+    port: ${HUB_MEMBER_PORT:0}
   budget:
     # "Today" for the Budget page (settlement dates, "This month"). The container runs in UTC, so this is never the JVM zone.
     zone: ${HUB_BUDGET_ZONE:Asia/Kolkata}

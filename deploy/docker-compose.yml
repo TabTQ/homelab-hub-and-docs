@@ -21,6 +21,9 @@ services:
       HUB_ALLOWED_HOSTS: ${HUB_ALLOWED_HOSTS:-}
       HUB_AUTH_MODE: ${HUB_AUTH_MODE:-all}
       HUB_SECURE_COOKIES: ${HUB_SECURE_COOKIES:-false}
+      # Member port for the Ledger: 0 = off. Host networking is used, so the port is open on the Pi as soon as it is set.
+      # Also add the Pi's home-network address (or name) to HUB_ALLOWED_HOSTS, or members get "Invalid Host header".
+      HUB_MEMBER_PORT: ${HUB_MEMBER_PORT:-0}
       HUB_BUDGET_ZONE: ${HUB_BUDGET_ZONE:-Asia/Kolkata}
       PROXMOX_API_URL: ${PROXMOX_API_URL:-}
       PROXMOX_API_TOKEN: ${PROXMOX_API_TOKEN:-}
