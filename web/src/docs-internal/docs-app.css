@@ -231,3 +231,29 @@
   .dx-bar .vh-tabs { grid-row: 3; }
   .dx-bar::after { grid-row: 4; }
 }
+
+/* GitHub Pages (mockups Docs 1 to 3) */
+.dx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dx-target { border: 1px solid var(--line); padding: 12px 14px; margin-bottom: 10px; min-width: 0; }
+.dx-target.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.dx-target p { margin: 4px 0 8px; font-size: 13px; color: var(--muted); }
+.dx-target .hint { overflow-wrap: anywhere; }
+.dx-thead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dx-thead .dx-switch b { font: 600 1.1rem var(--f-display); letter-spacing: 0.03em; }
+.dx-tstate { margin-left: auto; font: 500 11px var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.dx-switch:focus-visible, .dx-hostin input:focus-visible, .dx-hostin select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dx-hostin { flex-wrap: wrap; }
+.dx-hostin > span.mono { overflow-wrap: anywhere; font-size: 13px; }
+.dx-hostin .dx-tail { padding: 8px 10px 8px 0; }
+.dx-badge { font: 500 10px var(--f-body); letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid var(--line); padding: 1px 5px; color: var(--muted); flex: none; }
+.dx-badge.l { border-color: var(--accent); color: var(--accent); }
+.dx-badge.g { border-color: var(--gold); color: var(--gold); }
+.dx-ghstate { display: inline-flex; align-items: center; gap: 8px; font: 500 11px var(--f-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.dx-ghstate.up { color: var(--ok); } .dx-ghstate.warn { color: var(--warn); } .dx-ghstate.down { color: var(--bad); }
+.dx-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1px solid var(--line); padding: 10px 14px; margin: 0 0 8px; background: color-mix(in srgb, var(--surface) 90%, transparent); }
+.dx-strip.warn { border-color: var(--warn); } .dx-strip.down { border-color: var(--bad); }
+.dx-strip .t { flex: 1 1 220px; min-width: 0; }
+.dx-strip .t b { display: block; font: 600 1.05rem var(--f-display); }
+.dx-strip .t span { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.dx-strip .btn:focus-visible, .dx-ghstate .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 520px) { .dx-tstate { margin-left: 0; width: 100%; } .dx-strip .btn { flex: 1 1 auto; text-align: center; } }

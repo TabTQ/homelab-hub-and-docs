@@ -10,6 +10,8 @@ COPY web/package.json web/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build:docs-public && npm run build:docs-internal && npm run build:public
+# The two public bundles are also packed into docs-internal (static-export/viewer and /portfolio, with files.txt), for the GitHub Pages copy.
+RUN node scripts/pack-static-export.mjs /src/web/dist /pack
 
 FROM maven:3.9-eclipse-temurin-17 AS jars
 WORKDIR /src
@@ -23,6 +25,7 @@ COPY docs-public/ docs-public/
 COPY --from=web /src/web/dist/docs-internal/ docs-internal/src/main/resources/static/
 COPY --from=web /src/web/dist/docs-public/ docs-public/src/main/resources/static/
 COPY --from=web /src/web/dist/public/ hub-public/src/main/resources/static/
+COPY --from=web /pack/static-export/ docs-internal/src/main/resources/static-export/
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl docs-internal,docs-public,hub-public -am -DskipTests package \
  && cp docs-internal/target/docs-internal-0.1.0-SNAPSHOT.jar /docs-internal.jar \
  && cp docs-public/target/docs-public-0.1.0-SNAPSHOT.jar /docs-public.jar \

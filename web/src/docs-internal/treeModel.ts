@@ -2,7 +2,7 @@
 // into the {parentId, afterId} the move API takes. No React here, so all of it is unit-tested.
 
 export type PageState = "internal" | "public" | "public-changed";
-export interface TreeItem { id: number; parentId: number | null; position: number; kind: "rich" | "webapp"; title: string; publicHost: string | null; state: PageState }
+export interface TreeItem { id: number; parentId: number | null; position: number; kind: "rich" | "webapp"; title: string; publicHost: string | null; githubSlug?: string | null; state: PageState }
 export interface TreeNode extends TreeItem { children: TreeNode[] }
 export interface Placement { parentId: number | null; afterId: number | null }
 export type DropZone = "before" | "into" | "after";

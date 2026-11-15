@@ -31,6 +31,8 @@ function privateAvatar(): Plugin {
 // entry and imports nothing from src/internal (checked by scripts/check-public-bundle.mjs after the build).
 export default defineConfig({
   root: "src/public",
+  // Relative base: the built folder works at the site root and from a sub-folder (the GitHub Pages copy).
+  base: "./",
   plugins: [react(), privateAvatar()],
   build: { outDir: "../../dist/public", emptyOutDir: true, sourcemap: false, target: "es2022" },
 });

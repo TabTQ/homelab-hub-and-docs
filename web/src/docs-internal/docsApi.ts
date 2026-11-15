@@ -1,6 +1,7 @@
 // Types and small helpers for docs-internal's API (docs plan 5.3).
 import { api } from "../shared/api";
 import type { PMNode, WebappSettings } from "../shared/docs/types";
+import type { GithubConfig } from "./githubUi";
 import type { PageState, TreeItem } from "./treeModel";
 
 export const A = "/api/admin/docs";
@@ -9,19 +10,19 @@ export interface BundleView { seq: number; sha256: string; size: number; created
 
 export interface PageDetail {
   id: number; parentId: number | null; kind: "rich" | "webapp"; title: string; body: PMNode | WebappSettings;
-  publicHost: string | null; publishedVersion: number | null; publishedAt: string | null; updatedAt: string; createdAt: string;
+  publicHost: string | null; githubSlug?: string | null; githubUrl?: string | null; publishedVersion: number | null; publishedAt: string | null; updatedAt: string; createdAt: string;
   version: number; state: PageState; latestVersion: number; breadcrumbs: { id: number; title: string }[]; childCount: number;
   draftBundle?: BundleView; publishedBundle?: BundleView;
 }
 
-export interface DocsConfig { hubUrl: string; domains: string[]; maxAssetMb: number; maxBundleMb: number; cdns: Record<string, string> }
+export interface DocsConfig { hubUrl: string; domains: string[]; maxAssetMb: number; maxBundleMb: number; cdns: Record<string, string>; github?: GithubConfig }
 
 export interface VersionItem { version: number; kind: string; title: string; bundleSeq: number | null; note: string | null; createdAt: string; live: boolean }
 
 export interface PublishCheck {
   draftVersion: number; publishedVersion: number | null; publishedAt: string | null; publicHost: string | null; state: PageState;
-  domains: string[];
-  links: { pageId: number; title: string | null; public: boolean; href: string | null; missing: boolean }[];
+  domains: string[]; githubSlug?: string | null;
+  links: { pageId: number; title: string | null; public: boolean; href: string | null; missing: boolean; githubHref?: string | null; githubLocalOnly?: boolean }[];
   embeds: { pageId: number; title: string | null; bundleSeq: number | null; size: number | null; source: "published" | "draft" | "missing" }[];
   files: { sha256: string; mime: string; size: number; name: string }[];
   fileBytes: number; bundle: BundleView | null; problems: string[]; liveBody: PMNode | WebappSettings | null; liveTitle: string | null;

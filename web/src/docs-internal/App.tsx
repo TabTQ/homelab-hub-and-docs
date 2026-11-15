@@ -5,7 +5,8 @@ import { Palette, openPalette, usePaletteHotkey, type PaletteItem } from "../sha
 import { useToast } from "../shared/components/Toast";
 import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
 import { Crest } from "../shared/components/Crest";
-import { A, go, loadTree, type DocsConfig } from "./docsApi";
+import { A, go, loadTree, when, type DocsConfig } from "./docsApi";
+import { githubGate, isBusyState, statusText, type GithubStatus } from "./githubUi";
 import { DeleteDialog, MoveDialog, NewPageDialog, RenameDialog } from "./Dialogs";
 import { PageView } from "./PageView";
 import { Trash } from "./Trash";
@@ -70,6 +71,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
   const [portfolioInfo, setPortfolioInfo] = useState<{ upToDate: boolean; lastError: string | null } | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [ghStatus, setGhStatus] = useState<GithubStatus | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -90,6 +92,17 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     return () => clearInterval(t);
   }, [routeInfo]);
   const retryRoutes = () => api<RouteInfo>(`${A}/routes/retry`, { method: "POST" }).then(setRouteInfo).catch(fail);
+  // GitHub Pages state: read on load and after every action (the tree reloads then), and every 5 s while an update is under way.
+  const ghEnabled = githubGate(config);
+  const loadGh = useCallback(() => api<GithubStatus>(`${A}/github/status`).then(setGhStatus).catch(() => setGhStatus(null)), []);
+  useEffect(() => { if (ghEnabled) loadGh(); else setGhStatus(null); }, [ghEnabled, items, loadGh]);
+  useEffect(() => {
+    if (!ghEnabled || !isBusyState(ghStatus?.state)) return;
+    const t = setInterval(loadGh, 5000);
+    return () => clearInterval(t);
+  }, [ghEnabled, ghStatus?.state, loadGh]);
+  const retryGh = () => api<GithubStatus>(`${A}/github/retry`, { method: "POST" }).then(setGhStatus).catch(fail);
+  const ghText = ghEnabled ? statusText(ghStatus, (iso) => when(iso)) : null;
   useEffect(() => {
     refresh(); api<DocsConfig>(`${A}/config`).then(setConfig).catch(fail);
     api<{ publicUrl: string }>("/api/admin/portfolio/config").then((c) => setPortfolioUrl(c.publicUrl)).catch(() => setPortfolioUrl(""));
@@ -186,6 +199,12 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
           )}
           {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
             <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
+          )}
+          {ghText && ghStatus && (
+            <span className={`dx-ghstate ${ghText.tone}`} role="status" title={ghText.detail}>
+              <i className={`gem ${ghText.tone}`} />{ghText.title}
+              {ghStatus.state === "error" && <button className="btn sm" onClick={retryGh}>Retry</button>}
+            </span>
           )}
           {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
           <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>

@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.homelabhub.docs.cloudflare.CloudflareRoutes;
+import com.homelabhub.docs.github.GitHubProperties;
+import com.homelabhub.docs.github.GitHubSync;
 
 /** The editor's API (plan 5.3). Login and CSRF apply in every auth mode except none (/api/admin/** is protected in edit mode too). */
 @RestController
@@ -37,9 +39,13 @@ class DocsController {
     private final DocsAudit audit;
     private final DocsProperties props;
     private final CloudflareRoutes routes;
+    private final GitHubSync github;
+    private final GitHubProperties ghProps;
 
     DocsController(DocsService docs, DocsPublisher publisher, PreviewTokens tokens, BlobStore blobs, DocsAudit audit, DocsProperties props,
-                   CloudflareRoutes routes) {
+                   CloudflareRoutes routes, GitHubSync github, GitHubProperties ghProps) {
+        this.github = github;
+        this.ghProps = ghProps;
         this.docs = docs;
         this.publisher = publisher;
         this.tokens = tokens;
@@ -57,7 +63,10 @@ class DocsController {
 
     record VersionOnly(Long version) {}
 
-    record PublishRequest(String publicHost, Long version) {}
+    /** A missing publicHost or githubSlug key means "leave as it is"; null or "" means "not there". */
+    record PublishRequest(JsonNode publicHost, JsonNode githubSlug, Long version) {}
+
+    record TargetsRequest(JsonNode publicHost, JsonNode githubSlug, Long version) {}
 
     record HostRequest(String publicHost, Long version) {}
 
@@ -69,6 +78,11 @@ class DocsController {
         m.put("maxAssetMb", props.maxAssetMb());
         m.put("maxBundleMb", props.maxBundleMb());
         m.put("cdns", WebappSettings.CDNS);
+        Map<String, Object> gh = new LinkedHashMap<>();
+        gh.put("enabled", ghProps.enabled());
+        gh.put("siteUrl", ghProps.enabled() ? ghProps.effectiveSiteUrl() : null);
+        gh.put("dryRun", ghProps.enabled() && ghProps.dryRun());
+        m.put("github", gh);
         return m;
     }
 
@@ -143,7 +157,28 @@ class DocsController {
 
     @PostMapping("/pages/{id}/publish")
     Map<String, Object> publish(@PathVariable long id, @RequestBody PublishRequest r, HttpServletRequest req) {
-        return docs.publish(id, r.publicHost(), r.version(), req.getRemoteAddr(), req.getHeader("User-Agent"));
+        return docs.publish(id, target(r.publicHost()), target(r.githubSlug()), r.version(), req.getRemoteAddr(), req.getHeader("User-Agent"));
+    }
+
+    private static DocsService.Target target(JsonNode n) {
+        if (n == null) {
+            return DocsService.Target.KEEP;
+        }
+        if (n.isNull()) {
+            return DocsService.Target.of(null);
+        }
+        if (!n.isTextual()) {
+            throw DocsException.bad("An address or folder name must be text or null.");
+        }
+        return DocsService.Target.of(n.asText());
+    }
+
+    /** Changes where the published version is shown, without publishing a new version. Both null on a published page unpublishes it. */
+    @PutMapping("/pages/{id}/targets")
+    Map<String, Object> targets(@PathVariable long id, @RequestBody TargetsRequest r, HttpServletRequest req) {
+        Map<String, Object> out = docs.setTargets(id, target(r.publicHost()), target(r.githubSlug()), r.version());
+        audit.record("targets", "page " + id, "ok", "host=" + out.get("publicHost") + " github=" + out.get("githubSlug"), req.getRemoteAddr(), req.getHeader("User-Agent"));
+        return out;
     }
 
     @PostMapping("/pages/{id}/unpublish")
@@ -163,6 +198,21 @@ class DocsController {
     @GetMapping("/hosts/check")
     Map<String, Object> checkHost(@RequestParam String host, @RequestParam(required = false) Long pageId) {
         return docs.checkHost(host, pageId);
+    }
+
+    @GetMapping("/github/check")
+    Map<String, Object> checkSlug(@RequestParam String slug, @RequestParam(required = false) Long pageId) {
+        return docs.checkSlug(slug, pageId);
+    }
+
+    @GetMapping("/github/status")
+    Map<String, Object> githubStatus() {
+        return github.toMap();
+    }
+
+    @PostMapping("/github/retry")
+    Map<String, Object> githubRetry() {
+        return github.retry();
     }
 
     @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

@@ -18,6 +18,7 @@ web/node_modules/
 hub-internal/src/main/resources/static/
 hub-public/src/main/resources/static/
 docs-internal/src/main/resources/static/
+docs-internal/src/main/resources/static-export/
 docs-public/src/main/resources/static/
 __pycache__/
 *.pyc

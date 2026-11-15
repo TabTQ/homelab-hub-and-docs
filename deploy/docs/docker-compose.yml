@@ -40,6 +40,15 @@ services:
       DOCS_CF_TUNNEL_ID: ${DOCS_CF_TUNNEL_ID:-}
       DOCS_CF_ZONE_NAME: ${DOCS_CF_ZONE_NAME:-}
       DOCS_CF_RESERVED_LABELS: ${DOCS_CF_RESERVED_LABELS:-}
+      # GitHub Pages publishing: needs only outbound HTTPS to api.github.com. Off unless DOCS_GH_ENABLED=true. The token stays in .env.
+      # The container file system is read-only: the stored portfolio copy and the dry-run folder are written under /data.
+      DOCS_GH_ENABLED: ${DOCS_GH_ENABLED:-false}
+      DOCS_GH_REPO: ${DOCS_GH_REPO:-}
+      DOCS_GH_BRANCH: ${DOCS_GH_BRANCH:-gh-pages}
+      DOCS_GH_TOKEN: ${DOCS_GH_TOKEN:-}
+      DOCS_GH_SITE_URL: ${DOCS_GH_SITE_URL:-}
+      DOCS_GH_DRY_RUN: ${DOCS_GH_DRY_RUN:-false}
+      DOCS_GH_API_URL: ${DOCS_GH_API_URL:-https://api.github.com}
       JAVA_TOOL_OPTIONS: ${DOCS_INTERNAL_JAVA_OPTS:--Xmx256m -XX:+UseSerialGC -Xss512k}
     volumes:
       - ${DOCS_DATA:-./data}/internal:/data   # docs.db, blobs/, backups/  (include DOCS_DATA in the Proxmox backup)

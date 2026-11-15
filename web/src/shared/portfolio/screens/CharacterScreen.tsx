@@ -5,7 +5,8 @@ import { usePortfolio } from "../context";
 import { VhIcon, resolveProjectIcon, resolveSkillIcon } from "../icons";
 import { EditBtn, EditHint } from "./parts";
 
-const AVATAR = `${import.meta.env.BASE_URL}avatar.webp`;
+// Made absolute against the page: the CSS variable below is resolved against the stylesheet, which sits in assets/, not next to the page.
+const AVATAR = new URL(`${import.meta.env.BASE_URL}avatar.webp`, document.baseURI).href;
 
 type CoreSkill = { l: string; n: number; ic?: string | null; core?: boolean };
 type CoreGroup<S> = { name?: string; skills: S[] };
