@@ -3,8 +3,10 @@ import { api } from "../shared/api";
 import { Login } from "../shared/components/Login";
 import { Palette, openPalette, usePaletteHotkey, type PaletteItem } from "../shared/components/Palette";
 import { useToast } from "../shared/components/Toast";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
-import { A, go, loadTree, type DocsConfig } from "./docsApi";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
+import { A, go, loadTree, when, type DocsConfig } from "./docsApi";
+import { githubGate, isBusyState, statusText, type GithubStatus } from "./githubUi";
 import { DeleteDialog, MoveDialog, NewPageDialog, RenameDialog } from "./Dialogs";
 import { PageView } from "./PageView";
 import { Trash } from "./Trash";
@@ -69,6 +71,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
   const [portfolioInfo, setPortfolioInfo] = useState<{ upToDate: boolean; lastError: string | null } | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [ghStatus, setGhStatus] = useState<GithubStatus | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -89,6 +92,17 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     return () => clearInterval(t);
   }, [routeInfo]);
   const retryRoutes = () => api<RouteInfo>(`${A}/routes/retry`, { method: "POST" }).then(setRouteInfo).catch(fail);
+  // GitHub Pages state: read on load and after every action (the tree reloads then), and every 5 s while an update is under way.
+  const ghEnabled = githubGate(config);
+  const loadGh = useCallback(() => api<GithubStatus>(`${A}/github/status`).then(setGhStatus).catch(() => setGhStatus(null)), []);
+  useEffect(() => { if (ghEnabled) loadGh(); else setGhStatus(null); }, [ghEnabled, items, loadGh]);
+  useEffect(() => {
+    if (!ghEnabled || !isBusyState(ghStatus?.state)) return;
+    const t = setInterval(loadGh, 5000);
+    return () => clearInterval(t);
+  }, [ghEnabled, ghStatus?.state, loadGh]);
+  const retryGh = () => api<GithubStatus>(`${A}/github/retry`, { method: "POST" }).then(setGhStatus).catch(fail);
+  const ghText = ghEnabled ? statusText(ghStatus, (iso) => when(iso)) : null;
   useEffect(() => {
     refresh(); api<DocsConfig>(`${A}/config`).then(setConfig).catch(fail);
     api<{ publicUrl: string }>("/api/admin/portfolio/config").then((c) => setPortfolioUrl(c.publicUrl)).catch(() => setPortfolioUrl(""));
@@ -112,7 +126,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
     const header = (
       <div className="wrap">
         <header className="top">
-          <div className="brand"><i aria-hidden="true" />Docs</div>
+          <div className="brand"><Crest className="crest" />Docs</div>
           <nav className="nav" aria-label="Main">
             <a href="#/">Pages</a>
             <a href="#/portfolio" aria-current="page">Portfolio</a>
@@ -120,7 +134,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
           </nav>
           <span className="grow" />
           {portfolioUrl && <a className="btn" href={portfolioUrl} target="_blank" rel="noopener noreferrer">Open public site</a>}
-          <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+          <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
           {auth.mode !== "none" && auth.authenticated && <button className="btn" onClick={onLogout}>Sign out</button>}
           <button className="kbd-search" onClick={openPalette} aria-label="Search"><span>Search portfolio</span><kbd>Ctrl K</kbd></button>
         </header>
@@ -158,32 +172,45 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
       {items ? <Tree items={items} currentId={currentId} onAction={onAction} onMove={onMove} />
         : <p className="hint">Loading pages…</p>}
       <div className="dx-legend"><span><i className="dx-dot pub" />public</span><span><i className="dx-dot draft" />unpublished changes</span><span><i className="dx-dot" />internal</span></div>
-      <a className="dx-trashlink" href="#/trash">🗑 Trash</a>
+      <a className="dx-trashlink" href="#/trash">Trash</a>
     </aside>
   );
 
   return (
     <div className="dx-app">
-      <header className="dx-bar">
-        <button className="btn sm dx-menu" onClick={() => setDrawer((d) => !d)} aria-label="Pages" aria-expanded={drawer}>☰</button>
-        <a className="brand" href="#/"><i aria-hidden="true" />Docs</a>
-        {config?.hubUrl && <a className="btn sm ghost" href={config.hubUrl} title="Back to the Homelab Hub">← Hub</a>}
-        <a className="btn sm ghost" href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
-        <span className="grow" />
-        {portfolioInfo && !portfolioInfo.upToDate && <a className="dx-warn" href="#/portfolio" title={portfolioInfo.lastError ?? ""}>Portfolio out of date</a>}
-        {routeInfo?.enabled && routeInfo.configError && <span className="dx-warn" title={routeInfo.configError}>Cloudflare not configured</span>}
-        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "error") && (
-          <span className="dx-warn" title={routeInfo.hosts.filter((h) => h.state === "error").map((h) => `${h.host}: ${h.message}`).join("\n")}>
-            Address not reachable yet: {routeInfo.hosts.filter((h) => h.state === "error").length} <button className="btn sm" onClick={retryRoutes}>Retry</button>
-          </span>
-        )}
-        {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
-          <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
-        )}
-        {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
-        <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
-        <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
-        {auth.mode !== "none" && auth.authenticated && <button className="btn sm" onClick={onLogout}>Sign out</button>}
+      <header className="vh-top dx-bar">
+        <div className="dx-brandrow">
+          <button className="btn sm dx-menu" onClick={() => setDrawer((d) => !d)} aria-label="Pages" aria-expanded={drawer}>☰</button>
+          <a className="vh-brand" href="#/"><Crest className="crest" />Docs</a>
+        </div>
+        <nav className="vh-tabs" aria-label="Main">
+          <a href="#/" aria-current={route.name === "trash" ? undefined : "page"}>Pages</a>
+          <a href="#/portfolio" title="Edit the public portfolio">Portfolio</a>
+          <a href="#/trash" aria-current={route.name === "trash" ? "page" : undefined}>Trash</a>
+          {config?.hubUrl && <a href={config.hubUrl} title="Back to the Homelab Hub">← Hub</a>}
+        </nav>
+        <div className="vh-actions">
+          {portfolioInfo && !portfolioInfo.upToDate && <a className="dx-warn" href="#/portfolio" title={portfolioInfo.lastError ?? ""}>Portfolio out of date</a>}
+          {routeInfo?.enabled && routeInfo.configError && <span className="dx-warn" title={routeInfo.configError}>Cloudflare not configured</span>}
+          {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "error") && (
+            <span className="dx-warn" title={routeInfo.hosts.filter((h) => h.state === "error").map((h) => `${h.host}: ${h.message}`).join("\n")}>
+              Address not reachable yet: {routeInfo.hosts.filter((h) => h.state === "error").length} <button className="btn sm" onClick={retryRoutes}>Retry</button>
+            </span>
+          )}
+          {routeInfo?.enabled && routeInfo.hosts.some((h) => h.state === "pending") && !routeInfo.hosts.some((h) => h.state === "error") && (
+            <span className="dx-warn" title="Cloudflare is being updated">Connecting addresses…</span>
+          )}
+          {ghText && ghStatus && (
+            <span className={`dx-ghstate ${ghText.tone}`} role="status" title={ghText.detail}>
+              <i className={`gem ${ghText.tone}`} />{ghText.title}
+              {ghStatus.state === "error" && <button className="btn sm" onClick={retryGh}>Retry</button>}
+            </span>
+          )}
+          {publishInfo && !publishInfo.upToDate && <span className="dx-warn" title={publishInfo.lastError ?? ""}>Public site out of date</span>}
+          <button className="kbd-search dx-search" onClick={() => setPalette(true)} aria-label="Search pages"><span>Search pages</span><kbd>Ctrl K</kbd></button>
+          <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
+          {auth.mode !== "none" && auth.authenticated && <button className="btn sm" onClick={onLogout}>Sign out</button>}
+        </div>
       </header>
       <div className="dx-layout">
         {drawer && <div className="dx-scrim" onClick={() => setDrawer(false)} />}

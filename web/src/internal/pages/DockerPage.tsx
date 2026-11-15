@@ -101,13 +101,13 @@ export default function DockerPage({ onUnauthorized }: { onUnauthorized: () => v
 
   return (
     <div className="dk">
-      <div className="dk-head">
+      <div className="screen-title dk-head">
         <div>
           <div className="eyebrow">Containers on {hosts.length} host{hosts.length === 1 ? "" : "s"}</div>
-          <h1>Docker</h1>
+          <h1 className="display">Longhouse</h1>
         </div>
         <span className="grow" />
-        <div className="seg" role="tablist" aria-label="View">
+        <div className="pillseg" role="tablist" aria-label="View">
           {(["containers", "stacks", "activity"] as Tab[]).map((t) => (
             <button key={t} role="tab" aria-selected={tab === t} aria-pressed={tab === t} onClick={() => setTab(t)}>{t[0].toUpperCase() + t.slice(1)}</button>
           ))}
@@ -115,13 +115,13 @@ export default function DockerPage({ onUnauthorized }: { onUnauthorized: () => v
       </div>
 
       <div className="dk-hosts" role="group" aria-label="Hosts">
-        <button className="dk-host" aria-pressed={selected === "all"} onClick={() => setSelected("all")}>All hosts</button>
+        <button className="chip dk-host" aria-pressed={selected === "all"} onClick={() => setSelected("all")}>All hosts</button>
         {hosts.map((h) => {
           const r = containers[h.id];
           const running = r?.status === "ok" ? r.data.filter((c) => c.state === "running").length : 0;
           const bad = r?.status === "ok" ? r.data.filter((c) => tone(c) === "bad").length : 0;
           return (
-            <button key={h.id} className="dk-host" aria-pressed={selected === h.id} onClick={() => setSelected(h.id)} title={`${h.user}@${h.host}`}>
+            <button key={h.id} className="chip dk-host" aria-pressed={selected === h.id} onClick={() => setSelected(h.id)} title={`${h.user}@${h.host}`}>
               <span className={"dk-dot " + (r?.status === "error" ? "bad" : r?.status === "ok" ? (bad ? "warn" : "ok") : "off")} aria-hidden="true" />
               {h.label}
               <span className="dk-count">{r?.status === "ok" ? `${running}/${r.data.length}` : r?.status === "error" ? "error" : "…"}</span>
@@ -134,7 +134,7 @@ export default function DockerPage({ onUnauthorized }: { onUnauthorized: () => v
         <>
           <div className="dk-toolbar">
             <input className="dk-search" type="search" placeholder="Filter by name, image, project or port" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Filter containers" />
-            <div className="seg" role="group" aria-label="State">
+            <div className="pillseg" role="group" aria-label="State">
               {(["all", "running", "stopped", "unhealthy"] as StateFilter[]).map((f) => <button key={f} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}
             </div>
             <label className="dk-check"><input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /> Live CPU / memory</label>
@@ -191,9 +191,9 @@ function HostSection({ host, result, stats, query, filter, onLogs, onRun, onNewS
   const list = result?.status === "ok" ? result.data.filter((c) => matches(c, query, filter)) : [];
   const groups = groupByProject(list);
   return (
-    <section className="dk-section" aria-label={host.label}>
+    <section className="panel hp dk-section" aria-label={host.label}>
       <header className="dk-section-head">
-        <h2>{host.label}</h2>
+        <h3>{host.label}</h3>
         <span className="mono dk-muted">{host.user}@{host.host}</span>
         <span className="grow" />
         <button className="btn sm" onClick={onNewStack}>+ New stack</button>
@@ -275,9 +275,9 @@ function StacksSection({ host, result, onEdit, onNew, onAction, onShowContainers
   onAction: (name: string, op: string, volumes?: boolean) => void; onShowContainers: (name: string) => void;
 }) {
   return (
-    <section className="dk-section" aria-label={`Stacks on ${host.label}`}>
+    <section className="panel hp dk-section" aria-label={`Stacks on ${host.label}`}>
       <header className="dk-section-head">
-        <h2>{host.label}</h2>
+        <h3>{host.label}</h3>
         <span className="mono dk-muted">~{host.user}/stacks</span>
         <span className="grow" />
         <button className="btn sm pri" onClick={onNew}>+ New stack</button>
@@ -324,8 +324,8 @@ function Activity({ hosts }: { hosts: DockerHost[] }) {
   const label = (id: string) => hosts.find((h) => h.id === id)?.label ?? id;
   return (
     <>
-      <section className="dk-section">
-        <header className="dk-section-head"><h2>Recent jobs</h2><span className="dk-muted">kept in memory until the hub restarts</span></header>
+      <section className="panel hp dk-section">
+        <header className="dk-section-head"><h3>Recent jobs</h3><span className="dk-muted">kept in memory until the hub restarts</span></header>
         {jobs.length === 0 ? <p className="dk-muted">No jobs since the hub started.</p> : (
           <ul className="dk-list">
             {jobs.map((j) => (
@@ -338,8 +338,8 @@ function Activity({ hosts }: { hosts: DockerHost[] }) {
           </ul>
         )}
       </section>
-      <section className="dk-section">
-        <header className="dk-section-head"><h2>Audit log</h2><span className="dk-muted">last 50 changes</span></header>
+      <section className="panel hp dk-section">
+        <header className="dk-section-head"><h3>Audit log</h3><span className="dk-muted">last 50 changes</span></header>
         {audit.length === 0 ? <p className="dk-muted">Nothing recorded yet.</p> : (
           <div className="dk-table-wrap">
             <table className="dk-table">

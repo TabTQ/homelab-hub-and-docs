@@ -7,6 +7,10 @@ import com.homelabhub.internal.budget.BudgetModels.Person;
 import com.homelabhub.internal.budget.BudgetModels.Recurring;
 import com.homelabhub.internal.budget.BudgetModels.Settlement;
 import com.homelabhub.internal.budget.BudgetModels.StatementView;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.homelabhub.internal.member.MemberAccounts;
+import com.homelabhub.internal.member.MemberPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.LinkedHashMap;
@@ -21,6 +25,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -37,30 +44,93 @@ class BudgetController {
 
     private final BudgetService service;
     private final BudgetLedger ledger;
+    private final MemberAccounts accounts;
+    private final TransactionTemplate tx;
 
-    BudgetController(BudgetService service, BudgetLedger ledger) {
+    BudgetController(BudgetService service, BudgetLedger ledger, MemberAccounts accounts, TransactionTemplate tx) {
+        this.tx = tx;
         this.service = service;
         this.ledger = ledger;
+        this.accounts = accounts;
     }
+
+    /** The member behind this request, or null for the admin. */
+    private static MemberPrincipal member() {
+        Authentication a = SecurityContextHolder.getContext().getAuthentication();
+        return a != null && a.getPrincipal() instanceof MemberPrincipal p ? p : null;
+    }
+
+    /** Response of "add a person" when a login was created with it: the person plus the one-time password. */
+    record PersonWithPassword(@JsonUnwrapped Person person, String password) {}
 
     // ---------------------------------------------------------------- people
 
     @GetMapping("/people")
     List<Person> people() {
-        return service.people();
+        List<Person> all = service.people();
+        if (member() == null) {
+            return all;
+        }
+        // Login details are for the admin only.
+        return all.stream().map(p -> new Person(p.id(), p.name(), p.archived(), p.version(), p.expenseCount(), p.recurringCount(), null)).toList();
     }
 
     @PostMapping("/people")
-    ResponseEntity<Person> addPerson(@RequestBody Map<String, Object> body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.addPerson(body));
+    ResponseEntity<Object> addPerson(@RequestBody Map<String, Object> body, HttpServletRequest req) {
+        if (!Boolean.TRUE.equals(body.get("createLogin"))) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(service.addPerson(body));
+        }
+        MemberAccounts.Generated g = accounts.generate(); // hashed before the write transaction: bcrypt is slow on a Pi
+        Person created = tx.execute(st -> {
+            Person p = service.addPerson(body);
+            accounts.insert(p.id(), g.hash());
+            return service.person(p.id());
+        });
+        accounts.audit("member-account", created.id(), com.homelabhub.internal.audit.AuditLog.Result.ok, "created with the person",
+                req.getRemoteAddr(), req.getHeader("User-Agent"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new PersonWithPassword(created, g.password()));
     }
 
     @PutMapping("/people/{id}")
-    Person updatePerson(@PathVariable long id, @RequestBody Map<String, Object> body) {
-        return service.updatePerson(id, body);
+    Person updatePerson(@PathVariable long id, @RequestBody Map<String, Object> body, HttpServletRequest req) {
+        Person p = service.updatePerson(id, body);
+        if (p.archived()) {
+            accounts.disableOnArchive(id, req.getRemoteAddr(), req.getHeader("User-Agent"));
+            return service.person(id);
+        }
+        return p;
+    }
+
+    // ---------------------------------------------------------------- member logins (admin only)
+
+    @PostMapping("/people/{id}/account")
+    ResponseEntity<Map<String, Object>> createAccount(@PathVariable long id, HttpServletRequest req) {
+        String password = accounts.create(id, req.getRemoteAddr(), req.getHeader("User-Agent"));
+        return ResponseEntity.ok(Map.of("password", password));
+    }
+
+    @PostMapping("/people/{id}/account/reset")
+    Map<String, Object> resetAccount(@PathVariable long id, HttpServletRequest req) {
+        return Map.of("password", accounts.reset(id, req.getRemoteAddr(), req.getHeader("User-Agent")));
+    }
+
+    @PutMapping("/people/{id}/account")
+    Person updateAccount(@PathVariable long id, @RequestBody Map<String, Object> body, HttpServletRequest req) {
+        Check c = new Check(body);
+        Boolean canAdd = c.bool("canAdd");
+        Boolean disabled = c.bool("disabled");
+        c.done();
+        accounts.update(id, canAdd, disabled, req.getRemoteAddr(), req.getHeader("User-Agent"));
+        return service.person(id);
     }
 
     // ---------------------------------------------------------------- months
+
+    /** Read only: creates nothing, so recurring entries of a month nobody has opened yet are not in it. Members use this. */
+    @GetMapping("/months/{month}")
+    MonthView view(@PathVariable String month) {
+        return ledger.viewMonth(month(month, "month"));
+    }
 
     @PostMapping("/months/{month}/open")
     MonthView open(@PathVariable String month) {
@@ -84,7 +154,8 @@ class BudgetController {
 
     @PostMapping("/expenses")
     ResponseEntity<Expense> addExpense(@RequestBody Map<String, Object> body) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.addExpense(body));
+        MemberPrincipal m = member();
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.addExpense(body, m == null ? null : m.personId()));
     }
 
     @PutMapping("/expenses/{id}")
@@ -139,16 +210,22 @@ class BudgetController {
     @GetMapping("/statement")
     StatementView statement(@RequestParam(required = false) String from, @RequestParam(required = false) String to) {
         LocalDate[] r = BudgetService.range(from, to);
-        ledger.materialise(YearMonth.from(r[1]));
+        if (member() == null) {
+            ledger.materialise(YearMonth.from(r[1])); // a member's read never creates entries
+        }
         return ledger.statement(r[0], r[1]);
     }
 
     /** Built only now, streamed back and never stored. The file name is made here, never from user text. */
     @GetMapping("/export.pdf")
-    ResponseEntity<byte[]> export(@RequestParam(required = false) String from, @RequestParam(required = false) String to) {
+    ResponseEntity<byte[]> export(@RequestParam(required = false) String from, @RequestParam(required = false) String to,
+                                  @RequestParam(required = false) String split, @RequestParam(required = false) String people) {
         LocalDate[] r = BudgetService.range(from, to);
-        ledger.materialise(YearMonth.from(r[1]));
-        byte[] pdf = BudgetPdf.render(ledger.statement(r[0], r[1]), ledger.today());
+        StatementFilter filter = StatementFilter.parse(split, people);
+        if (member() == null) {
+            ledger.materialise(YearMonth.from(r[1])); // a member's read never creates entries
+        }
+        byte[] pdf = BudgetPdf.render(ledger.statement(r[0], r[1]), ledger.today(), filter);
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_PDF);
         h.setContentDisposition(ContentDisposition.attachment().filename(BudgetPdf.filename(r[0], r[1])).build());
@@ -175,6 +252,16 @@ class BudgetController {
             m.put("errors", e.errors());
         }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(m);
+    }
+
+    @ExceptionHandler(MemberAccounts.ExistsException.class)
+    ResponseEntity<Map<String, Object>> accountExists(MemberAccounts.ExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "conflict", "message", e.getMessage()));
+    }
+
+    @ExceptionHandler(MemberAccounts.RefusedException.class)
+    ResponseEntity<Map<String, Object>> accountRefused(MemberAccounts.RefusedException e) {
+        return ResponseEntity.unprocessableEntity().body(Map.of("error", "invalid", "errors", Map.of(e.field(), e.getMessage())));
     }
 
     @ExceptionHandler(NoSuchElementException.class)

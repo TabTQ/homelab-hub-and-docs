@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { api } from "../../shared/api";
-import type { ActionView, DashboardView, EntryView, GroupView, ItemView, LightState, StatusEntry } from "../../shared/types";
+import type { ActionView, DashboardView, EntryView, GroupView, ItemView, LightState, MachineView, StatusEntry } from "../../shared/types";
 import { ago, fmtRate, fmtUptime, safeHref } from "../../shared/util";
 import { Icon } from "../components/Icon";
 import { WidgetLine } from "../components/WidgetLine";
@@ -10,6 +10,7 @@ import { useState as useS } from "react";
 import type { WidgetResponse } from "../../shared/types";
 
 const dotClass = (s: LightState | undefined) => "dot " + (s ?? "unknown");
+const gemClass = (s: LightState | undefined) => "dot " + (s ?? "unknown");
 
 function countItems(entries: EntryView[], statuses: Map<string, StatusEntry>): { up: number; total: number } {
   let up = 0, total = 0;
@@ -71,11 +72,116 @@ function Group({ g, actions, statuses, filter, nested }: { g: GroupView; actions
   );
   if (nested) return body;
   return (
-    <section className="grp" aria-label={g.name}>
-      <header><h2 className="tape">{g.name}</h2>{c.total > 0 && <span className="count">{c.up}/{c.total} up</span>}</header>
+    <section className="panel hp grp" aria-label={g.name}>
+      <header><h3>{g.name}</h3>{c.total > 0 && <span className="count">{c.up}/{c.total} up</span>}</header>
       {body}
     </section>
   );
+}
+
+
+// ---- by machine ----
+const flatItems = (entries: EntryView[]): ItemView[] => entries.flatMap((e) => (e.kind === "group" ? flatItems(e.entries) : [e]));
+const hit = (i: ItemView, filter: string) => !filter || `${i.name} ${i.href ?? ""} ${i.description ?? ""}`.toLowerCase().includes(filter);
+const STATE_TEXT: Record<LightState, string> = { up: "Online", down: "Offline", degraded: "Partly up", unknown: "No checks" };
+
+/** One state for a set of status ids: all up is up, all down is down, a mix is degraded, nothing known is unknown. */
+function combine(ids: (string | null | undefined)[], statuses: Map<string, StatusEntry>): LightState {
+  const s = ids.flatMap((id) => { const v = id ? statuses.get(id)?.state : undefined; return v ? [v] : []; });
+  if (s.length === 0) return "unknown";
+  if (s.every((x) => x === "up")) return "up";
+  return s.every((x) => x === "down") ? "down" : "degraded";
+}
+
+/** Boxes and panels show their own power state when an action has a check, else what their services say. */
+function machineState(m: MachineView, svc: ItemView[], actions: Map<string, ActionView>, statuses: Map<string, StatusEntry>): LightState {
+  const own = combine([...m.power, ...(m.toggle ? [m.toggle] : [])].map((id) => actions.get(id)?.statusId), statuses);
+  return own !== "unknown" ? own : combine(svc.map((i) => i.statusId), statuses);
+}
+
+function PowerButton({ a, statuses, toggle }: { a: ActionView; statuses: Map<string, StatusEntry>; toggle?: boolean }) {
+  const run = useRunAction();
+  const st = a.statusId ? statuses.get(a.statusId)?.state : undefined;
+  const label = toggle && st === "up" ? "Stop" : toggle && st === "down" ? "Start" : a.label;
+  const danger = a.type === "proxmox-node" && (a.command === "shutdown" || a.command === "reboot");
+  return <button className={"btn" + (toggle ? " sm" : "") + (danger ? " danger" : "")} data-action={a.id} title={a.label} onClick={() => run(a.id)}>{!toggle && a.statusId && <span className={dotClass(st)} />}{label}</button>;
+}
+
+function ItemList({ items, actions, statuses }: { items: ItemView[]; actions: Map<string, ActionView>; statuses: Map<string, StatusEntry> }) {
+  return <ul className="items">{items.map((i) => <Tile key={i.id} item={i} actions={actions} statuses={statuses} />)}</ul>;
+}
+
+function Machines({ machines, groups, actions, statuses, filter }: { machines: MachineView[]; groups: GroupView[]; actions: Map<string, ActionView>; statuses: Map<string, StatusEntry>; filter: string }) {
+  const all = flatItems(groups.flatMap((g) => g.entries)).filter((i) => hit(i, filter));
+  const on = (id: string | null) => all.filter((i) => !i.action && (i.machine ?? null) === id);
+  const kids = (id: string) => machines.filter((m) => m.parent === id);
+  const tops = machines.filter((m) => m.parent === null);
+  const known = new Set(machines.map((m) => m.id));
+  const unplaced = all.filter((i) => !i.action && !(i.machine && known.has(i.machine)));
+  const loose = all.filter((i) => i.action && !(i.machine && known.has(i.machine)));
+  const act = (id: string) => actions.get(id);
+  const up = (items: ItemView[]) => items.filter((i) => i.statusId && statuses.get(i.statusId)?.state === "up").length;
+  const checked = (items: ItemView[]) => items.filter((i) => i.statusId).length;
+
+  const box = (m: MachineView) => {
+    const svc = on(m.id);
+    if (filter && svc.length === 0) return null;
+    const tg = m.toggle ? act(m.toggle) : undefined;
+    const st = machineState(m, svc, actions, statuses);
+    const tst = tg?.statusId ? statuses.get(tg.statusId)?.state : undefined;
+    const dim = tst === "down" && !svc.some((i) => i.statusId && statuses.get(i.statusId)?.state === "up");
+    return (
+      <div className={"mp-box" + (dim ? " off" : "")} key={m.id}>
+        <div className="mp-boxh"><h4 title={m.name}><span className={dotClass(st)} /><span className="sr">{STATE_TEXT[st]}</span><span className="nm">{m.name}</span></h4>{tg && <PowerButton a={tg} statuses={statuses} toggle />}</div>
+        {svc.length > 0 ? <ItemList items={svc} actions={actions} statuses={statuses} /> : <span className="state">no services listed</span>}
+      </div>
+    );
+  };
+
+  const panel = (m: MachineView, wide: boolean) => {
+    const svc = on(m.id), cs = kids(m.id).map((c) => ({ c, b: box(c) })).filter((x) => x.b);
+    if (filter && svc.length === 0 && cs.length === 0) return null;
+    const st = machineState(m, svc, actions, statuses);
+    const pw = m.power.flatMap((id) => { const a = act(id); return a ? [a] : []; });
+    const all2 = [...svc, ...cs.flatMap(({ c }) => on(c.id))];
+    return (
+      <section className={"panel hp mp" + (wide ? " wide" : "")} key={m.id} aria-label={m.name}>
+        <header><h3 title={m.name}>{m.name}</h3><span className={"state " + (st === "degraded" ? "warn" : st)}><span className={dotClass(st)} /> {STATE_TEXT[st]}{checked(all2) > 0 ? ` · ${up(all2)}/${checked(all2)} up` : ""}</span></header>
+        {pw.length > 0 && <div className="mp-power"><span className="eyebrow">Power</span>{pw.map((a) => <PowerButton key={a.id} a={a} statuses={statuses} />)}</div>}
+        {svc.length > 0 && <ItemList items={svc} actions={actions} statuses={statuses} />}
+        {wide && cs.length > 0 && <><div className="rule"><i />Containers · {cs.length}<i /></div><div className="mp-boxes">{cs.map((x) => x.b)}</div></>}
+        {!wide && svc.length === 0 && <span className="state">no services listed</span>}
+      </section>
+    );
+  };
+
+  const wide = tops.filter((m) => kids(m.id).length > 0).map((m) => panel(m, true)).filter(Boolean);
+  const side = tops.filter((m) => kids(m.id).length === 0).map((m) => panel(m, false)).filter(Boolean);
+  return (
+    <div className="mview">
+      {(wide.length > 0 || side.length > 0) && <div className={"mv" + (wide.length === 0 ? " solo" : "") + (side.length === 0 ? " nside" : "")}>
+        {side.length > 0 && <div className="mv-side">{side}</div>}
+        {wide.length > 0 && <div className="mv-main">{wide}</div>}
+      </div>}
+      {(unplaced.length > 0 || loose.length > 0) && (
+        <div className="mv-rest">
+          {unplaced.length > 0 && <section className="panel hp mp" aria-label="Unplaced"><header><h3>Unplaced</h3><span className="count">{unplaced.length}</span></header>
+            <p className="mp-hint">Add <span className="mono">on:</span> to a service, or an address to a machine, to place it.</p><ItemList items={unplaced} actions={actions} statuses={statuses} /></section>}
+          {loose.length > 0 && <section className="panel hp mp" aria-label="Other actions"><header><h3>Other actions</h3><span className="count">{loose.length}</span></header><ItemList items={loose} actions={actions} statuses={statuses} /></section>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const VIEW_KEY = "hub-dash-view";
+function readView(): "machine" | "group" { try { return localStorage.getItem(VIEW_KEY) === "group" ? "group" : "machine"; } catch { return "machine"; } }
+
+/** Ten-segment bar. Warn from 75 percent, bad from 90 percent. */
+function Seg({ pct }: { pct: number }) {
+  const n = Math.round(Math.max(0, Math.min(100, pct)) / 10);
+  const tone = pct >= 90 ? "bad" : pct >= 75 ? "warn" : "accent";
+  return <div className={"seg " + tone} aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < n ? "f" : ""} />)}</div>;
 }
 
 function Resources({ options }: { options: Record<string, string> }) {
@@ -94,10 +200,10 @@ function Resources({ options }: { options: Record<string, string> }) {
   return (
     <section className="widgets" aria-label="Host resources">
       {cells.map((c) => (
-        <div className="w" key={c.k}>
-          <div className="k">{c.k}</div>
-          <div className="v">{c.v}<small>{c.small}</small></div>
-          {c.pct != null && <div className="bar"><i style={{ width: `${Math.min(100, c.pct)}%` }} /></div>}
+        <div className="panel hp w" key={c.k}>
+          <div className="eyebrow k">{c.k}</div>
+          <div className="v"><span className="num">{c.v}</span><small>{c.small}</small></div>
+          {c.pct != null && <Seg pct={c.pct} />}
         </div>
       ))}
     </section>
@@ -108,16 +214,16 @@ function Resources({ options }: { options: Record<string, string> }) {
 function PortfolioCard({ docsUrl, portfolioUrl }: { docsUrl: string | null; portfolioUrl: string | null }) {
   const editUrl = docsUrl ? `${docsUrl.replace(/\/+$/, "")}/#/portfolio` : null;
   return (
-    <div className="portfolio-card">
+    <section className="panel hp portfolio-card" aria-label="Portfolio">
       <div>
-        <h2>Portfolio</h2>
+        <h3>Portfolio</h3>
         <p>{editUrl ? "Edited in Docs and served from the Docs LXC." : <>Moved to Docs. Add <span className="mono">docs: {"{url: …}"}</span> in Config to get the link here.</>}</p>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {editUrl && <a className="btn solid" href={editUrl}>Edit in Docs</a>}
+        {editUrl && <a className="btn pri" href={editUrl}>Edit in Docs</a>}
         {portfolioUrl && <a className="btn" href={portfolioUrl} target="_blank" rel="noopener noreferrer">Open public site</a>}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -127,6 +233,10 @@ export function Dashboard({ view, statuses, live, refresh, gotoConfig }: {
 }) {
   const run = useRunAction();
   const [filter, setFilter] = useState("");
+  const [pick, setPick] = useState<"machine" | "group">(readView);
+  const machines = view.machines ?? [];
+  const mode = machines.length > 0 ? pick : "group";
+  const choose = (v: "machine" | "group") => { setPick(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* private mode */ } };
   const actions = useMemo(() => new Map(view.actions.map((a) => [a.id, a])), [view.actions]);
   const totals = countItems(view.groups.flatMap((g) => g.entries), statuses);
   const searchOpts = view.widgets.find((w) => w.type === "search")?.options;
@@ -142,10 +252,15 @@ export function Dashboard({ view, statuses, live, refresh, gotoConfig }: {
 
   return (
     <>
-      <h1>{view.title}</h1>
+      <div className="screen-title">
+        <div>
+          <div className="eyebrow">{totals.total > 0 ? `${new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} · ${totals.up} of ${totals.total} monitored services up` : "No status checks configured yet"}</div>
+          <h1 className="display">Settlement</h1>
+        </div>
+        {totals.total > 0 && <div className="power" aria-hidden="true"><div className="eyebrow">Services up</div><div className="num">{totals.up}</div></div>}
+      </div>
       <p className="sub">
-        {totals.total > 0 ? `${totals.up} of ${totals.total} monitored services up` : "No status checks configured yet"}
-        {" · "}<span title={live ? "Updates arrive live" : "Live updates are reconnecting"}>{live ? "live" : "reconnecting…"}</span>
+        {" "}<span title={live ? "Updates arrive live" : "Live updates are reconnecting"}>{live ? "live" : "reconnecting…"}</span>
         {" · "}<button className="linkbtn" onClick={refresh}>Recheck now</button>
       </p>
       {c.health !== "ok" && (
@@ -165,17 +280,25 @@ export function Dashboard({ view, statuses, live, refresh, gotoConfig }: {
             const a = actions.get(id);
             if (!a) return null;
             const st = a.statusId ? statuses.get(a.statusId)?.state : undefined;
-            return <button key={id} className="chip-act" onClick={() => run(id)}>{a.statusId && <span className={dotClass(st)} />}{a.label}</button>;
+            return <button key={id} className="btn" onClick={() => run(id)}>{a.statusId && <span className={gemClass(st)} />}{a.label}</button>;
           })}
         </div>
       )}
       <PortfolioCard docsUrl={view.docsUrl ?? null} portfolioUrl={view.portfolioUrl ?? null} />
-      <form className="search-row" onSubmit={webSearch} role="search">
-        <input type="search" value={filter} onChange={(e) => setFilter(e.target.value.toLowerCase())} placeholder={searchOpts ? "Filter services, or press Enter to search the web" : "Filter services"} aria-label="Filter services" />
-      </form>
-      <div className="groups">
-        {view.groups.map((g) => <Group key={g.id} g={g} actions={actions} statuses={statuses} filter={filter.trim()} />)}
+      <div className="dash-bar">
+        <form className="search-row" onSubmit={webSearch} role="search">
+          <input type="search" value={filter} onChange={(e) => setFilter(e.target.value.toLowerCase())} placeholder={searchOpts ? "Filter services, or press Enter to search the web" : "Filter services"} aria-label="Filter services" />
+        </form>
+        {machines.length > 0 && (
+          <div className="viewsw" role="group" aria-label="Dashboard view">
+            <button type="button" aria-pressed={mode === "machine"} onClick={() => choose("machine")}>By machine</button>
+            <button type="button" aria-pressed={mode === "group"} onClick={() => choose("group")}>By group</button>
+          </div>
+        )}
       </div>
+      {mode === "machine"
+        ? <Machines machines={machines} groups={view.groups} actions={actions} statuses={statuses} filter={filter.trim()} />
+        : <div className="groups">{view.groups.map((g) => <Group key={g.id} g={g} actions={actions} statuses={statuses} filter={filter.trim()} />)}</div>}
       {view.groups.length === 0 && <div className="none">No groups yet. Add some in Config.</div>}
     </>
   );

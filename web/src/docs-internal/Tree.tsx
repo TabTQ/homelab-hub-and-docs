@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildTree, dropPlacement, filterTree, stepPlacement, visibleOrder, type DropZone, type TreeItem, type TreeNode } from "./treeModel";
 import { go } from "./docsApi";
+import { badgesFor } from "./githubUi";
 
 export type TreeAction = "new" | "newChild" | "newWebapp" | "move" | "duplicate" | "rename" | "delete" | "copyLink" | "settings";
 
@@ -105,9 +106,13 @@ export function Tree({ items, currentId, onAction, onMove }: {
           <span className="tw" onClick={(e) => { if (n.children.length) { e.stopPropagation(); toggle(n.id); } }}
             aria-hidden="true">{n.children.length ? (isOpen ? "▾" : "▸") : ""}</span>
           <i className={`dx-dot${n.state === "public" ? " pub" : n.state === "public-changed" ? " draft" : ""}`}
-            title={n.state === "internal" ? "internal" : n.state === "public" ? `public: ${n.publicHost}` : `public with unpublished changes: ${n.publicHost}`} />
+            title={n.state === "internal" ? "internal" : `${n.state === "public" ? "public" : "public with unpublished changes"}: ${[n.publicHost, n.githubSlug ? `github/${n.githubSlug}` : ""].filter(Boolean).join(", ")}`} />
           <span className="t">{n.title}</span>
           {n.kind === "webapp" && <span className="kind">app</span>}
+          {(() => { const b = badgesFor(n); return (<>
+            {b.local && <span className="dx-badge l" title={`Local: ${n.publicHost}`}>Local</span>}
+            {b.github && <span className="dx-badge g" title={`GitHub Pages: ${n.githubSlug}`}>GitHub</span>}
+          </>); })()}
           <button className="dx-more" aria-label={`Actions for ${n.title}`} tabIndex={-1}
             onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setMenu({ item: n, x: r.left, y: r.bottom }); }}>⋯</button>
         </div>

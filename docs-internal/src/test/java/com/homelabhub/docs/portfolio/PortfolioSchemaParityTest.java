@@ -18,6 +18,27 @@ class PortfolioSchemaParityTest {
 
     @TempDir Path dir;
 
+    /**
+     * Display options added to docs.db in V3 after the hub's schema was frozen. The hub never gets them (the hub stops
+     * owning the portfolio), so parity means: identical to the hub apart from exactly these columns, which are checked
+     * on their own. Anything else that differs still fails the test.
+     */
+    private static final Map<String, List<List<Object>>> DOCS_ONLY = Map.of(
+            "skills", List.of(List.of("icon", "TEXT", 0, "null", 0), List.of("core", "INTEGER", 1, "0", 0)),
+            "skill_groups", List.of(List.of("constellation", "TEXT", 0, "null", 0)),
+            "projects", List.of(List.of("icon", "TEXT", 0, "null", 0)));
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> withoutDocsOnly(String table, Map<String, Object> shape) {
+        Map<String, Object> copy = new LinkedHashMap<>(shape);
+        List<List<Object>> cols = new ArrayList<>((List<List<Object>>) shape.get("columns"));
+        List<List<Object>> extra = DOCS_ONLY.getOrDefault(table, List.of());
+        assertThat(cols).as("docs-only columns of %s, at the end and as declared", table).containsAll(extra);
+        cols.removeAll(extra);
+        copy.put("columns", cols);
+        return copy;
+    }
+
     /** columns (name, type, notnull, default, pk), foreign keys and indexes of one table, in a comparable form */
     private static Map<String, Object> shape(JdbcClient j, String table) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -45,7 +66,7 @@ class PortfolioSchemaParityTest {
         try {
             assertThat(PortfolioImporter.tablesInInsertOrder()).hasSize(19);
             for (String t : PortfolioImporter.tablesInInsertOrder()) {
-                assertThat(shape(d, t)).as("table %s in docs.db", t).isEqualTo(shape(h, t));
+                assertThat(withoutDocsOnly(t, shape(d, t))).as("table %s in docs.db", t).isEqualTo(shape(h, t));
             }
         } finally {
             hub.destroy();

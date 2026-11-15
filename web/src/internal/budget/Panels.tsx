@@ -3,86 +3,11 @@ import { api } from "../../shared/api";
 import { useToast } from "../../shared/components/Toast";
 import { dateLabel, isDate, monthEnd, monthLabel, parseMonth, pdfName } from "./dates";
 import { formatRupees, paiseToInput, parseRupees } from "./money";
-import { BUDGET, type FieldErrors, type Person, type PersonRef, type Recurring, type StatementView, type Transfer } from "./types";
+import { BUDGET, type FieldErrors, type PersonRef, type Recurring, type StatementView, type Transfer } from "./types";
+import { filterLabel, filterQuery, isFiltered, NO_FILTER, type LedgerFilter } from "./filter";
 import { AmountInput, amountError, describeError, FieldError, PeopleChips, Sheet, SplitPreview } from "./ui";
 
 const nameOf = (people: PersonRef[], id: number) => people.find((p) => p.id === id)?.name ?? `#${id}`;
-
-// ---------------------------------------------------------------- People (mockup 5)
-
-export function PeoplePanel({ onClose, onUnauthorized }: { onClose: (changed: boolean) => void; onUnauthorized: () => void }) {
-  const [people, setPeople] = useState<Person[] | null>(null);
-  const [changed, setChanged] = useState(false);
-  const [editing, setEditing] = useState<number | null>(null);
-  const [rename, setRename] = useState("");
-  const [newName, setNewName] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<string | null>(null);
-
-  const load = () => api<Person[]>(`${BUDGET}/people`).then(setPeople).catch((e) => { const d = describeError(e); if (d.unauthorized) onUnauthorized(); else setMessage(d.message); });
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fail = (key: string, e: unknown) => {
-    const d = describeError(e);
-    if (d.unauthorized) { onUnauthorized(); return; }
-    setErrors({ [key]: d.fields.name ?? d.fields.archived ?? d.message ?? "Could not save." });
-  };
-  const update = async (p: Person, name: string, archived: boolean) => {
-    try {
-      await api(`${BUDGET}/people/${p.id}`, { method: "PUT", body: { name, archived, version: p.version } });
-      setErrors({}); setEditing(null); setChanged(true); load();
-    } catch (e) { fail(String(p.id), e); }
-  };
-  const add = async () => {
-    if (!newName.trim()) { setErrors({ add: "Enter a name." }); return; }
-    try {
-      await api(`${BUDGET}/people`, { method: "POST", body: { name: newName.trim() } });
-      setNewName(""); setErrors({}); setChanged(true); load();
-    } catch (e) { fail("add", e); }
-  };
-  const hint = (p: Person) => [p.recurringCount ? `${p.recurringCount} recurring` : "", p.expenseCount ? `${p.expenseCount} expense${p.expenseCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-
-  return (
-    <Sheet title="People" sub="Set up once; they appear in “Paid by” and “Split among”." onClose={() => onClose(changed)}
-      actions={<button className="btn pri" onClick={() => onClose(changed)}>Done</button>}>
-      {message && <div className="banner bad" role="alert">{message}</div>}
-      {!people ? <p className="bud-hint">Loading…</p> : (
-        <ul className="bud-list">
-          {people.length === 0 && <li className="bud-hint">Nobody yet. Add the people who share expenses.</li>}
-          {people.map((p) => (
-            <li key={p.id} className={p.archived ? "bud-muted" : undefined}>
-              {editing === p.id ? (
-                <div className="bud-inline">
-                  <label className="sr" htmlFor={`bud-rn-${p.id}`}>New name for {p.name}</label>
-                  <input id={`bud-rn-${p.id}`} type="text" maxLength={60} value={rename} autoFocus onChange={(e) => setRename(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") update(p, rename.trim(), p.archived); if (e.key === "Escape") { e.stopPropagation(); setEditing(null); } }} />
-                  <button className="btn pri sm" onClick={() => update(p, rename.trim(), p.archived)}>Save</button>
-                  <button className="btn sm" onClick={() => setEditing(null)}>Cancel</button>
-                </div>
-              ) : (
-                <div className="bud-person">
-                  <span className="bud-grow"><b>{p.name}</b>{p.archived && <span className="bud-pill grey">archived</span>}
-                    {hint(p) && <span className="bud-hint"> {hint(p)}</span>}</span>
-                  {!p.archived && <button className="btn sm" onClick={() => { setEditing(p.id); setRename(p.name); setErrors({}); }}>Rename</button>}
-                  <button className="btn sm" onClick={() => update(p, p.name, !p.archived)}>{p.archived ? "Restore" : "Archive"}</button>
-                </div>
-              )}
-              <FieldError text={errors[String(p.id)]} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="bud-inline" style={{ marginTop: 12 }}>
-        <label className="sr" htmlFor="bud-new-person">Add a person</label>
-        <input id="bud-new-person" type="text" placeholder="Add a person" maxLength={60} value={newName} onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-        <button className="btn pri" onClick={add}>Add</button>
-      </div>
-      <FieldError text={errors.add} />
-      <p className="bud-hint">Archive hides a person from new forms but keeps their history and any balance. Renaming changes the name everywhere.</p>
-    </Sheet>
-  );
-}
 
 // ---------------------------------------------------------------- Recurring (mockup 4)
 
@@ -324,8 +249,8 @@ export function SettleDialog({ transfer, people, today, month, onClose, onSaved,
 type Mode = "this" | "month" | "range";
 
 /** Fetches the PDF as a File (so it can be shared); errors carry the server's message. */
-async function fetchPdf(from: string, to: string): Promise<File> {
-  const res = await fetch(`${BUDGET}/export.pdf?from=${from}&to=${to}`, { credentials: "same-origin", headers: { Accept: "application/pdf, application/json" } });
+async function fetchPdf(from: string, to: string, filter: LedgerFilter): Promise<File> {
+  const res = await fetch(`${BUDGET}/export.pdf?from=${from}&to=${to}${filterQuery(filter)}`, { credentials: "same-origin", headers: { Accept: "application/pdf, application/json" } });
   if (!res.ok) {
     let msg = `Export failed (HTTP ${res.status}).`;
     try { const b = await res.json(); msg = Object.values(b.errors ?? {})[0] as string ?? b.message ?? msg; } catch { /* not JSON */ }
@@ -348,7 +273,9 @@ function download(file: File) {
   window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export function ExportDialog({ month, today, onClose, onUnauthorized }: { month: string; today: string; onClose: () => void; onUnauthorized: () => void }) {
+export function ExportDialog({ month, today, filter = NO_FILTER, people: known = [], onClose, onUnauthorized }: {
+  month: string; today: string; filter?: LedgerFilter; people?: PersonRef[]; onClose: () => void; onUnauthorized: () => void;
+}) {
   const toast = useToast();
   const [mode, setMode] = useState<Mode>("this");
   const [pick, setPick] = useState(month);
@@ -385,7 +312,7 @@ export function ExportDialog({ month, today, onClose, onUnauthorized }: { month:
   const get = async (): Promise<File | null> => {
     if (!range) return null;
     setBusy(true); setError(null);
-    try { return await fetchPdf(range[0], range[1]); }
+    try { return await fetchPdf(range[0], range[1], filter); }
     catch (e) { const err = e as Error & { status?: number }; if (err.status === 401) onUnauthorized(); else setError(err.message); return null; }
     finally { setBusy(false); }
   };
@@ -407,7 +334,7 @@ export function ExportDialog({ month, today, onClose, onUnauthorized }: { month:
   const s = preview?.statement;
   const line = (ts: Transfer[], verb: string) => ts.map((t) => `${nameOf(people, t.fromId)} ${verb} ${nameOf(people, t.toId)} ${formatRupees(t.paise)}`).join(" · ");
   return (
-    <Sheet title="Export PDF" onClose={onClose} actions={(
+    <Sheet title={isFiltered(filter) ? "Export this view" : "Export PDF"} onClose={onClose} actions={(
       <>
         <button className="btn" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={!range || busy} onClick={async () => { const f = await get(); if (f) download(f); }}>Download</button>
@@ -417,7 +344,7 @@ export function ExportDialog({ month, today, onClose, onUnauthorized }: { month:
       </>
     )}>
       <div className="field">
-        <div className="seg bud-seg" role="group" aria-label="What to export">
+        <div className="pillseg bud-seg" role="group" aria-label="What to export">
           <button type="button" aria-pressed={mode === "this"} onClick={() => setMode("this")}>This month</button>
           <button type="button" aria-pressed={mode === "month"} onClick={() => setMode("month")}>Choose month</button>
           <button type="button" aria-pressed={mode === "range"} onClick={() => setMode("range")}>Choose range</button>
@@ -436,6 +363,7 @@ export function ExportDialog({ month, today, onClose, onUnauthorized }: { month:
           <div className="bud-grow"><label htmlFor="bud-e-to">To</label><input id="bud-e-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         </div>
       )}
+      {isFiltered(filter) && <p className="bud-hint" data-testid="bud-export-filter">Only the filtered entries: {filterLabel(filter, known)}. The balances in the preview below are for everyone.</p>}
       <FieldError text={rangeError ?? error ?? undefined} />
       {range && (
         <div className="bud-preview" aria-live="polite" data-testid="bud-export-preview">

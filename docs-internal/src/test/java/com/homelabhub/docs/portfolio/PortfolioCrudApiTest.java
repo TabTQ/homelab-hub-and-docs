@@ -211,6 +211,66 @@ class PortfolioCrudApiTest {
         assertThat(p.get("skills").get(0).get("skills").get(0).get("n").asInt()).as("linked by 1 role, 1 device, 1 container, 1 service").isEqualTo(4);
     }
 
+
+    // ---------------------------------------------------------------- display options (icons, core skills, constellations)
+
+    @Test
+    void displayOptionsAreOmittedWhenUnsetAndAppearInTheEditorJsonAndTheSnapshotWhenSet() throws Exception {
+        long gid = group();
+        long plain = create("skills", m("groupId", gid, "label", "Plain")).get("id").asLong();
+        JsonNode proj = create("projects", m("slug", "p1", "kind", "small", "title", "P", "description", "D"));
+        JsonNode before = body(mvc.perform(get("/api/portfolio").with(user("admin"))).andExpect(status().isOk()));
+        assertThat(before.get("skills").get(0).has("constellation")).isFalse();
+        assertThat(before.get("skills").get(0).get("skills").get(0).fieldNames().next()).isEqualTo("id");
+        assertThat(before.get("skills").get(0).get("skills").get(0).toString()).doesNotContain("\"ic\"").doesNotContain("core");
+        assertThat(before.get("projects").get(0).has("icon")).isFalse();
+        assertThat(create("skills", m("groupId", gid, "label", "Off", "core", false)).get("core").asBoolean()).isFalse();
+
+        JsonNode g = body(send(put(BASE + "skill-groups/" + gid), m("category", "Languages", "icon", "Code", "constellation", " wolf ", "version", 0)).andExpect(status().isOk()));
+        assertThat(g.get("constellation").asText()).isEqualTo("wolf");
+        send(put(BASE + "skills/" + plain), m("groupId", gid, "label", "Plain", "icon", "terminal", "core", true, "version", 0)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.icon").value("terminal")).andExpect(jsonPath("$.core").value(true));
+        send(put(BASE + "projects/" + proj.get("id").asLong()), m("slug", "p1", "kind", "small", "title", "P", "description", "D", "icon", "rocket", "version", 0))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.icon").value("rocket"));
+
+        JsonNode p = body(mvc.perform(get("/api/portfolio").with(user("admin"))).andExpect(status().isOk()));
+        assertThat(p.get("skills").get(0).get("constellation").asText()).isEqualTo("wolf");
+        JsonNode sk = p.get("skills").get(0).get("skills").get(0);
+        assertThat(sk.get("ic").asText()).isEqualTo("terminal");
+        assertThat(sk.get("core").asBoolean()).isTrue();
+        assertThat(p.get("skills").get(0).get("skills").get(1).has("core")).isFalse();
+        assertThat(p.get("projects").get(0).get("icon").asText()).isEqualTo("rocket");
+
+        publisher.publish();
+        JsonNode snap = json.readTree(Files.readString(publisher.file())).get("data");
+        assertThat(snap.get("skills").get(0).get("constellation").asText()).isEqualTo("wolf");
+        assertThat(snap.get("skills").get(0).get("skills").get(0).get("ic").asText()).isEqualTo("terminal");
+        assertThat(snap.get("skills").get(0).get("skills").get(0).get("core").asBoolean()).isTrue();
+        assertThat(snap.get("projects").get(0).get("icon").asText()).isEqualTo("rocket");
+    }
+
+    @Test
+    void displayOptionKeysAreValidatedAndEmptyClearsThem() throws Exception {
+        long gid = group();
+        JsonNode proj = create("projects", m("slug", "p2", "kind", "small", "title", "P", "description", "D", "icon", "rocket"));
+        long pid = proj.get("id").asLong();
+        for (String bad : new String[] {"Has Caps", "with space", "a_b", "x".repeat(41), "../x", "ok\nno"}) {
+            send(post(BASE + "projects"), m("slug", "bad", "kind", "small", "title", "P", "description", "D", "icon", bad))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors.icon").exists());
+            send(post(BASE + "skills"), m("groupId", gid, "label", "S", "icon", bad)).andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors.icon").exists());
+            send(put(BASE + "skill-groups/" + gid), m("category", "L", "icon", "Code", "constellation", bad, "version", 0)).andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.errors.constellation").exists());
+        }
+        send(post(BASE + "skills"), m("groupId", gid, "label", "S", "core", "yes")).andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors.core").exists());
+        send(post(BASE + "skills"), m("groupId", gid, "label", "S2", "icon", "x".repeat(40))).andExpect(status().isCreated());
+        // an empty or missing value clears it
+        send(put(BASE + "projects/" + pid), m("slug", "p2", "kind", "small", "title", "P", "description", "D", "icon", "  ", "version", 0)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.icon").doesNotExist());
+        assertThat(jdbc.queryForObject("SELECT icon FROM projects WHERE id = ?", String.class, pid)).isNull();
+        JsonNode p = body(mvc.perform(get("/api/portfolio").with(user("admin"))).andExpect(status().isOk()));
+        assertThat(p.get("projects").get(0).has("icon")).isFalse();
+    }
+
     // ---------------------------------------------------------------- validation
 
     @Test

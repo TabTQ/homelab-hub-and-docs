@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { addAction, addService, listActions, listGroups, listServices, removeAction, removeService, slugId } from "./yamlEdit";
+import { addAction, addMachine, addService, formatYaml, listActions, listMachines, listGroups, listServices, removeAction, removeService, slugId } from "./yamlEdit";
 
 const BASE = `# My homelab
 version: 1
@@ -59,8 +59,8 @@ describe("addService", () => {
     const before = BASE.split("\n"), after = r.text.split("\n");
     expect(after.length).toBe(before.length + 1);
     const inserted = after.filter((l) => !before.includes(l) || l.includes("Z"));
-    expect(inserted).toEqual(["      - {name: Z}"]);
-    expect(after.filter((l) => l !== "      - {name: Z}")).toEqual(before);
+    expect(inserted).toEqual(['      - name: "Z"']);
+    expect(after.filter((l) => l !== '      - name: "Z"')).toEqual(before);
   });
   it("keeps a trailing comment on the last item and inserts after it", () => {
     const r = addService(BASE, { group: "Servers", name: "Z", href: "http://z" });
@@ -71,7 +71,7 @@ describe("addService", () => {
     const flat = "version: 1\ngroups:\n  - name: A\n    items: []   # none yet\n";
     const r = addService(flat, { group: "A", name: "B" });
     expect(r.reformatted).toBe(false);
-    expect(r.text).toContain("items:   # none yet\n      - {name: B}");
+    expect(r.text).toContain('items:   # none yet\n      - name: "B"');
     expect(parse(r.text).groups[0].items).toEqual([{ name: "B" }]);
   });
   it("preserves Windows line endings in what it inserts", () => {
@@ -256,5 +256,132 @@ describe("removeAction", () => {
   });
   it("refuses an unknown id", () => {
     expect(() => removeAction(FULL, "nope")).toThrow(/no action/);
+  });
+});
+
+
+describe("new entries use the standard format", () => {
+  it("writes block style with double-quoted strings next to flow neighbours", () => {
+    const r = addService(BASE, { group: "Servers", name: "Z", href: "http://z", status: { kind: "tcp", target: "z:1" } });
+    expect(r.text).not.toMatch(/\{name: Z/);
+    expect(r.text).toContain('      - name: "Z"\n        href: "http://z"\n        status:\n          tcp: "z:1"');
+  });
+  it("writes actions, buttons and pins as block entries", () => {
+    const r = addAction(BASE, { type: "wol", id: "w", label: "W", mac: "AA:BB:CC:DD:EE:FF", placeInGroup: "Servers", pin: true });
+    expect(r.text).toContain('  - id: "w"\n    label: "W"\n    type: "wol"\n    mac: "AA:BB:CC:DD:EE:FF"');
+    expect(r.text).toContain('      - name: "W"\n        action: "w"');
+    expect(r.text).toContain('  - "w"');
+    expect(r.text).not.toMatch(/\{id: w/);
+  });
+  it("writes on: only when a machine is chosen", () => {
+    expect(addService(BASE, { group: "Servers", name: "Z", machine: "pve" }).text).toContain('        on: "pve"');
+    expect(addService(BASE, { group: "Servers", name: "Z", machine: "" }).text).not.toMatch(/^\s+on:/m);
+  });
+});
+
+describe("machines", () => {
+  it("creates machines: above groups: and keeps the comment on top of groups", () => {
+    const t = "version: 1\ntitle: Lab\n\n# the groups\ngroups: []\n";
+    const r = addMachine(t, { id: "pve", name: "Proxmox host", addresses: ["192.0.2.2"], power: ["wake"] });
+    expect(r.reformatted).toBe(false);
+    expect(r.text).toBe('version: 1\ntitle: Lab\n\nmachines:\n  - id: "pve"\n    name: "Proxmox host"\n    addresses:\n      - "192.0.2.2"\n    power:\n      - "wake"\n\n# the groups\ngroups: []\n');
+  });
+  it("appends to an existing section, with in: and toggle:", () => {
+    const t = addMachine("version: 1\ngroups: []\n", { id: "pve", name: "Proxmox" }).text;
+    const u = addMachine(t, { id: "apps", name: "Apps", inside: "pve", addresses: ["10.0.0.5", " "], toggle: "t-apps" }).text;
+    expect(parse(u).machines).toEqual([{ id: "pve", name: "Proxmox" }, { id: "apps", name: "Apps", in: "pve", addresses: ["10.0.0.5"], toggle: "t-apps" }]);
+    expect(listMachines(u)).toEqual([{ id: "pve", name: "Proxmox", parent: null }, { id: "apps", name: "Apps", parent: "pve" }]);
+    expect(listMachines("a: [")).toEqual([]);
+  });
+  it("works when the file has no groups", () => {
+    expect(parse(addMachine("version: 1\n", { id: "a", name: "A" }).text).machines[0].id).toBe("a");
+  });
+});
+
+const MIXED = `# My homelab (invented values)
+version: 1
+title: Lab   # shown at the top
+docs: {url: http://docs.example.test}
+machines:
+  - {id: pi, name: Raspberry, addresses: [10.0.0.2]}
+  - id: pve
+    name: Proxmox
+    addresses:
+    - 10.0.0.3
+    power: [wake, off]
+  - id: apps
+    name: 'Apps'
+    in: pve
+    toggle: toggle-apps
+groups:
+  # the servers
+  - name: Servers
+    items:
+      - {name: Grafana, href: "http://10.0.0.2:3000/", status: {tcp: "10.0.0.2:3000"}}   # metrics
+      - name: Docs
+        href: http://10.0.0.2:3011
+        description: A long description that goes past the usual wrapping width of the editor so a folding writer would split it up
+        widget: {type: proxmox, url: "https://pve.example.test:8006", token: "\${secret:PVE_TOKEN}"}
+      - name: Nested
+        items:
+          - name: Deep one
+          - {name: Deep two, href: 'http://deep.example.test', on: apps}
+  - name: Power
+    items:
+      - {name: Wake box, action: wake}
+actions:
+  - {id: wake, label: Wake box, type: wol, mac: "AA:BB:CC:DD:EE:FF", status: {icmp: 10.0.0.3}}
+  - id: off
+    label: Shut down
+    type: proxmox-node
+    node: pve
+    command: shutdown
+  - {id: toggle-apps, label: Toggle apps, type: proxmox-guest, node: pve, kind: lxc, vmid: 100}
+terminals:
+  - {id: pi, label: Pi, host: 10.0.0.2, port: 22, user: admin, auth: key}
+dockerHosts: []
+pinned: [wake]
+empty: {}
+flags: {on: true, count: 3, ratio: 1.5, none: null, text: "007", yes: "yes"}
+`;
+
+describe("formatYaml", () => {
+  const out = formatYaml(MIXED);
+  it("keeps the data exactly", () => { expect(parse(out)).toEqual(parse(MIXED)); });
+  it("has no flow collections except empty ones", () => {
+    expect(out.replace(/"(?:[^"\\\n]|\\.)*"/g, '""').replace(/#.*$/gm, "")).not.toMatch(/[{\[][^}\]\n]/);
+    expect(out).toContain("dockerHosts: []");
+    expect(out).toContain("empty: {}");
+  });
+  it("double-quotes strings, keeps numbers and booleans plain, and keeps secret references", () => {
+    expect(out).toContain('name: "Raspberry"');
+    expect(out).toContain('token: "${secret:PVE_TOKEN}"');
+    expect(out).toContain("port: 22");
+    expect(out).toContain("count: 3");
+    expect(out).toContain("on: true");
+    expect(out).toContain('text: "007"');
+    expect(out).toContain("none: null");
+  });
+  it("indents list items under their key and does not fold long lines", () => {
+    expect(out).toContain('    addresses:\n      - "10.0.0.3"');
+    expect(out).toMatch(/description: "A long description[^\n]+split it up"\n/);
+  });
+  it("keeps comments", () => {
+    for (const c of ["# My homelab (invented values)", "# shown at the top", "# the servers", "# metrics"]) expect(out).toContain(c);
+  });
+  it("puts one blank line between top-level sections and between top-level groups", () => {
+    expect(out).toContain('\n\nmachines:\n');
+    expect(out).toContain('\n\ngroups:\n');
+    expect(out).toMatch(/\n\n  - name: "Power"/);
+    expect(out).not.toMatch(/\n\n\n/);
+  });
+  it("is stable when formatted twice", () => { expect(formatYaml(out)).toBe(out); });
+  it("refuses a file with syntax errors", () => {
+    expect(() => formatYaml("version: 1\ngroups: [\n")).toThrow(/syntax/);
+    expect(() => formatYaml("- a\n")).toThrow(/mapping/);
+  });
+  it("is what the writers produce, so a file they edited is already standard", () => {
+    const t = addService(addAction(out, { type: "wol", id: "w2", label: "W2", mac: "AA:BB:CC:DD:EE:00" }).text, { group: "Servers", name: "New", machine: "pve" }).text;
+    expect(formatYaml(t)).toBe(t);
   });
 });

@@ -27,13 +27,12 @@ function saveFontSize(v: number) {
   try { localStorage.setItem(FONT_KEY, String(v)); } catch { /* per-viewer convenience only */ }
 }
 
-/** xterm colours from the page's own tokens, so light and dark themes match the rest of the app. */
+/** The terminal surface stays plain black in both themes. Only the cursor and selection follow the app theme (data-theme="light" is Parchment, otherwise Stone). */
 function themeFromTokens() {
-  const css = getComputedStyle(document.documentElement);
-  const v = (n: string, d: string) => css.getPropertyValue(n).trim() || d;
+  const light = document.documentElement.getAttribute("data-theme") === "light";
   return {
-    background: v("--surface", "#f6f8f9"), foreground: v("--ink", "#13202b"), cursor: v("--accent", "#c2410c"),
-    cursorAccent: v("--surface", "#f6f8f9"), selectionBackground: v("--accent-soft", "#f6dccf"), selectionForeground: v("--ink", "#13202b"),
+    background: "#010405", foreground: "#d6e4e0", cursor: light ? "#7fe0cf" : "#40c1ac", cursorAccent: "#010405",
+    selectionBackground: light ? "#2c5d54" : "#1d4a43", selectionForeground: "#ffffff",
   };
 }
 
@@ -111,15 +110,13 @@ export default function TerminalPage({ onUnauthorized }: { onUnauthorized: () =>
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(resizeMessage(cols, rows));
     });
 
-    // Re-theme when the app theme (data-theme) or the system scheme changes.
+    // Re-theme when the app theme (data-theme) changes. The theme button also covers the "system" choice by setting data-theme.
     const retheme = () => { term.options.theme = themeFromTokens(); };
     const mo = new MutationObserver(retheme);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
-    mq?.addEventListener?.("change", retheme);
 
     return () => {
-      dataSub.dispose(); resizeSub.dispose(); mo.disconnect(); mq?.removeEventListener?.("change", retheme);
+      dataSub.dispose(); resizeSub.dispose(); mo.disconnect();
       const ws = wsRef.current;
       if (ws) { ws.onclose = null; ws.onmessage = null; ws.close(1000); }
       wsRef.current = null;
@@ -387,7 +384,7 @@ function RecentSessions({ rows }: { rows: AuditRow[] | null }) {
   if (!rows) return null;
   return (
     <div className="wrap">
-      <div className="card term-recent">
+      <div className="panel hp term-recent">
         <h3>Recent sessions</h3>
         {rows.length === 0 ? <p className="sub">None yet.</p> : (
           <div className="tablewrap">

@@ -18,9 +18,11 @@ web/node_modules/
 hub-internal/src/main/resources/static/
 hub-public/src/main/resources/static/
 docs-internal/src/main/resources/static/
+docs-internal/src/main/resources/static-export/
 docs-public/src/main/resources/static/
 __pycache__/
 *.pyc
 # Terminal page: SSH keys (the mock SSH tool writes throwaway ones; never commit a real one)
 *.key
 hub_terminal_ed25519*
+web/src/public/public/avatar.private.webp

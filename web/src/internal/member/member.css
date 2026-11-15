@@ -1,0 +1,15 @@
+/* Member mode: sign-in, forced password change, slim header. Tokens only. */
+.mem-login .eyebrow { margin-top: 4px; }
+.mem-login .login { margin-top: 10vh; }
+.mem-login .sub, .mem-login .mem-note { text-align: left; font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.mem-login .mem-ok { color: var(--ok); }
+.mem-login .linkbtn { font-size: 13px; }
+.mem-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mem-menu-wrap { position: relative; }
+.mem-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px; display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.mem-menu button { text-align: left; background: none; border: 0; padding: 10px 14px; font: inherit; color: var(--ink); cursor: pointer; }
+.mem-menu button:hover, .mem-menu button:focus-visible { background: var(--accent-soft); outline: none; }
+.mem-menu button:focus-visible { box-shadow: inset 2px 0 0 var(--accent); }
+.mem-pw label { display: block; margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
+.mem-pw input { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); font: 400 15px var(--f-body); }
+@media (max-width: 640px) { .mem-top .scope { display: none; } }

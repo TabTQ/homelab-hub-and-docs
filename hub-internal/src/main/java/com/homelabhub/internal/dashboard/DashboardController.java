@@ -43,8 +43,10 @@ class DashboardController {
         out.put("theme", c.themeMode());
         out.put("widgets", c.widgets().stream().map(w -> Map.of("type", w.type(), "options", w.options())).toList());
         out.put("pinned", c.pinned());
-        out.put("groups", c.groups().stream().map(this::group).toList());
+        Map<String, String> placed = MachinePlacement.place(c);
+        out.put("groups", c.groups().stream().map(g -> group(g, placed)).toList());
         out.put("actions", c.actions().stream().map(this::action).toList());
+        out.put("machines", c.machines().stream().map(this::machine).toList());
         out.put("config", configHealth(st));
         Map<String, Object> features = new LinkedHashMap<>();
         features.put("terminal", terminal.available());
@@ -69,20 +71,20 @@ class DashboardController {
         return m;
     }
 
-    private Map<String, Object> group(Group g) {
+    private Map<String, Object> group(Group g, Map<String, String> placed) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("kind", "group");
         m.put("id", g.id());
         m.put("name", g.name());
-        m.put("entries", entries(g.entries()));
+        m.put("entries", entries(g.entries(), placed));
         return m;
     }
 
-    private List<Object> entries(List<Entry> list) {
+    private List<Object> entries(List<Entry> list, Map<String, String> placed) {
         List<Object> out = new ArrayList<>();
         for (Entry e : list) {
             if (e instanceof Group g) {
-                out.add(group(g));
+                out.add(group(g, placed));
             } else if (e instanceof Item it) {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("kind", "item");
@@ -92,6 +94,7 @@ class DashboardController {
                 m.put("icon", it.icon());
                 m.put("description", it.description());
                 m.put("action", it.action());
+                m.put("machine", placed.get(it.id()));
                 m.put("widget", it.widget() == null ? null : it.widget().type());
                 m.put("statusId", status.tracks("item:" + it.id()) ? "item:" + it.id()
                         : (it.action() != null && status.tracks("action:" + it.action()) ? "action:" + it.action() : null));
@@ -99,6 +102,17 @@ class DashboardController {
             }
         }
         return out;
+    }
+
+    /** Addresses and match globs stay on the server; the browser only needs the tree and the power buttons. */
+    private Map<String, Object> machine(Machine mc) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", mc.id());
+        m.put("name", mc.name());
+        m.put("parent", mc.parent());
+        m.put("power", mc.power());
+        m.put("toggle", mc.toggle());
+        return m;
     }
 
     private Map<String, Object> action(ActionSpec a) {

@@ -6,7 +6,7 @@ terminal, a Docker manager, and a Confluence-style knowledge base whose pages (i
 to the internet one hostname at a time. Java 17 / Spring Boot, SQLite, React; it runs on a Raspberry Pi 4 and a small Proxmox LXC.
 
 > **Status.** This is a personal project built for one homelab (a Raspberry Pi 4 plus a Proxmox host) and published as a reference
-> and a starting point. It is tested (see [Build and test](#build-and-test)) but opinionated: expect to adapt `dashboard.yaml`,
+> and a starting point. It is tested (see [Design](#design) · [Build and test](#build-and-test)) but opinionated: expect to adapt `dashboard.yaml`,
 > the compose files and the host assumptions to your setup. Nothing in the repository contains real credentials; every secret
 > is read from `secrets.env`, environment variables or a `deploy/.env` you create (examples only are committed). Read the
 > [Security](#security) section and the "must do" hardening list before exposing anything.
@@ -107,6 +107,8 @@ serves nothing public. The **Docs LXC** runs `docs-internal` (the Docs editor an
 **Portfolio** (moved to the Docs LXC; the hub keeps a card with a link to the editor and to the public site)
 - One page: About, Experience, Projects, Education, Homelab, Contact, with a collapsible **skill filter panel** (match all/any, hide/dim, free-text search) that filters the whole page.
 - Edited in **Docs → Portfolio** (`#/portfolio`): create/update/delete with validation, skill linking, optimistic locking, and automatic publishing.
+- One portfolio dataset feeds every tab of the public site (Character, Skills, Quests, Inventory, World, Codex, Summary), so an edit is made once and shows up wherever it belongs.
+- Optional **display options**, all left on **Automatic** by default (empty means the site chooses, as before): a **skill icon**, a **core skill** tick (pins the skill to the Character screen), a skill **group constellation**, and a **project icon**. Icons and constellations are picked from a list in the editor. They are stored in `docs.db` (migration `V3__portfolio_display_options.sql`) and published as `ic`, `core`, `constellation` and `icon` in the snapshot, and left out when not set.
 - The public site is a **read-only snapshot**: `docs-internal` writes `snapshot.json`, the public container (`hub-public`, on the LXC) only reads it.
 
 **Docs** (a separate app on its own Proxmox LXC; the hub only links to it, see [Docs app](#docs-app))
@@ -118,6 +120,23 @@ serves nothing public. The **Docs LXC** runs `docs-internal` (the Docs editor an
 - **Webapp pages**: upload an `index.html` or a ZIP; it runs in a sandboxed iframe that cannot see Docs, its cookies or its API.
 - Pages are internal until they get a **public hostname** (`page1.domain.com`) and are published: a visitor on that hostname sees
   exactly that one page, read-only, never indexed. Everything else is a plain 404.
+
+## Design
+
+The four web apps share one look, inspired by Norse game menus: dark carved stone with a boreal turquoise accent (the
+default theme, "Stone"), a parchment-and-ink light theme ("Parchment"), a serif display face for titles and numerals, and
+a DIN-style sans for labels. Every graphic, including the crest, is original.
+
+- Tokens, fonts and shared components live in `web/src/shared/styles.css`, `web/src/shared/valhalla.css` and
+  `web/src/shared/fonts.ts` (self-hosted Cormorant Garamond, Barlow and IBM Plex Mono, latin subsets).
+- The **public portfolio** is a tabbed app: Character, Skills (a constellation of skill groups), Quests (experience),
+  Inventory (projects), World (homelab), Codex (education and contact) and Summary (everything on one page with the skill
+  filter). Q and E switch tabs, and the **? Guide** button runs a 10 second navigation tour.
+- The **hub on the Raspberry Pi** uses CSS only for the look: no canvas, no images, no extra JavaScript.
+- **Avatar.** The character screen shows `/avatar.webp`. The repository ships a neutral placeholder
+  (`web/src/public/public/avatar.webp`). To use your own portrait without committing it, put it at
+  `web/src/public/public/avatar.private.webp` (git-ignored) before building; the public build serves it in place of the
+  placeholder. A cut-out portrait with a transparent background, about 1100 px square, works best.
 
 ## Architecture
 
@@ -353,6 +372,48 @@ actions:
 - Widget types: `resources`, `search`, `proxmox`, `proxmoxbackupserver`, `filebrowser`, `qbittorrent`.
 - Action types: `wol`, `proxmox-node` (`shutdown` | `reboot`), `proxmox-guest` (`lxc` | `qemu`).
 - Unknown keys, bad URLs, duplicate action ids, actions referenced but missing, and plaintext credentials are reported with line numbers.
+- Optional `machines:` groups the dashboard by the host, VM or container each service runs on. The dashboard has a "By machine / By group"
+  switch; without `machines:` nothing changes. An item is placed on the first rule that fits:
+  1. its `on: "<machine id>"`;
+  2. the host of its `href` (else its status check target, else its widget url) equals a machine's `addresses` (compared without regard to case)
+     or matches one of its `match` globs (only `*` is special). Addresses are tried on all machines before any glob; machines are tried in file order;
+  3. otherwise it is shown as unplaced.
+
+  An action tile is placed on the machine that lists its action in `power` or `toggle`. `in:` nests a machine inside one other machine (one
+  level only). `power` lists action ids shown in the machine's header; `toggle` is one action id used as its Start/Stop button. Duplicate or
+  malformed ids, an unknown `in`, `on`, `power` or `toggle`, are errors; the same address on two machines is a warning.
+
+```yaml
+machines:
+  - id: "pi"
+    name: "Raspberry Pi"
+    addresses:
+      - "192.0.2.10"
+  - id: "pve"
+    name: "Proxmox host"
+    addresses:
+      - "192.0.2.20"
+    power:
+      - "wol-pve"
+      - "shutdown-pve"
+  - id: "apps"
+    name: "Apps"
+    in: "pve"
+    addresses:
+      - "192.0.2.30"
+    toggle: "toggle-apps"
+  - id: "tailnet"
+    name: "Tailnet"
+    match:
+      - "*.ts.net"
+groups:
+  - name: "Apps"
+    items:
+      - name: "Wiki"
+        href: "https://wiki.example.test/"
+        on: "apps"
+```
+
 - Optional `terminals:` for the Terminal page (see *Terminal setup*). Only hosts listed here can ever be connected to; the key is a
   file **name** inside `$HUB_DATA/hub/ssh/`, never a path, and `hostKey` pins the server's SSH host key:
 
@@ -699,6 +760,10 @@ starting `docs-internal` while both public sites keep answering; in the browser,
 `blobs/` folder (images, attachments, app files) is **not** in that copy: include `DOCS_DATA` in the Proxmox backup of the LXC.
 
 ## Known limitations and what is not verified
+
+- **After the redesign:** the browser end-to-end suites (`web/e2e/`) had their renamed headings and the theme test
+  updated but were not re-run, and the portfolio flows in `docs.e2e.mjs` still assume the single-page layout in places.
+  Run `scripts/e2e.sh` and fix what it reports before relying on them.
 
 - **Legacy routes are open by design** (no login), so anyone on your LAN can call `/toggle/...`. Cross-site requests from a browser are refused, and every call is audited and locked per target.
 - Over plain HTTP on the LAN the session cookie cannot be `Secure`. Serving the dashboard through Tailscale HTTPS (`tailscale serve`) and setting `HUB_SECURE_COOKIES=true` fixes that (see *Install on a phone*).

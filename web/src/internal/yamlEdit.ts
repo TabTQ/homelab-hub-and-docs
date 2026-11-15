@@ -3,11 +3,25 @@
 // New entries are INSERTED AS TEXT at the right place, so every other byte of the file (comments, spacing, quoting, flow
 // style) stays exactly as the user wrote it. Only when a layout is not understood do we fall back to re-serialising the
 // whole document, and then `reformatted` is true so the UI can say so. The server validates whatever is finally saved.
-import { Document, isMap, isScalar, isSeq, parseDocument, YAMLMap, YAMLSeq, type Node } from "yaml";
+//
+// One standard format everywhere (see formatYaml): block style, two-space indent, double-quoted strings. Every new entry is
+// written in it, whatever style its neighbours use.
+import { Document, isCollection, isMap, isScalar, isSeq, parseDocument, visit, YAMLMap, YAMLSeq, type Node } from "yaml";
 
 export interface NewService {
   group: string; name: string; href?: string; icon?: string; description?: string;
   status?: { kind: "tcp" | "http" | "icmp"; target: string };
+  /** machine id for `on:`; left out when the service is placed automatically by address */
+  machine?: string;
+}
+
+export interface NewMachine {
+  id: string; name: string;
+  /** id of a top-level machine this one lives in */
+  inside?: string;
+  addresses?: string[];
+  power?: string[];
+  toggle?: string;
 }
 
 export interface NewAction {
@@ -39,22 +53,59 @@ const lineEnd = (text: string, pos: number) => {
   return end > 0 && text[end - 1] === "\r" && i >= 0 ? end - 1 : end;
 };
 
-/** One scalar as YAML text: the library decides when quoting is needed ("No", "007", "a: b", ...). */
-function scalar(v: unknown): string {
-  return new Document(v).toString({ lineWidth: 0 }).replace(/\s+$/, "");
+/** Makes every string a double-quoted scalar and every non-empty collection block style. Keys stay plain. */
+function standardise(doc: Document): void {
+  visit(doc, {
+    Collection(_k, node) { if (node.items.length > 0) node.flow = false; node.spaceBefore = false; },
+    Pair(_k, pair) { if (isScalar(pair.key)) { pair.key.spaceBefore = false; if (typeof pair.key.value === "string") pair.key.type = "PLAIN"; } },
+    Scalar(key, node) {
+      if (key === "key") return;
+      node.spaceBefore = false;
+      if (typeof node.value === "string") node.type = "QUOTE_DOUBLE";
+    },
+  });
 }
 
-/** Flow style in the project's own spacing, {a: 1, b: {c: 2}}, built here so no text is ever rewritten by regex. */
-function flowText(v: unknown): string {
-  if (Array.isArray(v)) return "[" + v.map(flowText).join(", ") + "]";
-  if (v !== null && typeof v === "object") return "{" + Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined).map(([k, x]) => `${k}: ${flowText(x)}`).join(", ") + "}";
-  return scalar(v);
+const STD = { lineWidth: 0, indent: 2, indentSeq: true } as const;
+
+/** YAML for one new list entry (no leading dash) in the standard format. */
+function render(value: unknown): string {
+  const doc = new Document(value);
+  standardise(doc);
+  return doc.toString(STD).replace(/\s+$/, "");
 }
 
-/** YAML for one new list entry (no leading dash), as one flow line or an indented block. */
-function render(value: unknown, flow: boolean): string {
-  if (flow) return flowText(value);
-  return new Document(value).toString({ lineWidth: 0 }).replace(/\s+$/, "");
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a === "number" && typeof b === "number") return Number.isNaN(a) && Number.isNaN(b);
+  if (Array.isArray(a) || Array.isArray(b)) return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    const ka = Object.keys(a), kb = Object.keys(b);
+    return ka.length === kb.length && ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+  }
+  return false;
+}
+
+/**
+ * The standard format: block style only (an empty list or map stays [] or {}), two-space indent with list items under their
+ * key, every string double-quoted, keys plain, comments kept, one blank line between top-level sections and between
+ * top-level groups, no line folding. The result must parse to exactly the same data; if it does not, or the file has syntax
+ * errors, this throws and the caller keeps its text.
+ */
+export function formatYaml(text: string): string {
+  const doc = parseDocument(text);
+  if (doc.errors.length > 0) throw new Error("The file has YAML syntax errors, so it cannot be formatted. Fix them first.");
+  if (!isMap(doc.contents)) throw new Error("The top level of the file must be a mapping.");
+  const before = doc.toJS();
+  standardise(doc);
+  const root = doc.contents as YAMLMap;
+  root.items.forEach((pair, i) => { if (i > 0 && isScalar(pair.key)) pair.key.spaceBefore = true; });
+  const groups = root.get("groups", true);
+  if (isSeq(groups)) groups.items.forEach((g, i) => { if (i > 0 && isCollection(g)) g.spaceBefore = true; });
+  const out = doc.toString(STD);
+  const again = parseDocument(out);
+  if (again.errors.length > 0 || !deepEqual(before, again.toJS())) throw new Error("Formatting would change the data, so nothing was changed. Edit the file by hand instead.");
+  return out;
 }
 
 function child(map: YAMLMap, key: string): Node | null {
@@ -66,14 +117,14 @@ function child(map: YAMLMap, key: string): Node | null {
  * Appends `entry` to the list found at `path` (creating the key when it is missing or empty).
  * `path` is the list of keys/indexes from the document root to the sequence.
  */
-function appendToSeq(text: string, path: (string | number)[], entry: unknown, flowEntry: boolean): string {
+function appendToSeq(text: string, path: (string | number)[], entry: unknown, beforeKey?: string): string {
   const doc = parse(text);
   const eol = nl(text);
   const parent = path.length === 1 ? (doc.contents as YAMLMap) : (doc.getIn(path.slice(0, -1), true) as YAMLMap | undefined);
   if (!parent || !isMap(parent)) throw new Unsupported("parent is not a mapping");
   const key = String(path[path.length - 1]);
   const node = child(parent, key);
-  const body = render(entry, flowEntry).split("\n");
+  const body = render(entry).split("\n");
 
   // key missing: append a new block at the end of the parent map (only supported at the top level)
   if (node == null || (isScalar(node) && node.value === null)) {
@@ -86,9 +137,21 @@ function appendToSeq(text: string, path: (string | number)[], entry: unknown, fl
       const lines = body.map((l, i) => `${indent}  ${i === 0 ? "- " : "  "}${l}`);
       return text.slice(0, end) + eol + lines.join(eol) + text.slice(end);
     }
-    const sep = text.endsWith("\n") ? "" : eol;
     const lines = body.map((l, i) => `  ${i === 0 ? "- " : "  "}${l}`);
-    return text + sep + `${key}:` + eol + lines.join(eol) + eol;
+    const block = `${key}:` + eol + lines.join(eol) + eol;
+    const before = beforeKey ? parent.items.find((p) => isScalar(p.key) && p.key.value === beforeKey) : undefined;
+    if (before && isScalar(before.key) && before.key.range) {
+      // put the new section above `beforeKey`, and above the comment lines that sit right on top of it
+      let at = lineStart(text, before.key.range[0]);
+      while (at > 0) {
+        const prev = lineStart(text, at - 1);
+        if (!text.slice(prev, at).trimStart().startsWith("#")) break;
+        at = prev;
+      }
+      return text.slice(0, at) + block + eol + text.slice(at);
+    }
+    const sep = text.endsWith("\n") ? "" : eol;
+    return text + sep + (text.trim() ? eol : "") + block;
   }
 
   if (!isSeq(node)) throw new Unsupported("not a list");
@@ -136,7 +199,7 @@ function withFallback(text: string, edit: (t: string) => string, reserialise: (d
     if (!(e instanceof Unsupported)) throw e;
     const doc = parse(text);
     reserialise(doc);
-    return { text: doc.toString({ lineWidth: 0 }), reformatted: true };
+    return { text: formatYaml(doc.toString(STD)), reformatted: true };
   }
 }
 
@@ -156,6 +219,7 @@ export function addService(text: string, svc: NewService): Edited {
   if (svc.href?.trim()) item.href = svc.href.trim();
   if (svc.icon?.trim()) item.icon = svc.icon.trim();
   if (svc.description?.trim()) item.description = svc.description.trim();
+  if (svc.machine?.trim()) item.on = svc.machine.trim();
   const status = svc.status?.target.trim() ? { [svc.status.kind]: svc.status.target.trim() } : null;
   const group = svc.group.trim();
 
@@ -165,9 +229,9 @@ export function addService(text: string, svc: NewService): Edited {
     if (gi < 0) {
       // a new group, appended to the groups list
       const g = { name: group, items: [{ ...item, ...(status ? { status } : {}) }] };
-      return appendToSeq(t, ["groups"], g, false);
+      return appendToSeq(t, ["groups"], g);
     }
-    return appendToSeq(t, ["groups", gi, "items"], status ? { ...item, status } : item, !status && Object.keys(item).length <= 2);
+    return appendToSeq(t, ["groups", gi, "items"], status ? { ...item, status } : item);
   };
   return withFallback(text, edit, (doc) => {
     const root = doc.contents as YAMLMap;
@@ -180,7 +244,7 @@ export function addService(text: string, svc: NewService): Edited {
     if (!isSeq(items)) { items = doc.createNode([]) as YAMLSeq; g.set("items", items); }
     items.flow = false;
     const n = doc.createNode(item) as YAMLMap;
-    if (status) { const s = doc.createNode(status) as YAMLMap; s.flow = true; n.set("status", s); }
+    if (status) n.set("status", doc.createNode(status));
     items.add(n);
   });
 }
@@ -194,15 +258,15 @@ export function addAction(text: string, a: NewAction): Edited {
   const button = { name: a.label.trim(), action: a.id.trim() };
 
   const edit = (t: string): string => {
-    let out = appendToSeq(t, ["actions"], obj, true);
+    let out = appendToSeq(t, ["actions"], obj);
     if (a.placeInGroup?.trim()) {
       const doc = parse(out);
       const gi = findGroupIndex(doc, a.placeInGroup.trim());
       out = gi < 0
-        ? appendToSeq(out, ["groups"], { name: a.placeInGroup.trim(), items: [button] }, false)
-        : appendToSeq(out, ["groups", gi, "items"], button, true);
+        ? appendToSeq(out, ["groups"], { name: a.placeInGroup.trim(), items: [button] })
+        : appendToSeq(out, ["groups", gi, "items"], button);
     }
-    if (a.pin) out = appendToSeq(out, ["pinned"], a.id.trim(), true);
+    if (a.pin) out = appendToSeq(out, ["pinned"], a.id.trim());
     return out;
   };
   return withFallback(text, edit, (doc) => {
@@ -214,7 +278,6 @@ export function addAction(text: string, a: NewAction): Edited {
       return s;
     };
     const n = doc.createNode(obj) as YAMLMap;
-    n.flow = true;
     ensure("actions").add(n);
     if (a.placeInGroup?.trim()) {
       const name = a.placeInGroup.trim();
@@ -225,10 +288,45 @@ export function addAction(text: string, a: NewAction): Edited {
       if (!isSeq(items)) { items = doc.createNode([]) as YAMLSeq; g.set("items", items); }
       items.flow = false;
       const b = doc.createNode(button) as YAMLMap;
-      b.flow = true;
       items.add(b);
     }
     if (a.pin) ensure("pinned").add(doc.createNode(a.id.trim()));
+  });
+}
+
+export interface MachineRef { id: string; name: string; parent: string | null }
+
+/** The machines in file order. A broken file gives an empty list. */
+export function listMachines(text: string): MachineRef[] {
+  try {
+    const doc = parse(text);
+    const machines = child(doc.contents as YAMLMap, "machines");
+    if (!isSeq(machines)) return [];
+    return machines.items.flatMap((m) => {
+      if (!isMap(m) || typeof m.get("id") !== "string") return [];
+      const inside = m.get("in");
+      return [{ id: m.get("id") as string, name: asString(m.get("name")), parent: typeof inside === "string" && inside ? inside : null }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Adds a machine to `machines:`. The section is created above `groups:` when the file has none. */
+export function addMachine(text: string, m: NewMachine): Edited {
+  const obj: Record<string, unknown> = { id: m.id.trim(), name: m.name.trim() };
+  if (m.inside?.trim()) obj.in = m.inside.trim();
+  const addresses = (m.addresses ?? []).map((x) => x.trim()).filter(Boolean);
+  if (addresses.length) obj.addresses = addresses;
+  if (m.power?.length) obj.power = m.power;
+  if (m.toggle?.trim()) obj.toggle = m.toggle.trim();
+  const edit = (t: string): string => appendToSeq(t, ["machines"], obj, "groups");
+  return withFallback(text, edit, (doc) => {
+    const root = doc.contents as YAMLMap;
+    let s = child(root, "machines") as YAMLSeq | null;
+    if (!isSeq(s)) { s = doc.createNode([]) as YAMLSeq; root.set("machines", s); }
+    s.flow = false;
+    s.add(doc.createNode(obj));
   });
 }
 
@@ -356,7 +454,7 @@ function removeEntry(text: string, path: (string | number)[]): Edited {
       if (seqPath.length === 1 && (seqPath[0] === "pinned" || seqPath[0] === "actions")) doc.deleteIn(seqPath);
       else { const empty = doc.createNode([]) as YAMLSeq; empty.flow = true; doc.setIn(seqPath, empty); }
     }
-    return { text: doc.toString({ lineWidth: 0 }), reformatted: true };
+    return { text: formatYaml(doc.toString(STD)), reformatted: true };
   }
 }
 

@@ -56,6 +56,13 @@ public final class ConfigParser {
     /** Container names as Docker allows them. */
     static final Pattern CONTAINER_NAME = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}");
 
+    static final Pattern MACHINE_ID = Pattern.compile("[a-z0-9][a-z0-9-]{0,63}");
+    /** An IP address or host name, optionally in [brackets] for IPv6. */
+    static final Pattern HOST_OR_BRACKETED = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._:-]{0,252}|\\[[0-9A-Fa-f:.]{2,60}]");
+    /** A host name pattern where only * is special. */
+    static final Pattern GLOB = Pattern.compile("[A-Za-z0-9*][A-Za-z0-9.*_-]{0,252}");
+    private static final int MAX_MACHINES = 100;
+
     private static final int MAX_ITEMS = 500, MAX_TOP_GROUPS = 50, MAX_DEPTH = 4, MAX_ACTIONS = 200, MAX_PINNED = 12;
 
     private final SecretLookup secrets;
@@ -88,6 +95,8 @@ public final class ConfigParser {
         final Set<String> actionIds = new LinkedHashSet<>();
         /** item -> action references, checked once all actions are known: {path, line, id} */
         final List<Object[]> itemActionRefs = new ArrayList<>();
+        /** item -> machine references (on:), checked once all machines are known: {path, line, id} */
+        final List<Object[]> itemOnRefs = new ArrayList<>();
 
         Run(List<Issue> issues) {
             this.issues = issues;
@@ -242,7 +251,7 @@ public final class ConfigParser {
         // ---- document ---------------------------------------------------------------------------------------
 
         DashboardConfig readRoot(M root) {
-            known(root, "", "version", "title", "theme", "widgets", "pinned", "groups", "actions", "defaults", "terminals", "dockerHosts", "docs");
+            known(root, "", "version", "title", "theme", "widgets", "pinned", "groups", "actions", "defaults", "terminals", "dockerHosts", "docs", "machines");
             Integer version = integer(root, "version", "", 1, 1);
             if (version == null && !root.map().containsKey("version")) {
                 err("version", root.line(), "'version: 1' is required.");
@@ -290,13 +299,23 @@ public final class ConfigParser {
                     err((String) ref[0], (Integer) ref[1], "There is no action with the id '" + ref[2] + "'.");
                 }
             }
+            List<Machine> machines = readMachines(root);
+            for (Object[] ref : itemOnRefs) {
+                if (machines.stream().noneMatch(mc -> mc.id().equals(ref[2]))) {
+                    if (root.map().containsKey("machines")) {
+                        err((String) ref[0], (Integer) ref[1], "There is no machine with the id '" + ref[2] + "'.");
+                    } else {
+                        warn((String) ref[0], (Integer) ref[1], "'on' is ignored because there is no 'machines:' section.");
+                    }
+                }
+            }
             List<String> pinned = readPinned(root);
             List<TerminalSpec> terminals = readTerminals(root);
             List<DockerHostSpec> dockerHosts = readDockerHosts(root);
             String docsUrl = readDocsUrl(root);
             String portfolioUrl = readPortfolioUrl(root);
             return new DashboardConfig(title == null ? "Homelab" : title, theme, widgets, pinned, groups, actions, defaults, terminals,
-                    dockerHosts, docsUrl, portfolioUrl);
+                    dockerHosts, docsUrl, portfolioUrl, machines);
         }
 
         /** docs: {url}: where the top bar's Docs link goes (docs plan D-L2). Only a link: the hub never calls it. */
@@ -461,7 +480,7 @@ public final class ConfigParser {
                 }
                 return null;
             }
-            known(m, p, "name", "href", "icon", "description", "status", "widget", "action");
+            known(m, p, "name", "href", "icon", "description", "status", "widget", "action", "on");
             String name = str(m, "name", p, true, 80);
             String action = str(m, "action", p, false, 64);
             if (action != null) {
@@ -470,12 +489,16 @@ public final class ConfigParser {
                     warn(p + ".href", m.map().get("href").line(), "This item runs an action, so its 'href' is ignored.");
                 }
             }
+            String on = str(m, "on", p, false, 64);
+            if (on != null) {
+                itemOnRefs.add(new Object[] {p + ".on", m.map().get("on").line(), on});
+            }
             String href = url(m, "href", p, false, true);
             String icon = icon(m, p);
             String desc = str(m, "description", p, false, 200);
             StatusCheck status = m.map().containsKey("status") ? status(m.map().get("status"), p + ".status") : null;
             WidgetSpec widget = m.map().containsKey("widget") ? widget(m.map().get("widget"), p + ".widget") : null;
-            return name == null ? null : new Item(id, name, href, icon, desc, status, widget, action);
+            return name == null ? null : new Item(id, name, href, icon, desc, status, widget, action, on);
         }
 
         String icon(M m, String p) {
@@ -641,6 +664,137 @@ public final class ConfigParser {
                     scanPlaintextCredentials(l.items().get(i), path + "[" + i + "]");
                 }
             }
+        }
+
+        /** machines: placement groups for the dashboard. Order is file order; ids are checked for nesting after all are read. */
+        List<Machine> readMachines(M root) {
+            List<Machine> out = new ArrayList<>();
+            N n = root.map().get("machines");
+            if (n == null || (n instanceof S s0 && s0.isNull())) {
+                return out;
+            }
+            if (!(n instanceof L l)) {
+                err("machines", n.line(), "'machines' must be a list.");
+                return out;
+            }
+            if (l.items().size() > MAX_MACHINES) {
+                err("machines", l.line(), "At most " + MAX_MACHINES + " machines are allowed.");
+                return out;
+            }
+            Map<String, Integer> idLines = new LinkedHashMap<>();
+            Map<String, String> parents = new LinkedHashMap<>();
+            Map<String, Integer> parentLines = new LinkedHashMap<>();
+            Map<String, Integer> parentIndex = new LinkedHashMap<>();
+            List<Machine> read = new ArrayList<>();
+            Map<String, String> addressOwner = new LinkedHashMap<>();
+            for (int i = 0; i < l.items().size(); i++) {
+                String p = "machines[" + i + "]";
+                M m = map(l.items().get(i), p);
+                if (m == null) {
+                    continue;
+                }
+                known(m, p, "id", "name", "in", "addresses", "match", "power", "toggle");
+                String id = str(m, "id", p, true, 64);
+                if (id != null) {
+                    if (!MACHINE_ID.matcher(id).matches()) {
+                        err(p + ".id", m.map().get("id").line(), "'id' may only use lower-case letters, digits and -.");
+                        id = null;
+                    } else if (idLines.containsKey(id)) {
+                        err(p + ".id", m.map().get("id").line(), "Another machine already uses the id '" + id + "'.");
+                        id = null;
+                    } else {
+                        idLines.put(id, m.map().get("id").line());
+                    }
+                }
+                String name = str(m, "name", p, true, 80);
+                String in = str(m, "in", p, false, 64);
+                List<String> addresses = stringList(m, "addresses", p, HOST_OR_BRACKETED);
+                List<String> match = stringList(m, "match", p, GLOB);
+                List<String> power = stringList(m, "power", p, null);
+                String toggle = str(m, "toggle", p, false, 64);
+                int[] powerLines = new int[power.size()];
+                if (m.map().get("power") instanceof L pl) {
+                    int k = 0;
+                    for (N item : pl.items()) {
+                        if (item instanceof S s && !s.isNull() && s.raw().strip().length() > 0 && k < power.size()
+                                && power.get(k).equals(s.raw().strip())) {
+                            powerLines[k++] = item.line();
+                        }
+                    }
+                }
+                for (int k = 0; k < power.size(); k++) {
+                    if (!actionIds.contains(power.get(k))) {
+                        err(p + ".power[" + k + "]", powerLines[k] == 0 ? m.map().get("power").line() : powerLines[k],
+                                "There is no action with the id '" + power.get(k) + "'.");
+                    }
+                }
+                if (toggle != null && !actionIds.contains(toggle)) {
+                    err(p + ".toggle", m.map().get("toggle").line(), "There is no action with the id '" + toggle + "'.");
+                }
+                if (id != null && in != null) {
+                    parents.put(id, in);
+                    parentLines.put(id, m.map().get("in").line());
+                    parentIndex.put(id, i);
+                }
+                if (id != null && name != null) {
+                    for (String a : addresses) {
+                        String key = a.toLowerCase();
+                        String other = addressOwner.putIfAbsent(key, id);
+                        if (other != null && !other.equals(id)) {
+                            warn(p + ".addresses", m.keyLines().get("addresses"),
+                                    "The address '" + a + "' is also listed on machine '" + other + "'.");
+                        }
+                    }
+                    read.add(new Machine(id, name, in, addresses, match, power, toggle));
+                }
+            }
+            for (var e : parents.entrySet()) {
+                String id = e.getKey(), in = e.getValue();
+                String p = "machines[" + parentIndex.get(id) + "].in";
+                int line = parentLines.get(id);
+                if (in.equals(id)) {
+                    err(p, line, "A machine cannot be inside itself.");
+                } else if (!idLines.containsKey(in)) {
+                    err(p, line, "There is no machine with the id '" + in + "'.");
+                } else if (parents.containsKey(in)) {
+                    err(p, line, "'" + in + "' is itself inside another machine. Only one level of nesting is allowed.");
+                }
+            }
+            out.addAll(read);
+            return out;
+        }
+
+        /** An optional list of plain strings, each checked against {@code pattern} (when not null). Bad entries are reported and dropped. */
+        List<String> stringList(M m, String key, String path, Pattern pattern) {
+            List<String> out = new ArrayList<>();
+            N n = m.map().get(key);
+            if (n == null || (n instanceof S s0 && s0.isNull())) {
+                return out;
+            }
+            String p = YamlTree.join(path, key);
+            if (!(n instanceof L l)) {
+                err(p, n.line(), "'" + key + "' must be a list.");
+                return out;
+            }
+            if (l.items().size() > 50) {
+                err(p, l.line(), "At most 50 entries are allowed in '" + key + "'.");
+                return out;
+            }
+            for (int i = 0; i < l.items().size(); i++) {
+                N it = l.items().get(i);
+                String ip = p + "[" + i + "]";
+                if (!(it instanceof S s) || s.isNull()) {
+                    err(ip, it.line(), "Each entry in '" + key + "' must be text.");
+                    continue;
+                }
+                String v = s.raw().strip();
+                if (v.isEmpty() || v.length() > 253 || (pattern != null && !pattern.matcher(v).matches())) {
+                    err(ip, s.line(), "'" + v + "' is not a valid entry for '" + key + "'.");
+                    continue;
+                }
+                out.add(v);
+            }
+            return out;
         }
 
         List<ActionSpec> readActions(M root) {

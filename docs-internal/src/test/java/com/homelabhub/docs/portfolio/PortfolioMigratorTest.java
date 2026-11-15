@@ -50,9 +50,9 @@ class PortfolioMigratorTest {
     }
 
     /** every row of a table as text, ordered by all columns, to compare source and target exactly */
-    private static List<String> rows(Connection c, String t) throws Exception {
+    private static List<String> rows(Connection c, String t, String cols) throws Exception {
         List<String> out = new java.util.ArrayList<>();
-        try (var rs = c.createStatement().executeQuery("SELECT * FROM " + t + " ORDER BY 1, 2")) {
+        try (var rs = c.createStatement().executeQuery("SELECT " + cols + " FROM " + t + " ORDER BY 1, 2")) {
             int n = rs.getMetaData().getColumnCount();
             while (rs.next()) {
                 StringBuilder sb = new StringBuilder();
@@ -65,14 +65,28 @@ class PortfolioMigratorTest {
         return out;
     }
 
+    private static String columnsOf(Connection c, String t) throws Exception {
+        List<String> cols = new java.util.ArrayList<>();
+        try (var rs = c.createStatement().executeQuery("SELECT name FROM pragma_table_info('" + t + "') ORDER BY cid")) {
+            while (rs.next()) {
+                cols.add(rs.getString(1));
+            }
+        }
+        return String.join(", ", cols);
+    }
+
     @Test
     void copiesEveryTableAndColumnWithIdsAndVersionsKept() throws Exception {
         try (Connection target = docs(); Connection src = DriverManager.getConnection("jdbc:sqlite:" + hubDb)) {
             var report = PortfolioMigrator.migrate(hubDb, target, false, false);
             assertThat(report.copied()).isEqualTo(report.source());
             for (String t : PortfolioImporter.tablesInInsertOrder()) {
-                assertThat(rows(target, t)).as(t).isEqualTo(rows(src, t));
+                // docs.db has display-option columns the hub backup lacks: compare the shared columns, check the extras are at their defaults
+                assertThat(rows(target, t, columnsOf(src, t))).as(t).isEqualTo(rows(src, t, columnsOf(src, t)));
             }
+            assertThat(count(target, "skills")).isEqualTo(count(target, "skills WHERE core = 0 AND icon IS NULL"));
+            assertThat(count(target, "projects")).isEqualTo(count(target, "projects WHERE icon IS NULL"));
+            assertThat(count(target, "skill_groups")).isEqualTo(count(target, "skill_groups WHERE constellation IS NULL"));
             assertThat(count(target, "experiences")).isPositive();
             assertThat(count(target, "device_skills") + count(target, "container_skills") + count(target, "service_skills")).isPositive();
             try (var rs = target.createStatement().executeQuery("SELECT max(version) FROM skills")) {

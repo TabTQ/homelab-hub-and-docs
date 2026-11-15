@@ -1,0 +1,139 @@
+# Sanitised structural copy of a real converted config. All values are invented.
+version: 1
+title: "Example Lab"
+defaults:
+  status: none
+  interval: 30
+
+widgets:
+  - resources: {cpu: true, memory: true, cputemp: true, uptime: true, network: true, disk: /, units: metric}
+  - search: {provider: google, target: _blank}
+
+groups:
+  - name: "Hypervisor"
+    items:
+      - name: "Hypervisor (Tailnet)"
+        href: "https://hv.example-net.ts.net"
+        icon: "proxmox.svg"
+        widget: {type: "proxmox", url: "https://192.0.2.20:8006", node: "pve", tls: "insecure", username: "root@pam!example", password: "${secret:PVE_PASSWORD}"}
+      - name: "Backup Server"
+        href: "https://192.0.2.21:8007/"
+        icon: "proxmox.svg"
+        widget: {type: "proxmoxbackupserver", url: "https://192.0.2.21:8007", tls: "insecure", username: "root@pam!example", password: "${secret:PBS_PASSWORD}"}
+  - name: "Small Board"
+    items:
+      - name: "Graphs"
+        href: "http://192.0.2.10:3000/"
+        icon: "grafana.png"
+      - name: "Metrics"
+        href: "http://192.0.2.10:9090/targets/"
+        icon: "prometheus.svg"
+  - name: "Applications"
+    items:
+      - name: "Wiki"
+        href: "http://192.0.2.30:8080/"
+        icon: "xwiki.svg"
+      - name: "Notes"
+        href: https://notes.example-net.ts.net/
+        status:
+          icmp: 192.0.2.31
+      - name: "Hostname only"
+        href: "http://APPS.example.test:3001"
+        icon: "open-webui.svg"
+  - name: "Media"
+    items:
+      - name: "Files"
+        href: "http://192.0.2.40:8080/"
+        icon: "filebrowser.svg"
+        widget: {type: "filebrowser", url: "http://192.0.2.40:8080", username: "demo", password: "${secret:FILES_PASSWORD}"}
+      - {name: Loose, href: "http://192.0.2.99:3100"}
+  - name: "Power Management"
+    items:
+      - name: "Wake Hypervisor"
+        action: "wol-pve"
+        icon: "/images/power-system.png"
+      - name: "Shutdown Hypervisor"
+        action: "shutdown-pve"
+        icon: "/images/power-system.png"
+  - name: "Container Toggles"
+    items:
+      - name: "Toggle Apps"
+        action: "toggle-apps"
+        icon: "/images/power-system.png"
+      - {name: "Toggle Media", action: toggle-media}
+      - {name: "Toggle Spare", action: toggle-spare}
+
+actions:
+  - id: wol-pve
+    label: "Wake Hypervisor"
+    type: wol
+    mac: "02:00:00:00:00:01"
+    status: {icmp: "192.0.2.20"}
+  - id: shutdown-pve
+    label: "Shutdown Hypervisor"
+    type: proxmox-node
+    node: "pve"
+    command: "shutdown"
+  - id: toggle-apps
+    label: "Toggle Apps"
+    type: proxmox-guest
+    node: "pve"
+    kind: "lxc"
+    vmid: 100
+    status: {icmp: "192.0.2.30"}
+  - {id: toggle-media, label: Toggle Media, type: proxmox-guest, node: pve, kind: lxc, vmid: 210, status: {icmp: 192.0.2.40}}
+  - {id: toggle-spare, label: Toggle Spare, type: proxmox-guest, node: pve, kind: lxc, vmid: 211}
+
+terminals:
+  - id: pi
+    label: Small Board
+    host: 192.0.2.10
+    port: 22
+    user: hubshell
+    key: hub_terminal_ed25519
+    hostKey: "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+dockerHosts:
+  - id: pi
+    label: Small Board
+    host: 192.0.2.10
+    port: 22
+    user: hubshell
+    key: hub_terminal_ed25519
+    hostKey: "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    protect: [hub-internal, hub-public]
+
+docs:
+  url: https://docs.example-net.ts.net
+  portfolioUrl: https://portfolio.example.test
+
+machines:
+  - id: "pi"
+    name: "Small Board"
+    addresses:
+      - "192.0.2.10"
+  - id: "pve"
+    name: "Hypervisor"
+    addresses:
+      - "192.0.2.20"
+      - "192.0.2.21"
+    power:
+      - "wol-pve"
+      - "shutdown-pve"
+  - id: "apps"
+    name: "Apps"
+    in: "pve"
+    addresses:
+      - "192.0.2.30"
+      - "apps.example.test"
+    toggle: "toggle-apps"
+  - id: "media"
+    name: "Media"
+    in: "pve"
+    addresses:
+      - "192.0.2.40"
+    toggle: "toggle-media"
+  - id: "tailnet"
+    name: "Tailnet"
+    match:
+      - "*.ts.net"

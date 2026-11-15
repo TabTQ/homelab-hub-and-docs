@@ -52,6 +52,7 @@ public final class PortfolioResources {
                 Field.url("repoUrl", "repo_url", "Repository URL"),
                 Field.url("liveUrl", "live_url", "Live URL"),
                 Field.text("type", "type", "Type", false, true, 100),
+                Field.key("icon", "icon", "Icon", "Leave empty to choose automatically"),
                 Field.sortOrder()),
                 "sort_order, id", false, null, null, null, "project_skills", "project_id", "project", true,
                 List.of(new Usage("deliverables", "SELECT count(*) FROM project_deliverables WHERE project_id = ?"))));
@@ -88,12 +89,15 @@ public final class PortfolioResources {
         add(m, new ResourceSpec("skill-groups", "Skill groups", "skill_groups", List.of(
                 Field.text("category", "category", "Name", true, false, 100),
                 Field.text("icon", "icon", "Icon", false, false, 60),
+                Field.key("constellation", "constellation", "Constellation", "Leave empty to assign automatically"),
                 Field.sortOrder()),
                 "sort_order, id", false, null, null, null, null, null, null, false,
                 List.of(new Usage("skills", "SELECT count(*) FROM skills WHERE group_id = ?"))));
 
         add(m, new ResourceSpec("skills", "Skills", "skills", List.of(
                 Field.text("label", "label", "Label", true, false, 100),
+                Field.key("icon", "icon", "Icon", "Leave empty to choose automatically"),
+                Field.bool("core", "core", "Core skill", "Pin this skill to the character screen"),
                 Field.sortOrder()),
                 "sort_order, id", false, "groupId", "group_id", "skill-groups", null, null, null, false, List.of(
                         new Usage("roles", "SELECT count(*) FROM experience_skills WHERE skill_id = ?"),

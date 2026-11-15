@@ -50,26 +50,45 @@ export function PageView({ id, items, config, onChanged, fail, publish }: {
           <button className="btn sm pri" onClick={() => go(`#/p/${id}/publish`)}>Publish…</button>
         </div>
       </div>
-      <div className="dx-meta">
+      {page.kind === "webapp" && (
+        <div className="dx-meta">
         {page.state === "internal" ? <span className="dx-pill">internal</span> : <span className="dx-pill pub">public</span>}
         {page.publicHost && <a className="mono" href={page.state === "internal" ? undefined : `https://${page.publicHost}/`} target="_blank" rel="noreferrer">{page.publicHost}</a>}
         {page.publicHost && page.state === "internal" && <span>(reserved, not published)</span>}
+        {page.githubUrl && page.state !== "internal" && <a className="mono" href={page.githubUrl} target="_blank" rel="noreferrer">{page.githubUrl.replace("https://", "")}</a>}
         <span>· Draft saved {ago(page.updatedAt)}</span>
         {page.publishedAt && page.state !== "internal" && <span>· Published {when(page.publishedAt)}</span>}
       </div>
+      )}
       {page.state === "public-changed" && (
         <div className="dx-banner">The draft has {pending === null ? "changes" : <b>{pending} change{pending === 1 ? "" : "s"}</b>} that the public page does not show yet.{" "}
           <a href={`#/p/${id}/history`}>Compare</a> · <a href={`#/p/${id}/publish`}>Publish</a></div>
       )}
       {page.kind === "webapp" ? <WebappPage page={page} config={config} onChanged={changed} fail={fail} theme={theme} /> : (
-        <div className={toc.length > 1 ? "dx-withtoc" : undefined}>
-          <article className="doc"><DocRenderer doc={page.body as PMNode} ctx={ctx} /></article>
-          {toc.length > 1 && (
-            <nav className="dx-toc" aria-label="On this page"><div className="caption">On this page</div>
-              {toc.map((h) => <a key={h.id} href={`#/p/${id}`} style={{ paddingLeft: (h.level - 2) * 10 }}
-                onClick={(e) => { e.preventDefault(); document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth" }); }}>{h.text}</a>)}
-            </nav>
-          )}
+        <div className="dx-withtoc">
+          <article className="doc dx-paper"><DocRenderer doc={page.body as PMNode} ctx={ctx} /></article>
+          <aside className="dx-aside" aria-label="Page status">
+            <section className="dx-panel">
+              <header><h3>Published</h3>
+                <span className={`state ${page.state === "public" ? "up" : page.state === "public-changed" ? "warn" : ""}`}>
+                  <i className={`gem ${page.state === "public" ? "up" : page.state === "public-changed" ? "warn" : "unknown"}`} />
+                  {page.state === "internal" ? "Internal" : page.state === "public" ? "Live" : "Changed"}
+                </span>
+              </header>
+              <dl className="stats one">
+                <div><dt>Address</dt><dd className="mono">{page.publicHost ? (page.state === "internal" ? `${page.publicHost} (reserved)` : <a href={`https://${page.publicHost}/`} target="_blank" rel="noreferrer">{page.publicHost}</a>) : "none"}</dd></div>
+                {page.githubUrl && page.state !== "internal" && <div><dt>GitHub</dt><dd className="mono"><a href={page.githubUrl} target="_blank" rel="noreferrer">{page.githubUrl.replace("https://", "")}</a></dd></div>}
+                <div><dt>Draft saved</dt><dd>{ago(page.updatedAt)}</dd></div>
+                {page.publishedAt && page.state !== "internal" && <div><dt>Published</dt><dd>{when(page.publishedAt)}</dd></div>}
+              </dl>
+            </section>
+            {toc.length > 1 && (
+              <nav className="dx-panel dx-toc" aria-label="On this page"><header><h3 className="caption">On this page</h3></header>
+                {toc.map((h) => <a key={h.id} href={`#/p/${id}`} style={{ paddingLeft: 8 + (h.level - 2) * 10 }}
+                  onClick={(e) => { e.preventDefault(); document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth" }); }}>{h.text}</a>)}
+              </nav>
+            )}
+          </aside>
         </div>
       )}
       {publish && <PublishDialog page={page} items={items} config={config} onClose={() => go(`#/p/${id}`)} onChanged={changed} fail={fail} />}

@@ -6,8 +6,8 @@ import { BUDGET, type Expense, type FieldErrors, type PersonRef } from "./types"
 import { AmountInput, amountError, describeError, FieldError, PeopleChips, Sheet, SplitPreview } from "./ui";
 
 /** Add or edit one expense (mockup 3). Only the month is required; no day = stored as the 15th, shown "Sep (no day)". */
-export function ExpenseSheet({ month, people: initialPeople, expense, onClose, onSaved, onUnauthorized }: {
-  month: string; people: PersonRef[]; expense?: Expense; onClose: (peopleAdded: boolean) => void; onSaved: (message: string) => void; onUnauthorized: () => void;
+export function ExpenseSheet({ month, people: initialPeople, expense, member, onClose, onSaved, onUnauthorized }: {
+  month: string; people: PersonRef[]; expense?: Expense; member?: boolean; /* a member cannot add people */ onClose: (peopleAdded: boolean) => void; onSaved: (message: string) => void; onUnauthorized: () => void;
 }) {
   const [people, setPeople] = useState(initialPeople);
   const cancel = () => onClose(people.length !== initialPeople.length); // a person added inline should show on the page too
@@ -117,7 +117,7 @@ export function ExpenseSheet({ month, people: initialPeople, expense, onClose, o
         <div className="bud-row">
           <input id="bud-x-month" type="month" className="bud-grow" value={m} pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
             onChange={(e) => changeMonth(e.target.value)} aria-invalid={!!errors.month || undefined} />
-          <div className="seg" role="group" aria-label="Day or month only">
+          <div className="pillseg" role="group" aria-label="Day or month only">
             <button type="button" aria-pressed={dayMode === "none"} onClick={() => setDayMode("none")}>No day</button>
             <button type="button" aria-pressed={dayMode === "day"} onClick={() => setDayMode("day")}>Pick day</button>
           </div>
@@ -141,7 +141,7 @@ export function ExpenseSheet({ month, people: initialPeople, expense, onClose, o
         <FieldError text={errors.paidBy} />
       </div>
       <div className="field">
-        <PeopleChips id="bud-x-split" choices={people} selected={split} onChange={setSplit} error={errors.splitIds} onUnauthorized={onUnauthorized}
+        <PeopleChips id="bud-x-split" choices={people} selected={split} onChange={setSplit} error={errors.splitIds} onUnauthorized={onUnauthorized} noAdd={member}
           onPersonAdded={(p) => { setPeople([...people, p]); setSplit([...split, p.id]); if (paidBy === "") setPaidBy(p.id); }} />
         <SplitPreview amountText={amount} ids={split} people={people} />
       </div>

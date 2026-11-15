@@ -14,6 +14,8 @@ export interface Deliverable { key: string; title: string; tag: string; body: st
 export interface Project {
   id: string; dbId: number; kind: "flagship" | "small"; title: string; description: string; repo: string | null; live: string | null;
   type: string | null; skills: string[]; tags: string[]; t: string;
+  /** Icon key chosen in the editor (absent = picked automatically). */
+  icon?: string | null;
   case?: { client: string | null; role: string | null; duration: string | null; context: string | null; metrics: Metric[]; platform: string[] };
   deliverables?: Deliverable[];
 }
@@ -26,20 +28,30 @@ export interface Device {
   dbId: number; id: string; key: string; cat: string; name: string; ip: string | null; summary: string | null; url?: string | null; hw: HwRow[]; skills: string[]; t: string;
   containers: Container[]; services: Service[]; network: NetEntity[];
 }
-export interface SkillRef { id: number; l: string; n: number }
-export interface SkillGroup { id: number; name: string; icon: string; skills: SkillRef[] }
+/** A skill. `ic` is an icon key chosen in the editor (absent = picked automatically from the label). `core` pins it to the character screen. */
+export interface SkillRef { id: number; l: string; n: number; ic?: string | null; core?: boolean }
+/** A skill group. `constellation` is a constellation key chosen in the editor (absent = assigned automatically). */
+export interface SkillGroup { id: number; name: string; icon: string; constellation?: string | null; skills: SkillRef[] }
 export interface Portfolio {
   profile: Profile; experience: Experience[]; projects: Project[]; education: Education[]; homelab: Device[]; skills: SkillGroup[];
 }
 export interface SnapshotEnvelope { schemaVersion: number; generatedAt: string; data: Portfolio }
 
 // ---- dashboard ----
-export interface ItemView { kind: "item"; id: string; name: string; href: string | null; icon: string | null; description: string | null; action: string | null; widget: string | null; statusId: string | null }
+export interface ItemView {
+  kind: "item"; id: string; name: string; href: string | null; icon: string | null; description: string | null; action: string | null; widget: string | null; statusId: string | null;
+  /** Id of the machine this entry belongs to, resolved by the server (explicit `on:`, else by address). Null or absent = unplaced. */
+  machine?: string | null;
+}
+/** A machine from dashboard.yaml `machines:`. `parent` is the host a container or VM lives in (null = a top-level machine). */
+export interface MachineView { id: string; name: string; parent: string | null; power: string[]; toggle: string | null }
 export interface GroupView { kind: "group"; id: string; name: string; entries: EntryView[] }
 export type EntryView = ItemView | GroupView;
 export interface ActionView { id: string; label: string; confirm: string; statusId: string | null; type: "wol" | "proxmox-node" | "proxmox-guest"; mac?: string; node?: string; command?: string; kind?: string; vmid?: number; stopMode?: string }
 export interface DashboardView {
   title: string; theme: string; widgets: { type: string; options: Record<string, string> }[]; pinned: string[]; groups: GroupView[]; actions: ActionView[];
+  /** dashboard.yaml machines (older servers and configs without the section omit it or send an empty list). */
+  machines?: MachineView[];
   config: { health: string; errors: number; warnings: number; missingSecrets: string[]; loadedAt: string };
   /** Optional pages the server has switched on (older servers omit it). */
   features?: { terminal: boolean; docker?: boolean };

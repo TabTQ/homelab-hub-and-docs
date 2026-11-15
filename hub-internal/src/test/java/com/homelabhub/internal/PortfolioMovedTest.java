@@ -61,7 +61,7 @@ class PortfolioMovedTest {
     void hubMigrationsAreUnchangedSoNoNewSchemaVersion() throws IOException {
         try (Stream<Path> files = Files.list(Path.of("src/main/resources/db/migration"))) {
             assertThat(files.map(p -> p.getFileName().toString()).sorted().toList()).containsExactly("V1__initial_schema.sql",
-                    "V2__homelab_skills_and_versions.sql", "V3__terminal_audit.sql", "V4__budget.sql", "V5__docker.sql");
+                    "V2__homelab_skills_and_versions.sql", "V3__terminal_audit.sql", "V4__budget.sql", "V5__docker.sql", "V6__budget_accounts.sql");
         }
     }
 

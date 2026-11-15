@@ -139,14 +139,15 @@ describe("dashboard", () => {
   test("the theme switch changes the page and is remembered", async () => {
     const page = await newPage();
     await login(page);
-    await page.getByRole("button", { name: "Change theme" }).click(); // system -> light
-    await page.getByRole("button", { name: "Change theme" }).click(); // -> dark
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "dark");
-    const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    assert.match(bg, /rgb\(15, 23, 29\)/);
+    // Stone (dark) is the default and has no data-theme attribute; one click switches to Parchment (light).
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), undefined);
+    await page.getByRole("button", { name: "Change theme" }).click(); // stone -> parchment
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "light");
+    const bg = await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+    assert.match(bg, /rgb\(231, 225, 213\)/);
     await page.reload();
     await page.getByRole("heading", { level: 1 }).waitFor();
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "dark");
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "light");
     await page.close();
     expectNoProblems();
   });
@@ -260,7 +261,7 @@ describe("config editor", () => {
     const page = await newPage();
     await login(page);
     await page.goto(INT + "/#/config");
-    await page.getByRole("heading", { level: 1, name: "Config" }).waitFor();
+    await page.getByRole("heading", { level: 1, name: "Runestone" }).waitFor();
     await page.locator(".cm-content").waitFor();
     assert.match(await page.locator(".cm-content").innerText(), /title: E2E Lab/);
     assert.equal(await page.getByRole("button", { name: "Save…" }).isDisabled(), true, "nothing changed yet");
@@ -1079,7 +1080,7 @@ const DOCKER_ALLOW = ["HTTP 502", "status of 502", "profile.jpg", "HTTP 404: htt
 
 async function openDocker(page) {
   await page.goto(INT + "/#/docker");
-  await page.getByRole("heading", { level: 1, name: "Docker" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Longhouse" }).waitFor();
   await page.locator(".dk-row-c", { hasText: "jellyfin" }).first().waitFor();
 }
 const dockerRow = (page, name) => page.locator("section[aria-label='Mock Pi'] .dk-row-c").filter({ has: page.locator(".dk-name .mono", { hasText: new RegExp(`^${name}$`) }) });

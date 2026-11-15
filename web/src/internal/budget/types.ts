@@ -1,11 +1,19 @@
 // Shapes of /api/admin/budget (plan 5.4). Every amount is integer paise, every date an ISO string.
 
 export interface PersonRef { id: number; name: string; archived: boolean }
-export interface Person extends PersonRef { version: number; expenseCount: number; recurringCount: number }
+/** The login of a person (admin People panel). null = no login yet. */
+export interface Account { canAdd: boolean; disabled: boolean; mustChange: boolean; resetRequestedAt: string | null; lastLoginAt: string | null }
+export interface Person extends PersonRef { version: number; expenseCount: number; recurringCount: number; account?: Account | null }
+/** What the server returns once, when it creates or resets a login. */
+export interface OneTimePassword { password: string }
+/** Who is signed in as a member, as far as the Ledger page cares. */
+export interface MemberInfo { personId: number; canAdd: boolean }
 export interface Share { personId: number; paise: number }
 export interface Expense {
   id: number; name: string; amountPaise: number; paidBy: number; date: string; daySet: boolean;
   recurringId: number | null; recurringMonth: string | null; version: number; shares: Share[];
+  /** Person id of the member who added it; null or missing for the admin's entries. */
+  createdBy?: number | null;
 }
 export interface Recurring {
   id: number; name: string; amountPaise: number; paidBy: number; splitIds: number[]; startMonth: string;

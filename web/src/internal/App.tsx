@@ -1,12 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../shared/api";
 import { Palette, openPalette, usePaletteHotkey, type PaletteItem } from "../shared/components/Palette";
-import { applyTheme, loadTheme, nextTheme, type ThemeChoice } from "../shared/theme";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
+import { Crest } from "../shared/components/Crest";
 import { ActionRunner, useRunAction } from "./components/ActionRunner";
 import { useDashboard, useStatus } from "./hooks";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "../shared/components/Login";
 import type { EntryView } from "../shared/types";
+import { appMode, isMemberContext, wantsMemberHash, type MemberContext } from "./member/context";
 
 // The YAML editor (CodeMirror) is the heaviest part of the app and only one page needs it.
 const ConfigPage = lazy(() => import("./pages/ConfigPage"));
@@ -16,6 +18,8 @@ const BudgetPage = lazy(() => import("./pages/BudgetPage"));
 const TerminalPage = lazy(() => import("./pages/TerminalPage"));
 // The Docker page is fetched only when opened, and its stack editor (CodeMirror) only when a stack is edited.
 const DockerPage = lazy(() => import("./pages/DockerPage"));
+// Member mode (a person with a Ledger login) is its own chunk, so the admin never downloads it and a member never downloads the admin pages.
+const MemberApp = lazy(() => import("./member/MemberApp"));
 
 type Route = "dashboard" | "config" | "budget" | "terminal" | "docker";
 interface AuthStatus { authenticated: boolean; mode: "all" | "edit" | "none"; passwordConfigured: boolean }
@@ -33,7 +37,24 @@ function flatItems(entries: EntryView[]): { name: string; href: string | null; a
   return entries.flatMap((e) => (e.kind === "group" ? flatItems(e.entries) : [{ name: e.name, href: e.href, action: e.action }]));
 }
 
+/** Asks who is looking before anything else. An older server has no such endpoint: then the app is exactly as before. */
 export function App() {
+  const [ctx, setCtx] = useState<MemberContext | null | undefined>(undefined);
+  const [wantsMember, setWantsMember] = useState(wantsMemberHash);
+  const loadCtx = useCallback(() => {
+    api("/api/member/context").then((c) => setCtx(isMemberContext(c) ? c : null)).catch(() => setCtx(null));
+  }, []);
+  useEffect(loadCtx, [loadCtx]);
+  useEffect(() => { const h = () => setWantsMember(wantsMemberHash()); window.addEventListener("hashchange", h); return () => window.removeEventListener("hashchange", h); }, []);
+
+  if (ctx === undefined) return <div className="wrap"><p className="sub" style={{ marginTop: 40 }}>Loading…</p></div>;
+  if (ctx && appMode(ctx, wantsMember) === "member") {
+    return <Suspense fallback={<div className="wrap"><p className="sub" style={{ marginTop: 40 }}>Loading…</p></div>}><MemberApp ctx={ctx} reload={loadCtx} /></Suspense>;
+  }
+  return <AdminApp memberLink={!!ctx} />;
+}
+
+function AdminApp({ memberLink }: { memberLink: boolean }) {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
   const [forceLogin, setForceLogin] = useState(false);
   const [offline, setOffline] = useState<string | null>(null);
@@ -48,7 +69,12 @@ export function App() {
 
   const needsLogin = forceLogin || (auth.mode === "all" && !auth.authenticated);
   if (needsLogin) {
-    return <Login passwordConfigured={auth.passwordConfigured} onLoggedIn={() => { setForceLogin(false); loadAuth(); }} />;
+    return (
+      <>
+        <Login passwordConfigured={auth.passwordConfigured} onLoggedIn={() => { setForceLogin(false); loadAuth(); }} />
+        {memberLink && <p className="sub" style={{ textAlign: "center", marginTop: 14 }}><a href="#/member">Member sign-in</a></p>}
+      </>
+    );
   }
   const onUnauthorized = () => { setAuth({ ...auth, authenticated: false }); if (auth.mode !== "none") setForceLogin(true); };
   return <Shell auth={auth} onUnauthorized={onUnauthorized} onLogout={() => api("/api/auth/logout", { method: "POST" }).finally(() => { setForceLogin(false); loadAuth(); })} />;
@@ -69,7 +95,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
   const header = (
     <div className="wrap">
       <header className="top">
-        <div className="brand"><i aria-hidden="true" />Homelab Hub</div>
+        <div className="brand"><Crest className="crest" />Homelab Hub</div>
         <nav className="nav" aria-label="Main">
           {(["dashboard", "config", "budget", ...(dash.data?.features?.docker ? ["docker"] : []), ...(dash.data?.features?.terminal ? ["terminal"] : [])] as Route[]).map((r) => (
             <a key={r} href={r === "dashboard" ? "#/" : `#/${r}`} aria-current={route === r ? "page" : undefined}>{r === "dashboard" ? "Dashboard" : r === "config" ? "Config" : r === "budget" ? "Budget" : r === "docker" ? "Docker" : "Terminal"}</a>
@@ -78,7 +104,7 @@ function Shell({ auth, onUnauthorized, onLogout }: { auth: AuthStatus; onUnautho
         </nav>
         <span className="grow" />
         <span className="scope" title="This app is only reachable from your LAN and Tailscale"><b>●</b> Internal · LAN + Tailscale</span>
-        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {theme}</button>
+        <button className="btn" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
         {auth.mode !== "none" && auth.authenticated && <button className="btn" onClick={onLogout}>Sign out</button>}
         <button className="kbd-search" onClick={openPalette} aria-label="Search"><span>Search services and actions</span><kbd>Ctrl K</kbd></button>
       </header>

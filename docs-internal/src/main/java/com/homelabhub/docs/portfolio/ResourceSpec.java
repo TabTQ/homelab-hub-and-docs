@@ -12,7 +12,7 @@ public record ResourceSpec(
         String skillLinkTable, String skillLinkOwnerColumn, String tagsOwnerType,
         boolean hasUpdatedAt, List<Usage> usage) {
 
-    public enum Type { TEXT, LONGTEXT, INT, URL, SLUG, ENUM, TEXT_LIST, JSON_LIST, JSON_OBJECT }
+    public enum Type { TEXT, LONGTEXT, INT, URL, SLUG, ENUM, KEY, BOOL, TEXT_LIST, JSON_LIST, JSON_OBJECT }
 
     /**
      * @param api      name in the JSON API (camelCase)
@@ -38,6 +38,16 @@ public record ResourceSpec(
 
         public static Field choice(String api, String column, String label, boolean required, String... allowed) {
             return new Field(api, column, label, Type.ENUM, required, !required, 40, List.of(allowed), null);
+        }
+
+        /** An optional lower-case key (letters, digits, hyphens) chosen from a list the browser supplies, e.g. an icon. Empty clears it. */
+        public static Field key(String api, String column, String label, String help) {
+            return new Field(api, column, label, Type.KEY, false, true, 40, List.of(), help);
+        }
+
+        /** A yes/no option stored as 0 or 1. */
+        public static Field bool(String api, String column, String label, String help) {
+            return new Field(api, column, label, Type.BOOL, false, false, 1, List.of(), help);
         }
 
         public static Field sortOrder() {

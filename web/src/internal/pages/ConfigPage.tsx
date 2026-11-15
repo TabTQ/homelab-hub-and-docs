@@ -11,7 +11,7 @@ import type { ConfigIssue, ConfigState, ConfigVersion } from "../../shared/types
 import { useToast } from "../../shared/components/Toast";
 import { Modal } from "../components/Modal";
 import { diffLines, hasChanges, type DiffLine } from "../../shared/diff";
-import { addAction, addService, listActions, listGroups, listServices, removeAction, removeService, slugId, type Edited, type ActionRef, type ServiceRef } from "../yamlEdit";
+import { addAction, addMachine, addService, formatYaml, listActions, listGroups, listMachines, listServices, removeAction, removeService, slugId, type Edited, type ActionRef, type MachineRef, type ServiceRef } from "../yamlEdit";
 
 /** Kept for existing imports; the dialog lives in components/Modal so light pages need not load the editor. */
 export { Modal };
@@ -25,16 +25,16 @@ const highlight = HighlightStyle.define([
 ]);
 
 const theme = EditorView.theme({
-  "&": { backgroundColor: "var(--surface)", color: "var(--ink)" },
+  "&": { backgroundColor: "var(--ed-bg, var(--surface))", color: "var(--ed-ink, var(--ink))" },
   ".cm-content": { fontFamily: "var(--f-mono)", caretColor: "var(--accent)" },
-  ".cm-gutters": { backgroundColor: "var(--surface2)", color: "var(--muted)", border: "none" },
+  ".cm-gutters": { backgroundColor: "var(--ed-bg, var(--surface2))", color: "var(--muted)", borderRight: "1px solid var(--line)" },
   ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--accent-soft) 45%, transparent)" },
   ".cm-activeLineGutter": { backgroundColor: "var(--accent-soft)" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": { backgroundColor: "var(--accent-soft)" },
   ".cm-cursor": { borderLeftColor: "var(--accent)" },
 });
 
-type Dialog = null | { kind: "diff"; lines: DiffLine[] } | { kind: "conflict"; theirs: ConfigState } | { kind: "service" } | { kind: "action" } | { kind: "rmservice" } | { kind: "rmaction" } | { kind: "restore"; v: ConfigVersion };
+type Dialog = null | { kind: "diff"; lines: DiffLine[] } | { kind: "conflict"; theirs: ConfigState } | { kind: "service" } | { kind: "action" } | { kind: "machine" } | { kind: "rmservice" } | { kind: "rmaction" } | { kind: "restore"; v: ConfigVersion };
 
 export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized: () => void; onSaved: () => void }) {
   const toast = useToast();
@@ -166,12 +166,26 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
     toast(r.reformatted ? `${what} ${verb}. The file layout was unusual, so it was re-formatted. Check the diff before saving.` : `${what} ${verb}${verb === "added" ? " to the editor" : " in the editor"}. Review it, then Save.`);
   }
   const services = useMemo(() => listServices(text), [text]);
+  const machines = useMemo(() => listMachines(text), [text]);
+  // "standard" = already formatted, "can" = formatting would change the text, "error" = it cannot be formatted (syntax errors)
+  const fmt = useMemo((): { state: "standard" | "can" | "error"; message: string } => {
+    if (!text.trim()) return { state: "standard", message: "" };
+    try { return { state: formatYaml(text) === text ? "standard" : "can", message: "" }; } catch (e) { return { state: "error", message: (e as Error).message }; }
+  }, [text]);
+  function runFormat() {
+    try { setEditorText(formatYaml(text)); setError(null); toast("Formatted in the editor. Review the changes, then Save."); } catch (e) { setError((e as Error).message); }
+  }
   const actionRefs = useMemo(() => listActions(text), [text]);
 
   const health = server?.health ?? "ok";
   return (
     <>
-      <h1>Config</h1>
+      <div className="screen-title">
+        <div>
+          <div className="eyebrow">dashboard.yaml</div>
+          <h1 className="display">Runestone</h1>
+        </div>
+      </div>
       <p className="sub">This is <span className="mono">dashboard.yaml</span>. It is checked before it is saved, kept in a version history, and a mistake never takes the dashboard down: the last working version keeps being used.</p>
       {health !== "ok" && server && (
         <div className="banner bad" role="alert"><b>The file on disk has errors.</b> {health === "using_default" ? "The starter dashboard is being shown." : "The last working version is being shown."} Fix the marked lines below and save.</div>
@@ -183,12 +197,16 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
             <button className="btn pri" disabled={!dirty || busy || errors.length > 0} onClick={askSave} title={errors.length ? "Fix the errors first" : "Ctrl+S"}>Save…</button>
             <button className="btn" disabled={!dirty || busy} onClick={() => server && setEditorText(server.text)}>Discard changes</button>
             <span className="grow" />
+            <button className="btn" disabled={fmt.state !== "can"} onClick={runFormat} title={fmt.state === "error" ? "Fix the syntax errors first, then format the file." : "Rewrite the file in the standard format: block style, double-quoted strings. Nothing is saved until you review it."}>Format</button>
+            <button className="btn" onClick={() => setDialog({ kind: "machine" })}>Add machine</button>
             <button className="btn" onClick={() => setDialog({ kind: "service" })}>Add service</button>
             <button className="btn" onClick={() => setDialog({ kind: "action" })}>Add action</button>
             <button className="btn" disabled={services.length === 0} onClick={() => setDialog({ kind: "rmservice" })}>Remove service</button>
             <button className="btn" disabled={actionRefs.length === 0} onClick={() => setDialog({ kind: "rmaction" })}>Remove action</button>
             <span className="state" aria-live="polite">{dirty ? "unsaved changes" : "saved"}</span>
           </div>
+          {fmt.state === "error" && <p className="help" role="status" style={{ margin: "0 0 8px" }}>Format is off: the file has YAML syntax errors. Fix the marked lines first.</p>}
+          {fmt.state === "standard" && text.trim() !== "" && <p className="help" role="status" style={{ margin: "0 0 8px" }}>The file is already in the standard format.</p>}
           <div className="cm-host" ref={host} />
           <div className="eyebrow" style={{ marginTop: 14 }}>{errors.length} error{errors.length === 1 ? "" : "s"} · {warnings.length} warning{warnings.length === 1 ? "" : "s"}</div>
           <ul className="issues" aria-label="Problems">
@@ -198,9 +216,9 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
             {issues.length === 0 && <li style={{ color: "var(--muted)" }}>No problems found.</li>}
           </ul>
         </div>
-        <aside>
-          <h2 className="tape">Versions</h2>
-          <p className="sub" style={{ margin: "8px 0" }}>The last 50 saved versions. Restoring one is itself a saved change.</p>
+        <aside className="panel hp cfg-side">
+          <header><h3>History</h3><span className="count">{versions.length} version{versions.length === 1 ? "" : "s"}</span></header>
+          <p className="sub" style={{ margin: "0 0 8px" }}>The last 50 saved versions. Restoring one is itself a saved change.</p>
           <ul className="vlist">
             {versions.map((v, idx) => (
               <li key={v.id}>
@@ -234,7 +252,8 @@ export default function ConfigPage({ onUnauthorized, onSaved }: { onUnauthorized
           <p>Your unsaved edits in the editor will be replaced. The current file stays in the version history.</p>
         </Modal>
       )}
-      {dialog?.kind === "service" && <ServiceForm groups={groups} onCancel={() => setDialog(null)} onAdd={(svc) => { try { applyEdit(addService(text, svc), "Service"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
+      {dialog?.kind === "service" && <ServiceForm groups={groups} machines={machines} onCancel={() => setDialog(null)} onAdd={(svc) => { try { applyEdit(addService(text, svc), "Service"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
+      {dialog?.kind === "machine" && <MachineForm machines={machines} actions={actionRefs} onCancel={() => setDialog(null)} onAdd={(m) => { try { applyEdit(addMachine(text, m), "Machine"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
       {dialog?.kind === "rmservice" && <RemoveServiceForm services={services} onCancel={() => setDialog(null)} onRemove={(sv) => { try { applyEdit(removeService(text, sv.path), `“${sv.name}”`, "removed"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
       {dialog?.kind === "rmaction" && <RemoveActionForm actions={actionRefs} onCancel={() => setDialog(null)} onRemove={(a) => { try { const r = removeAction(text, a.id); applyEdit(r, `Action “${a.label || a.id}”`, "removed"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
       {dialog?.kind === "action" && <ActionForm groups={groups} onCancel={() => setDialog(null)} onAdd={(a) => { try { applyEdit(addAction(text, a), "Action"); } catch (e) { setError((e as Error).message); setDialog(null); } }} />}
@@ -258,20 +277,20 @@ export function DiffView({ lines }: { lines: DiffLine[] }) {
     skipped = false;
     rows.push(<div key={i} className={l.type === "add" ? "add" : l.type === "del" ? "del" : ""}>{l.type === "add" ? "+ " : l.type === "del" ? "− " : "  "}{l.text || " "}</div>);
   });
-  return <pre className="diff-pre" style={{ margin: 0, padding: 10, background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 4, font: "12px/1.5 var(--f-mono)", overflow: "auto", maxHeight: "50vh", whiteSpace: "pre-wrap" }}>
+  return <pre className="diff-pre" style={{ margin: 0, padding: 10, background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 0, font: "12px/1.5 var(--f-mono)", overflow: "auto", maxHeight: "50vh", whiteSpace: "pre-wrap" }}>
     {style()}{rows}
   </pre>;
 }
 const style = () => <style>{`.diff-pre .add{background:color-mix(in srgb,var(--ok) 22%,transparent)}.diff-pre .del{background:color-mix(in srgb,var(--bad) 22%,transparent)}`}</style>;
 
-function ServiceForm({ groups, onAdd, onCancel }: { groups: string[]; onAdd: (s: Parameters<typeof addService>[1]) => void; onCancel: () => void }) {
+function ServiceForm({ groups, machines, onAdd, onCancel }: { groups: string[]; machines: MachineRef[]; onAdd: (s: Parameters<typeof addService>[1]) => void; onCancel: () => void }) {
   const [group, setGroup] = useState(groups[0] ?? "");
   const [name, setName] = useState(""); const [href, setHref] = useState(""); const [icon, setIcon] = useState(""); const [desc, setDesc] = useState("");
-  const [kind, setKind] = useState<"" | "tcp" | "http" | "icmp">(""); const [target, setTarget] = useState("");
+  const [kind, setKind] = useState<"" | "tcp" | "http" | "icmp">(""); const [target, setTarget] = useState(""); const [machine, setMachine] = useState("");
   const ok = group.trim() !== "" && name.trim() !== "";
   return (
     <Modal title="Add a service" onClose={onCancel}
-      actions={<><button className="btn" onClick={onCancel}>Cancel</button><button className="btn pri" disabled={!ok} onClick={() => onAdd({ group, name, href, icon, description: desc, status: kind && target ? { kind, target } : undefined })}>Add to the editor</button></>}>
+      actions={<><button className="btn" onClick={onCancel}>Cancel</button><button className="btn pri" disabled={!ok} onClick={() => onAdd({ group, name, href, icon, description: desc, status: kind && target ? { kind, target } : undefined, machine: machine || undefined })}>Add to the editor</button></>}>
       <div className="field"><label htmlFor="sv-g">Group</label>
         <input id="sv-g" type="text" list="sv-groups" value={group} onChange={(e) => setGroup(e.target.value)} /><datalist id="sv-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
         <div className="help">Pick an existing group, or type a new name to create one.</div></div>
@@ -279,9 +298,43 @@ function ServiceForm({ groups, onAdd, onCancel }: { groups: string[]; onAdd: (s:
       <div className="field"><label htmlFor="sv-h">Link</label><input id="sv-h" type="text" value={href} placeholder="http://192.168.10.101:3000/" onChange={(e) => setHref(e.target.value)} /></div>
       <div className="field"><label htmlFor="sv-i">Icon</label><input id="sv-i" type="text" value={icon} placeholder="/images/logo.png or an https address (optional)" onChange={(e) => setIcon(e.target.value)} /></div>
       <div className="field"><label htmlFor="sv-d">Description</label><input id="sv-d" type="text" value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
+      <div className="field"><label htmlFor="sv-m">Machine</label>
+        <select id="sv-m" value={machine} onChange={(e) => setMachine(e.target.value)}><option value="">Automatic (by address)</option>{machines.map((m) => <option key={m.id} value={m.id}>{m.parent ? "  " : ""}{m.name || m.id}</option>)}</select>
+        <div className="help">Where it runs, for the “By machine” view. Automatic matches the link against the machine addresses.</div></div>
       <div className="field"><label htmlFor="sv-k">Status check</label>
         <select id="sv-k" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="">None</option><option value="tcp">TCP port (host:port)</option><option value="http">Web address (http://…)</option><option value="icmp">Ping (host)</option></select>
         {kind && <input aria-label="Status target" type="text" style={{ marginTop: 6 }} value={target} placeholder={kind === "tcp" ? "192.168.10.101:3000" : kind === "http" ? "http://192.168.10.101:3000/" : "192.168.10.101"} onChange={(e) => setTarget(e.target.value)} />}</div>
+    </Modal>
+  );
+}
+
+function MachineForm({ machines, actions, onAdd, onCancel }: { machines: MachineRef[]; actions: ActionRef[]; onAdd: (m: Parameters<typeof addMachine>[1]) => void; onCancel: () => void }) {
+  const [name, setName] = useState(""); const [id, setId] = useState(""); const [idTouched, setIdTouched] = useState(false);
+  const [inside, setInside] = useState(""); const [addr, setAddr] = useState(""); const [power, setPower] = useState<string[]>([]); const [toggle, setToggle] = useState("");
+  const finalId = idTouched ? id : name.trim() ? slugId(name) : "";
+  const idOk = /^[a-z0-9][a-z0-9-]*$/.test(finalId) && !machines.some((m) => m.id === finalId);
+  const ok = name.trim() !== "" && idOk;
+  const tops = machines.filter((m) => m.parent === null);
+  const flip = (a: string) => setPower((p) => (p.includes(a) ? p.filter((x) => x !== a) : [...p, a]));
+  return (
+    <Modal title="Add a machine" onClose={onCancel}
+      actions={<><button className="btn" onClick={onCancel}>Cancel</button><button className="btn pri" disabled={!ok}
+        onClick={() => onAdd({ id: finalId, name, inside: inside || undefined, addresses: addr.split(/[\s,]+/).filter(Boolean), power, toggle: toggle || undefined })}>Add to the editor</button></>}>
+      <div className="field"><label htmlFor="mc-n">Name <span className="req">*</span></label><input id="mc-n" type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus /></div>
+      <div className="field"><label htmlFor="mc-i">Id</label><input id="mc-i" type="text" value={finalId} aria-invalid={!idOk} onChange={(e) => { setId(e.target.value); setIdTouched(true); }} />
+        <div className="help">{idOk || !finalId ? "Lower-case letters, digits and hyphens. Services and the “inside” list refer to it." : "Use lower-case letters, digits and hyphens, and an id no other machine has."}</div></div>
+      <div className="field"><label htmlFor="mc-in">Inside (optional)</label>
+        <select id="mc-in" value={inside} onChange={(e) => setInside(e.target.value)}><option value="">Nothing: a top-level machine</option>{tops.map((m) => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}</select>
+        <div className="help">Pick the host when this is a container or VM.</div></div>
+      <div className="field"><label htmlFor="mc-a">Addresses (optional)</label><input id="mc-a" type="text" value={addr} placeholder="192.0.2.30, apps.lan" onChange={(e) => setAddr(e.target.value)} />
+        <div className="help">Services whose link points at one of these are placed here. Separate with commas or spaces.</div></div>
+      {actions.length > 0 && <>
+        <div className="field"><span className="lbl" id="mc-p">Power actions (optional)</span>
+          <div className="pick" role="group" aria-labelledby="mc-p">{actions.map((a) => <label key={a.id} className={power.includes(a.id) ? "on" : ""}><input type="checkbox" checked={power.includes(a.id)} onChange={() => flip(a.id)} /> {a.label || a.id} <span className="tagx">{a.type}</span></label>)}</div>
+          <div className="help">Shown as buttons in the machine header.</div></div>
+        <div className="field"><label htmlFor="mc-t">Start / Stop action (optional)</label>
+          <select id="mc-t" value={toggle} onChange={(e) => setToggle(e.target.value)}><option value="">None</option>{actions.map((a) => <option key={a.id} value={a.id}>{a.label || a.id}</option>)}</select></div>
+      </>}
     </Modal>
   );
 }

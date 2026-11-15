@@ -15,6 +15,8 @@ cp -r web/dist/internal/.      hub-internal/src/main/resources/static/
 cp -r web/dist/public/.        hub-public/src/main/resources/static/
 cp -r web/dist/docs-internal/. docs-internal/src/main/resources/static/
 cp -r web/dist/docs-public/.   docs-public/src/main/resources/static/
+# The two public bundles again, for the GitHub Pages copy (static-export/viewer and /portfolio, each with files.txt).
+node web/scripts/pack-static-export.mjs web/dist docs-internal/src/main/resources
 
 echo "==> java: package"
 if [ "${1:-}" = "--skip-tests" ]; then mvn -B -q -DskipTests package; else mvn -B -q verify; fi

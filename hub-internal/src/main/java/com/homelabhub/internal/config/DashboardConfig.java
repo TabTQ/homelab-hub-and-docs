@@ -17,7 +17,16 @@ public record DashboardConfig(
         /** docs.url: the Docs app on its own LXC (null = no Docs link). */
         String docsUrl,
         /** docs.portfolioUrl: the public portfolio's address, a plain link on the dashboard card (null = none). */
-        String portfolioUrl) {
+        String portfolioUrl,
+        /** machines: the hosts, VMs and containers that services run on, in file order (empty when not configured). */
+        List<Machine> machines) {
+
+    /**
+     * A machine services can be grouped under. {@code parent} is the id of the machine it runs inside (one level only) or
+     * null. {@code addresses} and {@code match} are used on the server to place items and are never sent to the browser.
+     */
+    public record Machine(String id, String name, String parent, List<String> addresses, List<String> match,
+                          List<String> power, String toggle) {}
 
     public record Defaults(boolean autoStatus, int intervalSeconds) {}
 
@@ -32,7 +41,9 @@ public record DashboardConfig(
     public record Group(String id, String name, List<Entry> entries) implements Entry {}
 
     public record Item(String id, String name, String href, String icon, String description,
-                       StatusCheck status, WidgetSpec widget, String action) implements Entry {}
+                       StatusCheck status, WidgetSpec widget, String action,
+                       /** on: the id of the machine this item runs on (null = decided by its address). */
+                       String on) implements Entry {}
 
     public record StatusCheck(Kind kind, String target, int expectFrom, int expectTo, boolean insecureTls) {
         public enum Kind { HTTP, TCP, ICMP }

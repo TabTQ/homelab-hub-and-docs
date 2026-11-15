@@ -140,6 +140,7 @@ public class PortfolioReader {
             m.put("repo", rs.getString("repo_url"));
             m.put("live", rs.getString("live_url"));
             m.put("type", rs.getString("type"));
+            putIfSet(m, "icon", rs.getString("icon"));
             List<String> sk = links.getOrDefault(id, List.of());
             m.put("skills", sk);
             m.put("tags", tags.getOrDefault(id, List.of()));
@@ -257,22 +258,27 @@ public class PortfolioReader {
             ((List<Map<String, Object>>) d.get("services")).forEach(s -> bump.accept(s.get("skills")));
         }
         Map<Long, Map<String, Object>> groups = new LinkedHashMap<>();
-        jdbc.sql("SELECT id, category, icon FROM skill_groups ORDER BY sort_order, id").query((rs, n) -> {
+        jdbc.sql("SELECT id, category, icon, constellation FROM skill_groups ORDER BY sort_order, id").query((rs, n) -> {
             Map<String, Object> g = new LinkedHashMap<>();
             g.put("id", rs.getLong("id"));
             g.put("name", rs.getString("category"));
             g.put("icon", rs.getString("icon"));
+            putIfSet(g, "constellation", rs.getString("constellation"));
             g.put("skills", new ArrayList<Map<String, Object>>());
             groups.put(rs.getLong("id"), g);
             return null;
         }).list();
-        jdbc.sql("SELECT id, group_id, label FROM skills ORDER BY sort_order, id").query((rs, n) -> {
+        jdbc.sql("SELECT id, group_id, label, icon, core FROM skills ORDER BY sort_order, id").query((rs, n) -> {
             Map<String, Object> g = groups.get(rs.getLong("group_id"));
             if (g != null) {
                 Map<String, Object> s = new LinkedHashMap<>();
                 s.put("id", rs.getLong("id"));
                 s.put("l", rs.getString("label"));
                 s.put("n", counts.getOrDefault(rs.getString("label"), 0));
+                putIfSet(s, "ic", rs.getString("icon"));
+                if (rs.getInt("core") != 0) {
+                    s.put("core", true);
+                }
                 ((List<Map<String, Object>>) g.get("skills")).add(s);
             }
             return null;
@@ -281,6 +287,13 @@ public class PortfolioReader {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** Optional display options are left out when unset, so the output is unchanged for data that never used them. */
+    private static void putIfSet(Map<String, Object> m, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            m.put(key, value);
+        }
+    }
 
     private Map<Long, List<String>> links(String sql, Map<Long, String> skillLabel) {
         Map<Long, List<String>> m = new HashMap<>();
