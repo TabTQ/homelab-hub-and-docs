@@ -1,13 +1,13 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { matches, isActive } from "../../filter";
 import { usePortfolio } from "../context";
-import { FilterBar, Rule, ScreenTitle, SkillChips } from "./parts";
+import { AddBtn, EditBtn, FilterBar, Rule, ScreenTitle, SkillChips } from "./parts";
 import "./screens.css";
 
 const isActiveRole = (duration: string) => /present\s*$/i.test(duration.trim());
 
 export function QuestsScreen() {
-  const { data, filter } = usePortfolio();
+  const { data, filter, edit } = usePortfolio();
   const [sel, setSel] = useState<string | null>(null);
   const active = isActive(filter);
   const roles = useMemo(() => {
@@ -48,6 +48,7 @@ export function QuestsScreen() {
                 );
               })}
             </ul>
+            <div className="ed-row"><AddBtn label="role" resource="experiences" /></div>
           </aside>
           {cur && (
             <article className="panel sc-detail" aria-live="polite">
@@ -58,17 +59,19 @@ export function QuestsScreen() {
                   <div className="sub sc-meta">{cur.company} · {cur.duration}{cur.location ? ` · ${cur.location}` : ""}</div>
                   {cur.client && <div className="sub sc-meta">Client: {cur.client}</div>}
                 </div>
+                <div className="ed-actions"><EditBtn label={`role: ${cur.role}`} resource="experiences" id={cur.dbId} text="Edit role" /></div>
               </header>
               <p className="sc-text">{cur.summary}</p>
-              {cur.highlights.length > 0 && (
+              {(cur.highlights.length > 0 || edit) && (
                 <>
                   <Rule>Objectives completed</Rule>
+                  <div className="ed-row"><EditBtn label={`highlights: ${cur.role}`} resource="experiences" id={cur.dbId} text="Edit highlights" /></div>
                   <div className="grid sc-perks">
                     {cur.highlights.map((h, i) => <div key={i} className="perk" style={{ "--tier": "var(--accent)" } as React.CSSProperties}><i /><span>{h}</span></div>)}
                   </div>
                 </>
               )}
-              {(cur.skills.length > 0 || cur.tags.length > 0) && (<><Rule>Skills used</Rule><SkillChips skills={cur.skills} tags={cur.tags} /></>)}
+              {(cur.skills.length > 0 || cur.tags.length > 0) && (<><Rule>Skills used</Rule><SkillChips skills={cur.skills} tags={cur.tags} icons /></>)}
             </article>
           )}
         </div>

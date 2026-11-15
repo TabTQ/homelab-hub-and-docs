@@ -42,6 +42,15 @@ export function fitBox(world: Size, box: Box, fill = 0.88, maxZoom = MAX_ZOOM): 
   return clampView({ x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - w / aspect / 2, w, h: w / aspect }, world, maxZoom);
 }
 
+/** Like fitBox, but the box is centred exactly, even near the sky's edge (the view may reach a little past the sky). */
+export function centreBox(world: Size, box: Box, fill = 0.88, maxZoom = MAX_ZOOM): View {
+  const aspect = world.w / world.h;
+  const raw = Math.max(box.w / fill, (box.h / fill) * aspect);
+  const w = clamp(raw, world.w / maxZoom, world.w);
+  const h = w / aspect;
+  return { x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - h / 2, w, h };
+}
+
 export function lerpView(a: View, b: View, t: number): View {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t };
 }

@@ -150,3 +150,51 @@ canvas.embers { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0
 
 /* The avatar ring and glow extend past their box; never let them widen the page. */
 .vh-main { overflow-x: clip; }
+
+/* ---- top bar at mid widths: brand and buttons on one row, tabs on a second row, so nothing runs off the side ---- */
+@media (min-width: 821px) and (max-width: 1340px) {
+  .pf .vh-top { grid-template-columns: minmax(0, 1fr) auto; row-gap: 10px; }
+  .pf .vh-tabs { grid-column: 1 / -1; grid-row: 2; justify-content: center; flex-wrap: wrap; row-gap: 0; }
+  .pf .vh-actions { grid-row: 1; grid-column: 2; }
+  .pf .vh-top::after { grid-row: 3; margin-top: 0; }
+}
+/* On small screens the tab row scrolls inside the bar. */
+@media (max-width: 820px) {
+  .pf .vh-tabs { overflow-x: auto; max-width: 100%; padding-bottom: 14px; margin-bottom: -12px; }
+}
+
+/* ---- edit mode ---- */
+.pf-ribbon { position: relative; z-index: 2; padding: 0 clamp(16px, 3vw, 48px); margin-top: 12px; }
+.pf-ribbon .ribbon { margin: 0 0 6px; }
+.edit-note { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface2) 80%, transparent); padding: 9px 14px; margin: 0 0 8px; font-size: 13.5px; }
+.edit-note > div { flex: 1 1 420px; min-width: 0; color: var(--muted); }
+.edit-note b { color: var(--ink); }
+.pf .ed-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; line-height: 1.2; flex: none; }
+.pf .ed-btn svg { flex: none; }
+.pf .ed-add { align-self: flex-start; }
+.pf .ed-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; align-items: center; }
+.pf .ed-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.ed-hint { margin: 6px 0 0; max-width: 28ch; font-size: 12px; line-height: 1.35; color: var(--muted); text-align: center; }
+.ed-hint a { color: var(--accent); }
+.pf .sc .ed-line { display: flex; gap: 4px; align-items: stretch; }
+.pf .sc .ed-line > button:not(.ed-btn), .pf .sc .ed-line > .row { flex: 1; width: auto; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; padding: 9px 12px; border: 1px solid transparent; background: color-mix(in srgb, var(--surface2) 55%, transparent); }
+.pf .sc .ed-line > button:not(.ed-btn):hover { border-color: var(--line); }
+.pf .sc .ed-line > .ed-btn { align-self: center; }
+.pf .pf-res .r { position: relative; }
+.pf .pf-res .r .r-ed { position: absolute; top: 6px; right: 6px; padding: 2px 6px; }
+.pf .slots .ed-hint { max-width: 112px; }
+.pf .skills .sk-panel .ed-row { margin-top: 12px; }
+.pf .skills .chip-wrap { display: inline-flex; align-items: stretch; gap: 2px; }
+.pf .skills .chip-wrap .ed-chip { padding: 1px 6px; }
+.pf .skills .card-foot .ed-row { margin: 0 0 4px; }
+.pf .sc-dh { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.pf .sc-dic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; transform: rotate(45deg); border: 1px solid var(--accent); color: var(--accent); }
+.pf .sc-dic svg { transform: rotate(-45deg); }
+.pf .sc-hic { vertical-align: -3px; margin-right: 8px; color: var(--accent); }
+.pf .sc-eic { display: inline-grid; place-items: center; width: 22px; flex: none; color: var(--accent); }
+.pf .chip-ic { flex: none; color: var(--accent); }
+.pf .emblem svg { display: block; }
+.pf .sc-raven .btn svg { flex: none; }
+.pf .sc-raven .btn { gap: 8px; }
+.fig-crest { position: absolute; inset: 0; display: grid; place-items: center; color: var(--accent); opacity: 0.55; }
+.fig-crest svg { width: 34%; height: auto; }

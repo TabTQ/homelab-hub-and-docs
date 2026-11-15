@@ -19,6 +19,12 @@ export function parseTab(hash: string): TabKey {
   return TABS.find((t) => t.key === m?.[1])?.key ?? DEFAULT_TAB;
 }
 
+/** Edit hooks. When the context carries them, every screen shows its edit and add buttons. */
+export interface PortfolioEditHooks {
+  onEdit: (resource: string, id?: number) => void;
+  onAdd: (resource: string, parent?: { api: string; id: number }) => void;
+}
+
 /** What every portfolio screen can read and change. The skill filter is shared by all tabs. */
 export interface PortfolioContextValue {
   data: Portfolio;
@@ -30,6 +36,8 @@ export interface PortfolioContextValue {
   clear: () => void;
   /** Switch to a tab (sets the hash). */
   go: (tab: TabKey) => void;
+  /** Present only in the editor. Screens show edit affordances when this is set. */
+  edit?: PortfolioEditHooks;
 }
 
 export const PortfolioContext = createContext<PortfolioContextValue | null>(null);

@@ -1,7 +1,9 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { reducedMotion } from "../Embers";
+import { Crest } from "../../components/Crest";
 import { usePortfolio } from "../context";
 import { VhIcon, resolveProjectIcon, resolveSkillIcon } from "../icons";
+import { EditBtn, EditHint } from "./parts";
 
 const AVATAR = `${import.meta.env.BASE_URL}avatar.webp`;
 
@@ -20,6 +22,8 @@ const pips = (n: number, max: number) => Math.max(1, Math.min(3, Math.ceil((n / 
 const Pips = ({ n }: { n: number }) => <span className="pips" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} />)}</span>;
 
 export function Avatar({ name }: { name: string }) {
+  // The editor does not ship the portrait, so it shows the crest in the same frame.
+  const editing = !!usePortfolio().edit;
   const el = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = el.current;
@@ -39,12 +43,14 @@ export function Avatar({ name }: { name: string }) {
       <div className="halo" aria-hidden="true">
         <svg viewBox="0 0 400 400" fill="none" stroke="currentColor"><circle cx="200" cy="200" r="190" strokeDasharray="1 9" strokeWidth="3" /><circle cx="200" cy="200" r="172" strokeWidth="0.8" /><circle cx="200" cy="200" r="128" strokeWidth="0.6" /><path d="M200 28 372 200 200 372 28 200Z" strokeWidth="0.6" /><path d="M78 78 322 322M322 78 78 322" strokeWidth="0.4" /></svg>
       </div>
-      <div className="fig" style={lit}>
-        <div className="body">
-          <img src={AVATAR} alt={`Portrait of ${name}`} width={900} height={900} />
-          <div className="lit shade" /><div className="lit rim" /><div className="lit fire" />
+      {editing ? <div className="fig-crest" aria-hidden="true"><Crest /></div> : (
+        <div className="fig" style={lit}>
+          <div className="body">
+            <img src={AVATAR} alt={`Portrait of ${name}`} width={900} height={900} />
+            <div className="lit shade" /><div className="lit rim" /><div className="lit fire" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -70,6 +76,7 @@ export function CharacterScreen() {
           <a className="btn" href="#/codex">Contact</a>
         </div>
         <a className="sumlink" href="#/summary">Short on time? Read the one-page summary <span aria-hidden="true">→</span></a>
+        <div className="ed-row"><EditBtn label="profile" resource="profile" id={1} text="Edit profile" /></div>
       </section>
 
       <section className="slots" aria-label="Core skills">
@@ -84,6 +91,7 @@ export function CharacterScreen() {
             </a>
           );
         })}
+        <EditHint>Shown automatically from the most linked skills. Tick Core skill on a skill to pin it. <a href="#/skills">Open Skills</a></EditHint>
       </section>
 
       <section className="center" aria-label="Avatar">
@@ -100,10 +108,12 @@ export function CharacterScreen() {
             <Pips n={i === 0 ? 3 : 2} />
           </a>
         ))}
+        <EditHint>The first four projects in order. <a href="#/inventory">Open Inventory</a></EditHint>
       </section>
 
       <section className="pf-res" aria-label="Key numbers">
-        {p.stats.map((s, i) => <div className="r" key={i}><b>{s.value}</b><div className="tx"><span>{s.label}</span>{s.sub && <small>{s.sub}</small>}</div></div>)}
+        {p.stats.map((s, i) => <div className="r" key={i}><b>{s.value}</b><div className="tx"><span>{s.label}</span>{s.sub && <small>{s.sub}</small>}</div><EditBtn label={`stat: ${s.label}`} resource="profile" id={1} className="r-ed" /></div>)}
+        <EditBtn label="stats" aria="Add stat" resource="profile" id={1} text="Add stat" />
       </section>
     </div>
   );

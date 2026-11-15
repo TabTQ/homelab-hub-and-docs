@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampView, clientToWorld, easeInOut, fitBox, fullView, lerpView, panBy, screenScale, wheelFactor, zoomAt, zoomOf, MAX_ZOOM } from "./viewport";
+import { centreBox, clampView, clientToWorld, easeInOut, fitBox, fullView, lerpView, panBy, screenScale, wheelFactor, zoomAt, zoomOf, MAX_ZOOM } from "./viewport";
 
 const W = { w: 1800, h: 968 };
 
@@ -76,5 +76,16 @@ describe("viewport maths", () => {
     expect(easeInOut(0.5)).toBe(0.5);
     const m = lerpView(fullView(W), { x: 100, y: 100, w: 900, h: 484 }, 0.5);
     expect(m).toEqual({ x: 50, y: 50, w: 1350, h: 726 });
+  });
+});
+
+describe("centreBox", () => {
+  const world = { w: 1000, h: 500 };
+  it("centres a box exactly, even in a corner, and fills most of the view", () => {
+    const box = { x: 0, y: 0, w: 200, h: 100 };
+    const v = centreBox(world, box, 0.9);
+    expect(v.x + v.w / 2).toBeCloseTo(100);
+    expect(v.y + v.h / 2).toBeCloseTo(50);
+    expect(box.w / v.w).toBeGreaterThan(0.85);
   });
 });

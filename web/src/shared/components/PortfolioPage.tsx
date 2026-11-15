@@ -5,12 +5,9 @@ import type { Device, Portfolio } from "../types";
 import { Palette, usePaletteHotkey, type PaletteItem } from "./Palette";
 import { SkillPanel, type Visibility } from "./SkillPanel";
 import { useToast } from "./Toast";
-import { PortfolioContext } from "../portfolio/context";
+import { PortfolioContext, type PortfolioEditHooks } from "../portfolio/context";
 
-export interface PortfolioEditHooks {
-  onEdit: (resource: string, id?: number) => void;
-  onAdd: (resource: string, parent?: { api: string; id: number }) => void;
-}
+export type { PortfolioEditHooks };
 
 interface Props {
   data: Portfolio; hooks?: PortfolioEditHooks; header?: ReactNode; ribbon?: ReactNode;

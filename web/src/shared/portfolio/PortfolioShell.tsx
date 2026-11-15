@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { toggle, type FilterState } from "../filter";
 import { Crest } from "../components/Crest";
 import { Palette, usePaletteHotkey, type PaletteItem } from "../components/Palette";
@@ -6,7 +6,7 @@ import { PortfolioPage } from "../components/PortfolioPage";
 import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../theme";
 import { safeHref } from "../util";
 import type { Portfolio } from "../types";
-import { PortfolioContext, TABS, parseTab, type PortfolioContextValue, type TabKey } from "./context";
+import { PortfolioContext, TABS, parseTab, type PortfolioContextValue, type PortfolioEditHooks, type TabKey } from "./context";
 import { Embers } from "./Embers";
 import { Tour } from "./Tour";
 import { CharacterScreen, Avatar } from "./screens/CharacterScreen";
@@ -17,15 +17,20 @@ const SCREENS: Record<Exclude<TabKey, "summary">, ComponentType> = {
   character: CharacterScreen, skills: SkillsScreen, quests: QuestsScreen, inventory: InventoryScreen, world: WorldScreen, codex: CodexScreen,
 };
 
-function useHashTab(): TabKey {
-  const [tab, setTab] = useState<TabKey>(() => parseTab(location.hash));
+/** The current tab. On the public site it follows the URL hash. In the editor the hash belongs to the Docs app, so the tab lives in state. */
+function useTab(own: boolean): [TabKey, (t: TabKey) => void] {
+  const [tab, setTab] = useState<TabKey>(() => (own ? parseTab("") : parseTab(location.hash)));
   useEffect(() => {
+    if (own) return;
     const on = () => setTab(parseTab(location.hash));
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
-  }, []);
-  return tab;
+  }, [own]);
+  const go = useCallback((t: TabKey) => { if (own) setTab(t); else location.hash = `#/${t}`; }, [own]);
+  return [tab, go];
 }
+
+const TAB_HREF = new RegExp(`^#/(${TABS.map((t) => t.key).join("|")})$`);
 
 /** True when keys typed here belong to a field, so the tab keys must stay out of the way. */
 export function inField(t: EventTarget | null): boolean {
@@ -58,18 +63,29 @@ function SummaryHero({ data }: { data: Portfolio }) {
   );
 }
 
-export function PortfolioShell({ data }: { data: Portfolio }) {
-  const tab = useHashTab();
+interface ShellProps {
+  data: Portfolio;
+  /** Edit hooks. Setting them turns on edit mode: every screen shows its edit and add buttons. */
+  edit?: PortfolioEditHooks;
+  /** Editor slots, shown above the tab bar. */
+  header?: ReactNode;
+  ribbon?: ReactNode;
+  /** Extra search entries (the editor adds Docs pages). */
+  extraPalette?: PaletteItem[];
+}
+
+export function PortfolioShell({ data, edit, header, ribbon, extraPalette }: ShellProps) {
+  const editing = !!edit;
+  const [tab, go] = useTab(editing);
   const [filter, setFilter] = useState<FilterState>({ picked: new Set(), mode: "all", q: "" });
   const [theme, setTheme] = useState<ThemeChoice>(loadTheme);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [tour, setTour] = useState(false);
   useEffect(() => applyTheme(theme), [theme]);
 
-  const go = useCallback((t: TabKey) => { location.hash = `#/${t}`; }, []);
   const pickSkill = useCallback((s: string) => setFilter((f) => ({ ...f, picked: toggle(f.picked, s) })), []);
   const clear = useCallback(() => setFilter((f) => ({ ...f, picked: new Set(), q: "" })), []);
-  const ctx = useMemo<PortfolioContextValue>(() => ({ data, filter, setFilter, pickSkill, clear, go }), [data, filter, pickSkill, clear, go]);
+  const ctx = useMemo<PortfolioContextValue>(() => ({ data, filter, setFilter, pickSkill, clear, go, edit }), [data, filter, pickSkill, clear, go, edit]);
 
   const togglePalette = useCallback(() => setPaletteOpen((o) => !o), []);
   usePaletteHotkey(togglePalette);
@@ -83,6 +99,7 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (paletteOpen || tour || e.ctrlKey || e.metaKey || e.altKey || inField(e.target)) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return; // an edit drawer is open
       const k = e.key.toLowerCase();
       if (k !== "q" && k !== "e") return;
       const i = TABS.findIndex((t) => t.key === tab) + (k === "e" ? 1 : -1);
@@ -93,6 +110,13 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
   }, [tab, paletteOpen, tour, go]);
 
   useEffect(() => { window.scrollTo(0, 0); }, [tab]);
+
+  // In the editor, links to other tabs must not touch the URL hash (the Docs app owns it).
+  const onRootClick = editing ? (e: React.MouseEvent) => {
+    const a = (e.target as Element).closest?.("a[href^='#/']");
+    const m = a ? TAB_HREF.exec(a.getAttribute("href") ?? "") : null;
+    if (m && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); go(m[1] as TabKey); }
+  } : undefined;
 
   const inSummary = useCallback((id: string) => () => {
     clear(); go("summary");
@@ -105,7 +129,8 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
     ...data.projects.map((x) => ({ group: "Projects", title: x.title, hint: x.kind, run: inSummary(x.id) })),
     ...data.homelab.map((d) => ({ group: "Homelab", title: d.name, hint: d.ip ?? "", run: inSummary(d.id) })),
     ...data.skills.flatMap((g) => g.skills.map((sk) => ({ group: "Skills", title: sk.l, hint: sk.n ? `${sk.n} linked` : "no linked content", run: () => { pickSkill(sk.l); go("summary"); } }))),
-  ], [data, go, inSummary, pickSkill]);
+    ...(extraPalette ?? []),
+  ], [data, go, inSummary, pickSkill, extraPalette]);
 
   const s = data.profile.socials;
   const github = safeHref(s.github), linkedin = safeHref(s.linkedin), resume = safeHref(s.resume);
@@ -113,8 +138,10 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
 
   return (
     <PortfolioContext.Provider value={ctx}>
-      <div className="pf">
-        <Embers />
+      <div className={"pf" + (editing ? " editing" : "")} onClick={onRootClick}>
+        {!editing && <Embers />}
+        {header}
+        {ribbon && <div className="pf-ribbon">{ribbon}</div>}
         <header className="vh-top">
           <a className="vh-brand" href="#/character"><Crest />{data.profile.name}</a>
           <nav className="vh-tabs" aria-label="Sections">
@@ -123,7 +150,7 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
             <span className="key" aria-hidden="true">E</span>
           </nav>
           <div className="vh-actions">
-            <button className="btn sm" onClick={() => setTour(true)} aria-label="Show the 10 second navigation tutorial">? Guide</button>
+            {!editing && <button className="btn sm" onClick={() => setTour(true)} aria-label="Show the 10 second navigation tutorial">? Guide</button>}
             <button className="btn sm" onClick={() => setTheme(nextTheme(theme))} aria-label="Change theme">Theme: {themeLabel(theme)}</button>
             <button className="btn sm" onClick={() => setPaletteOpen(true)} aria-label="Search portfolio">Search <span className="key">Ctrl K</span></button>
           </div>
@@ -131,7 +158,7 @@ export function PortfolioShell({ data }: { data: Portfolio }) {
 
         <main className={"vh-main" + (tab === "summary" ? " flush" : "")} id="content" data-tour-main>
           {Screen ? <Screen /> : (
-            <PortfolioPage embedded data={data} hero={<SummaryHero data={data} />} />
+            <PortfolioPage embedded data={data} hero={<SummaryHero data={data} />} hooks={edit} />
           )}
         </main>
 

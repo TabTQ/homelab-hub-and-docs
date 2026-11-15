@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError, apiWithHeaders } from "../api";
 import { SLUG_RE, slugify } from "../util";
-import { ICON_KEYS, VhIcon, iconLabel } from "./icons";
+import { ICON_KEYS, VhIcon, iconLabel, resolveProjectIcon, resolveSkillIcon } from "./icons";
+import { assignConstellations } from "./screens/constellation";
 import { CONSTELLATION_KEYS, constellationLabel } from "./screens/constellations";
 import type { FieldSchema, Portfolio, ResourceSchema, Row } from "../types";
 
@@ -140,6 +141,22 @@ export function EditorDrawer({ schema, target, portfolio, onClose, onSaved, onOp
   const groupedSkills = useMemo(() => portfolio.skills.map((g) => ({ ...g, skills: g.skills.filter((s) => s.l.toLowerCase().includes(skillQuery.toLowerCase())) })).filter((g) => g.skills.length), [portfolio.skills, skillQuery]);
   const slugField = spec.fields.find((f) => f.type === "slug");
   const sourceField = spec.fields.find((f) => f.type === "text");
+  /** What "Automatic" would give right now, for the icon and constellation pickers: { key, text }. */
+  function autoFor(f: FieldSchema): string | null {
+    if (f.type !== "key") return null;
+    if (spec.path === "skills" && f.api === "icon") {
+      const gid = target.parent?.api === "groupId" ? target.parent.id : (row?.groupId as number | undefined);
+      return resolveSkillIcon(form.label ?? "", portfolio.skills.find((g) => g.id === gid)?.name);
+    }
+    if (spec.path === "projects" && f.api === "icon") return resolveProjectIcon(form.title ?? "", form.type || null);
+    if (spec.path === "skill-groups" && f.api === "constellation" && row) {
+      const gs = portfolio.skills;
+      const i = gs.findIndex((g) => g.id === row.id);
+      if (i < 0) return null;
+      return assignConstellations(gs.map((g, j) => ({ count: g.skills.length, constellation: j === i ? null : g.constellation })))[i] ?? null;
+    }
+    return null;
+  }
   const parentLabel = spec.parent && !target.parent && !row ? spec.parent.path : null;
 
   return (
@@ -151,7 +168,7 @@ export function EditorDrawer({ schema, target, portfolio, onClose, onSaved, onOp
           {!loaded && <p className="sub">Loading…</p>}
           {message && <div className="banner bad" role="alert">{message}</div>}
           {loaded && parentLabel && <div className="banner warn">Open this from its {parentLabel.replace("-", " ").replace(/s$/, "")} to add it in the right place.</div>}
-          {loaded && spec.fields.map((f) => <Field key={f.api} f={f} resource={spec.path} value={form[f.api] ?? ""} error={errors[f.api]}
+          {loaded && spec.fields.map((f) => <Field key={f.api} f={f} resource={spec.path} auto={autoFor(f)} value={form[f.api] ?? ""} error={errors[f.api]}
             onChange={(v) => {
               const next = { ...form, [f.api]: v };
               // a new row: suggest the slug from the first text field until the user types a slug themselves
@@ -219,15 +236,15 @@ function pickerKind(resource: string, f: FieldSchema): "icon" | "constellation" 
 }
 
 /** A select with "Automatic" first (stores nothing). A saved key the list no longer knows is kept as an extra choice. */
-function KeyPicker({ id, kind, value, onChange }: { id: string; kind: "icon" | "constellation"; value: string; onChange: (v: string) => void }) {
+function KeyPicker({ id, kind, value, auto, onChange }: { id: string; kind: "icon" | "constellation"; value: string; auto: string | null; onChange: (v: string) => void }) {
   const keys = kind === "icon" ? ICON_KEYS : CONSTELLATION_KEYS;
   const label = kind === "icon" ? iconLabel : constellationLabel;
   const unknown = value !== "" && !keys.includes(value);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      {kind === "icon" && <span aria-hidden="true" style={{ display: "inline-flex", width: 28, justifyContent: "center", color: "var(--accent)" }}>{value !== "" ? <VhIcon name={value} size={22} /> : null}</span>}
+      {kind === "icon" && <span aria-hidden="true" data-testid="icon-preview" title={value === "" ? "What Automatic gives now" : undefined} style={{ display: "inline-flex", width: 28, justifyContent: "center", color: "var(--accent)", opacity: value === "" ? 0.6 : 1 }}>{value !== "" ? <VhIcon name={value} size={22} /> : auto ? <VhIcon name={auto} size={22} /> : null}</span>}
       <select id={id} value={value} onChange={(e) => onChange(e.target.value)} style={{ flex: 1 }}>
-        <option value="">Automatic</option>
+        <option value="">{auto ? `Automatic (${label(auto)})` : "Automatic"}</option>
         {unknown && <option value={value}>{value} (not in the list)</option>}
         {keys.map((k) => <option key={k} value={k}>{label(k)}</option>)}
       </select>
@@ -235,11 +252,11 @@ function KeyPicker({ id, kind, value, onChange }: { id: string; kind: "icon" | "
   );
 }
 
-function Field({ f, resource, value, error, onChange }: { f: FieldSchema; resource: string; value: string; error?: string; onChange: (v: string) => void }) {
+function Field({ f, resource, value, auto, error, onChange }: { f: FieldSchema; resource: string; value: string; auto: string | null; error?: string; onChange: (v: string) => void }) {
   const id = "f-" + f.api;
   const picker = pickerKind(resource, f);
   let input: React.ReactNode;
-  if (picker) input = <KeyPicker id={id} kind={picker} value={value} onChange={onChange} />;
+  if (picker) input = <KeyPicker id={id} kind={picker} value={value} auto={auto} onChange={onChange} />;
   else if (f.type === "bool") input = <label style={{ fontWeight: 400, display: "flex", gap: 6, alignItems: "center" }}><input id={id} type="checkbox" checked={value === "true"} onChange={(e) => onChange(e.target.checked ? "true" : "")} />Yes</label>;
   else if (f.type === "longtext" || isList(f.type)) input = <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} />;
   else if (isJson(f.type)) input = <textarea id={id} className="mono" value={value} spellCheck={false} onChange={(e) => onChange(e.target.value)} />;

@@ -4,7 +4,9 @@ import type { Portfolio } from "../../types";
 import { usePortfolio } from "../context";
 import { assignConstellations, backgroundStars, branchOf, CENTRE, layoutConstellations, SKY_H, SKY_W, segHitsBox, starRadius, type PlacedFigure } from "./constellation";
 import { constellationLabel } from "./constellations";
-import { clientToWorld, easeInOut, fitBox, fullView, lerpView, panBy, screenScale, wheelFactor, zoomAt, zoomOf, type View } from "./viewport";
+import { VhIcon, resolveSkillIcon } from "../icons";
+import { AddBtn, EditBtn } from "./parts";
+import { centreBox, clientToWorld, easeInOut, fullView, lerpView, panBy, screenScale, wheelFactor, zoomAt, zoomOf, type View } from "./viewport";
 import "./skills.css";
 
 interface Linked { roles: string[]; projects: string[]; education: string[]; homelab: string[] }
@@ -92,9 +94,9 @@ function chooseLabels(placed: PlacedFigure[], groups: Portfolio["skills"], view:
 }
 
 export function SkillsScreen() {
-  const { data, filter, pickSkill, go } = usePortfolio();
+  const { data, filter, pickSkill, go, edit } = usePortfolio();
   const [sel, setSel] = useState<{ g: number; s: number } | null>(null);
-  const [listMode, setListMode] = useState(isPhone);
+  const [listMode, setListMode] = useState(() => isPhone() || !!edit);
   const [view, setView] = useState<View>(() => fullView(WORLD));
   const [focus, setFocus] = useState<number | null>(null);
   const [box, setBox] = useState({ left: 0, top: 0, width: 1100, height: 590 });
@@ -148,7 +150,7 @@ export function SkillsScreen() {
     const r = placed[gi]?.rect;
     if (!r) return;
     setFocus(gi);
-    animateTo(fitBox(WORLD, { x: r.x0, y: r.y0, w: r.x1 - r.x0, h: r.y1 - r.y0 }, 0.9));
+    animateTo(centreBox(WORLD, { x: r.x0, y: r.y0, w: r.x1 - r.x0, h: r.y1 - r.y0 }, 0.9));
   };
 
   useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
@@ -275,6 +277,13 @@ export function SkillsScreen() {
           <button className="btn sm" type="button" aria-label="Reset zoom" onClick={resetView} disabled={zoom <= 1.001 && focus === null}>Reset</button>
         </div>
         <button className="btn sm" type="button" onClick={() => setListMode((v) => !v)} aria-pressed={listMode}>{listMode ? "Star view" : "List view"}</button>
+        {edit && !listMode && focus !== null && groups[focus] && (
+          <>
+            <EditBtn label={`group: ${groups[focus].name}`} resource="skill-groups" id={groups[focus].id} text="Edit group" />
+            <AddBtn label="skill" resource="skills" parent={{ api: "groupId", id: groups[focus].id }} />
+          </>
+        )}
+        {edit && listMode && <AddBtn label="group" resource="skill-groups" />}
       </div>
       <div className="sky-wrap">
         <svg ref={svgRef} className="sky" viewBox={`${fmt(view.x)} ${fmt(view.y)} ${fmt(view.w)} ${fmt(view.h)}`} preserveAspectRatio="xMidYMid meet" role="group"
@@ -356,8 +365,8 @@ export function SkillsScreen() {
         <div className="detail" aria-live="polite">
           {chosen?.skill && work && (
             <article className={`card ${tierOf(chosen.skill.n)}`}>
-              <div className="emblem"><span>{chosen.skill.n || "–"}</span></div>
-              <div className="card-head"><h3>{chosen.skill.l}</h3><p>{chosen.group.name}</p></div>
+              <div className="emblem"><span><VhIcon name={resolveSkillIcon(chosen.skill.l, chosen.group.name, chosen.skill.ic)} size={20} /></span></div>
+              <div className="card-head"><h3>{chosen.skill.l}</h3><p>{chosen.group.name} · {plural(chosen.skill.n)}</p></div>
               <div className="card-body">
                 <div className="seg accent" aria-hidden="true">{Array.from({ length: 5 }, (_, i) => <i key={i} className={i < chosen.skill.n ? "f" : ""} />)}</div>
                 {work.roles.length + work.projects.length + work.education.length + work.homelab.length === 0 && <div className="perk"><i /><span>Listed skill. No role or project is linked to it yet.</span></div>}
@@ -369,6 +378,12 @@ export function SkillsScreen() {
                 ))}
               </div>
               <div className="card-foot">
+                {edit && (
+                  <div className="ed-row">
+                    <EditBtn label={`skill: ${chosen.skill.l}`} resource="skills" id={chosen.skill.id} text="Edit skill" />
+                    <EditBtn label={`group: ${chosen.group.name}`} resource="skill-groups" id={chosen.group.id} text="Edit group" />
+                  </div>
+                )}
                 <button className="hint" type="button" onClick={() => { if (!picked.has(chosen.skill.l)) pickSkill(chosen.skill.l); go("summary"); }}><span className="key">F</span>Filter site by this skill</button>
                 {work.roles.length > 0 && <button className="hint" type="button" onClick={() => { if (!picked.has(chosen.skill.l)) pickSkill(chosen.skill.l); go("quests"); }}><span className="key">Q</span>View in quests</button>}
               </div>
@@ -385,12 +400,21 @@ export function SkillsScreen() {
             <header><h3>{g.name}</h3><span className="count">{g.skills.filter((s) => s.n).length}/{g.skills.length}</span></header>
             <div className="chips">
               {g.skills.map((s) => (
-                <button key={s.id} type="button" className={"chip" + (picked.has(s.l) ? " on" : "") + (s.n ? "" : " hollow")} aria-pressed={picked.has(s.l)}
-                  title={plural(s.n)} onClick={() => pickSkill(s.l)}>
-                  {s.l}<b className="num" style={{ color: `var(--b-${branchOf(gi, groups.length)})` }}>{s.n || "–"}</b>
-                </button>
+                <span key={s.id} className={"chip-wrap" + (edit ? " ed" : "")}>
+                  <button type="button" className={"chip" + (picked.has(s.l) ? " on" : "") + (s.n ? "" : " hollow")} aria-pressed={picked.has(s.l)}
+                    title={plural(s.n)} onClick={() => pickSkill(s.l)}>
+                    <VhIcon name={resolveSkillIcon(s.l, g.name, s.ic)} size={14} className="chip-ic" />{s.l}<b className="num" style={{ color: `var(--b-${branchOf(gi, groups.length)})` }}>{s.n || "–"}</b>
+                  </button>
+                  <EditBtn label={`skill: ${s.l}`} resource="skills" id={s.id} className="ed-chip" />
+                </span>
               ))}
             </div>
+            {edit && (
+              <div className="ed-row">
+                <EditBtn label={`group: ${g.name}`} resource="skill-groups" id={g.id} text="Edit group" />
+                <AddBtn label="skill" aria={`Add skill to ${g.name}`} resource="skills" parent={{ api: "groupId", id: g.id }} />
+              </div>
+            )}
           </section>
         ))}
       </div>

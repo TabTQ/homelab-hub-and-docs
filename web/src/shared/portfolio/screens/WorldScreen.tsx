@@ -3,22 +3,23 @@ import { deviceMatches, isActive, matches } from "../../filter";
 import { deviceLinks } from "../../util";
 import type { Device, NetEntity } from "../../types";
 import { usePortfolio } from "../context";
-import { ExtLinks, FilterBar, ScreenTitle, SkillChips } from "./parts";
+import { FALLBACK_ICON, VhIcon, resolveNameIcon } from "../icons";
+import { AddBtn, EditBtn, ExtLinks, FilterBar, ScreenTitle, SkillChips } from "./parts";
 import "./screens.css";
 
 const human = (s: string) => s.replace(/[_-]+/g, " ").replace(/^./, (c) => c.toUpperCase());
 const NET_TITLES: Record<string, string> = { isp: "Uplinks", vlan: "VLANs", switch: "Switches" };
 const NET_KEYS: Record<string, string> = { spec: "Spec", subnet: "Subnet", role: "Role", type: "Type" };
 
-function Icon({ cat }: { cat: string }) {
-  if (cat.includes("proxmox")) return <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 5h22v8H5zm0 11h22v8H5zM9 8v2h2V8zm0 11v2h2v-2zM14 26h4v3h-4z" /></svg>;
-  if (cat.includes("raspberry")) return <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M9 9h14v14H9zM13 3h2v4h-2zm4 0h2v4h-2zm-4 22h2v4h-2zm4 0h2v4h-2zM3 13h4v2H3zm0 4h4v2H3zm22-4h4v2h-4zm0 4h4v2h-4z" /></svg>;
-  if (cat.includes("network")) return <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><circle cx="16" cy="16" r="11" /><path d="M5 16h22M16 5c5 6 5 16 0 22M16 5c-5 6-5 16 0 22" /></svg>;
-  return <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M6 4h20v24H6zm4 4v6h12V8zm6 10a4 4 0 100 8 4 4 0 000-8z" /></svg>;
+/** Device icon: from the category first (proxmox, raspberry pi, network), else from the name. */
+function deviceIcon(d: Device): string {
+  const byCat = resolveNameIcon(d.cat);
+  return byCat !== FALLBACK_ICON ? byCat : resolveNameIcon(d.name);
 }
 
 /** One expandable row: a gem, a title, an optional tag, and detail fields shown when opened. */
-function Item({ gem, title, tag, dim, fields, skills }: { gem: string; title: string; tag?: string; dim: boolean; fields: [string, string][]; skills: string[] }) {
+function Item({ gem, title, tag, dim, fields, skills, editor }: { gem: string; title: string; tag?: string; dim: boolean; fields: [string, string][]; skills: string[]; editor?: { label: string; resource: string; id: number } }) {
+  const { edit } = usePortfolio();
   const [open, setOpen] = useState(false);
   const more = fields.length > 0 || skills.length > 0;
   const head = (
@@ -28,9 +29,10 @@ function Item({ gem, title, tag, dim, fields, skills }: { gem: string; title: st
       {tag && <span className="tag">{tag}</span>}
     </>
   );
+  const row = more ? <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}>{head}</button> : <span className="row">{head}</span>;
   return (
     <li className={dim ? "sc-dim" : undefined}>
-      {more ? <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}>{head}</button> : <span className="row">{head}</span>}
+      {edit && editor ? <div className="ed-line">{row}<EditBtn label={editor.label} resource={editor.resource} id={editor.id} /></div> : row}
       {more && open && (
         <div className="sc-more">
           {fields.length > 0 && <dl className="stats one">{fields.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
@@ -45,55 +47,62 @@ const netFields = (n: NetEntity): [string, string][] =>
   Object.entries(n.spec).filter(([, v]) => v !== null && v !== undefined && String(v) !== "").map(([k, v]) => [NET_KEYS[k] ?? human(k), String(v)]);
 
 function DevicePanel({ d }: { d: Device }) {
-  const { filter } = usePortfolio();
+  const { filter, edit } = usePortfolio();
   const active = isActive(filter);
   const dim = active && !deviceMatches(filter, d);
   const d2 = (x: { skills: string[]; t: string }) => active && !matches(filter, x);
   const netTypes = [...new Set(d.network.map((n) => n.type))];
   return (
     <section id={"dev-" + d.id} tabIndex={-1} className={"panel sc-dev" + (dim ? " sc-dim" : "")} aria-label={d.name}>
-      <header><h2 className="sc-h2">{d.name}</h2>{d.ip && <span className="mono sc-ip">{d.ip}</span>}</header>
+      <header><h2 className="sc-h2"><VhIcon name={deviceIcon(d)} size={22} className="sc-hic" />{d.name}</h2>{d.ip && <span className="mono sc-ip">{d.ip}</span>}</header>
       <div className="eyebrow sc-eb">{human(d.cat)}</div>
+      <div className="ed-row">
+        <EditBtn label={`device: ${d.name}`} resource="homelab-devices" id={d.dbId} text="Edit device" />
+        <EditBtn label={`hardware: ${d.name}`} aria={`Edit hardware rows of ${d.name}`} resource="homelab-devices" id={d.dbId} text="Edit hardware" />
+      </div>
       {d.summary && <p className="sc-text">{d.summary}</p>}
       <ExtLinks links={deviceLinks(d)} />
       {d.hw.length > 0 && <dl className="stats one sc-hw">{d.hw.map((h, i) => <div key={i}><dt>{h.component}</dt><dd>{h.spec}</dd></div>)}</dl>}
       <SkillChips skills={d.skills} />
-      {d.containers.length > 0 && (
+      {(d.containers.length > 0 || edit) && (
         <>
           <div className="eyebrow sc-sub">Containers</div>
           <ul className="rows">
             {d.containers.map((c) => (
-              <Item key={c.id} gem={c.status === "Active" ? "up" : "warn"} title={c.name} tag={c.status} dim={d2(c)} skills={c.skills}
+              <Item key={c.id} gem={c.status === "Active" ? "up" : "warn"} title={c.name} tag={c.status} dim={d2(c)} skills={c.skills} editor={{ label: `container: ${c.name}`, resource: "homelab-containers", id: c.dbId }}
                 fields={[["ID", c.id.replace("lxc-", "")], ...(c.purpose ? [["Purpose", c.purpose] as [string, string]] : []), ...(c.res ? [["Resources", c.res] as [string, string]] : [])]} />
             ))}
           </ul>
+          <div className="ed-row"><AddBtn label="container" resource="homelab-containers" parent={{ api: "deviceId", id: d.dbId }} /></div>
         </>
       )}
-      {d.services.length > 0 && (
+      {(d.services.length > 0 || edit) && (
         <>
           <div className="eyebrow sc-sub">Services</div>
           <ul className="rows">
             {d.services.map((s) => (
-              <Item key={s.id} gem="up" title={s.name} dim={d2(s)} skills={s.skills}
+              <Item key={s.id} gem="up" title={s.name} dim={d2(s)} skills={s.skills} editor={{ label: `service: ${s.name}`, resource: "homelab-services", id: s.dbId }}
                 fields={[...(s.fn ? [["Function", s.fn] as [string, string]] : []), ...(s.ct ? [["Container", s.ct] as [string, string]] : []), ...(s.port ? [["Port", s.port] as [string, string]] : [])]} />
             ))}
           </ul>
+          <div className="ed-row"><AddBtn label="service" resource="homelab-services" parent={{ api: "deviceId", id: d.dbId }} /></div>
         </>
       )}
       {netTypes.map((t) => (
         <div key={t}>
           <div className="eyebrow sc-sub">{NET_TITLES[t] ?? human(t)}</div>
           <ul className="rows">
-            {d.network.filter((n) => n.type === t).map((n) => <Item key={n.id} gem="up" title={n.name} dim={d2(n)} skills={n.skills} fields={netFields(n)} />)}
+            {d.network.filter((n) => n.type === t).map((n) => <Item key={n.id} gem="up" title={n.name} dim={d2(n)} skills={n.skills} fields={netFields(n)} editor={{ label: `network entry: ${n.name}`, resource: "homelab-network", id: n.dbId }} />)}
           </ul>
         </div>
       ))}
+      {edit && <div className="ed-row"><AddBtn label="network entry" resource="homelab-network" parent={{ api: "deviceId", id: d.dbId }} /></div>}
     </section>
   );
 }
 
 export function WorldScreen() {
-  const { data } = usePortfolio();
+  const { data, edit } = usePortfolio();
   const total = data.homelab.reduce((n, d) => n + d.services.length + d.containers.length, 0);
   const jump = (id: string) => {
     const el = document.getElementById("dev-" + id);
@@ -109,12 +118,13 @@ export function WorldScreen() {
         <>
           <div className="sc-banners" role="group" aria-label="Devices">
             {data.homelab.map((d) => (
-              <button key={d.id} type="button" className="banner hang sc-banner" onClick={() => jump(d.id)}><Icon cat={d.cat} />{d.name}</button>
+              <button key={d.id} type="button" className="banner hang sc-banner" onClick={() => jump(d.id)}><VhIcon name={deviceIcon(d)} size={34} />{d.name}</button>
             ))}
           </div>
           <div className="grid cols-2 sc-devs">{data.homelab.map((d) => <DevicePanel key={d.id} d={d} />)}</div>
         </>
       )}
+      {edit && <div className="ed-row"><AddBtn label="device" resource="homelab-devices" /></div>}
     </div>
   );
 }

@@ -3,7 +3,8 @@ import { isActive, matches } from "../../filter";
 import { projectLinks } from "../../util";
 import type { Project } from "../../types";
 import { usePortfolio } from "../context";
-import { ExtLinks, FilterBar, Rule, ScreenTitle, SkillChips } from "./parts";
+import { VhIcon, resolveProjectIcon } from "../icons";
+import { AddBtn, EditBtn, ExtLinks, FilterBar, Rule, ScreenTitle, SkillChips } from "./parts";
 import "./screens.css";
 
 type Tier = "gold" | "steel" | "bronze" | "grey";
@@ -40,8 +41,14 @@ function Detail({ p, onClose }: { p: Project; onClose: () => void }) {
   return (
     <section ref={ref} tabIndex={-1} className="panel sc-detail" aria-label={`${p.title} details`}>
       <header>
-        <div><div className="eyebrow">{subtitle(p)}{c?.duration ? ` · ${c.duration}` : ""}{c?.client ? ` · ${c.client}` : ""}</div><h2 className="sc-h">{p.title}</h2></div>
-        <button type="button" className="btn sm" onClick={onClose}>Close</button>
+        <div className="sc-dh">
+          <span className="sc-dic" aria-hidden="true"><VhIcon name={resolveProjectIcon(p.title, p.type, p.icon)} size={26} /></span>
+          <div><div className="eyebrow">{subtitle(p)}{c?.duration ? ` · ${c.duration}` : ""}{c?.client ? ` · ${c.client}` : ""}</div><h2 className="sc-h">{p.title}</h2></div>
+        </div>
+        <div className="ed-actions">
+          <EditBtn label={`project: ${p.title}`} resource="projects" id={p.dbId} text="Edit project" />
+          <button type="button" className="btn sm" onClick={onClose}>Close</button>
+        </div>
       </header>
       <p className="sc-text">{p.description}</p>
       <ExtLinks links={projectLinks(p)} />
@@ -62,12 +69,16 @@ function Detail({ p, onClose }: { p: Project; onClose: () => void }) {
       )}
       <Rule>Skills used</Rule>
       <SkillChips skills={p.skills} tags={p.tags} />
+      <div className="ed-row">
+        <EditBtn label={`case study: ${p.title}`} resource="projects" id={p.dbId} text="Edit case study" />
+        <AddBtn label="deliverable" resource="project-deliverables" parent={{ api: "projectId", id: p.dbId }} />
+      </div>
     </section>
   );
 }
 
 export function InventoryScreen() {
-  const { data, filter } = usePortfolio();
+  const { data, filter, edit } = usePortfolio();
   const [type, setType] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const active = isActive(filter);
@@ -96,7 +107,7 @@ export function InventoryScreen() {
             const fs = facts(p);
             return (
               <article key={p.id} className={`card ${t === "grey" ? "" : t} ${dim ? "sc-dim" : ""}`.trim()} data-tier={t} data-dim={dim ? "true" : undefined} aria-label={p.title}>
-                <div className="emblem"><span>{p.title.trim().charAt(0).toUpperCase()}</span></div>
+                <div className="emblem"><span><VhIcon name={resolveProjectIcon(p.title, p.type, p.icon)} size={20} /></span></div>
                 <div className="card-head"><h3 title={p.title}><span className="sc-t">{p.title}</span></h3><p title={subtitle(p)}><span className="sc-s">{subtitle(p)}</span></p></div>
                 <div className="sc-cell sc-stats">{fs.length > 0 && <dl className="stats one">{fs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}</div>
                 <div className="sc-cell sc-perks">
@@ -107,12 +118,14 @@ export function InventoryScreen() {
                 <div className="card-foot">
                   <button type="button" className="hint" aria-label={`Details of ${p.title}`} aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? null : p.id)}><span className="key">A</span>Details</button>
                   {links.map((l) => <a key={l.label} className="hint" href={l.href} target="_blank" rel="noopener noreferrer"><span className="key">↗</span>{l.label}</a>)}
+                  <EditBtn label={`project: ${p.title}`} resource="projects" id={p.dbId} className="ed-foot" />
                 </div>
               </article>
             );
           })}
         </div>
       )}
+      {edit && <div className="ed-row"><AddBtn label="project" resource="projects" /></div>}
       {open && <Detail p={open} onClose={() => setOpenId(null)} />}
     </div>
   );
