@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.homelabhub.docs.cloudflare.CloudflareRoutes;
+import com.homelabhub.docs.github.GitHubProperties;
+import com.homelabhub.docs.github.GitHubSlug;
+import com.homelabhub.docs.github.GitHubSync;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,12 +56,17 @@ public class DocsService {
     private final DocsProperties props;
     private final DocsAudit audit;
     private final CloudflareRoutes routes;
+    private final GitHubSync github;
+    private final GitHubProperties ghProps;
     private final Object writeLock = new Object();
 
     public DocsService(JdbcClient jdbc, TransactionTemplate tx, ObjectMapper json, Clock clock, BlobStore blobs,
-                       DocsPublisher publisher, DocsProperties props, DocsAudit audit, CloudflareRoutes routes) {
+                       DocsPublisher publisher, DocsProperties props, DocsAudit audit, CloudflareRoutes routes,
+                       GitHubSync github, GitHubProperties ghProps) {
         this.audit = audit;
         this.routes = routes;
+        this.github = github;
+        this.ghProps = ghProps;
         this.jdbc = jdbc;
         this.tx = tx;
         this.json = json;
@@ -73,7 +81,7 @@ public class DocsService {
 
     record PageRow(long id, Long parentId, int position, String kind, String title, String draftJson, Long draftBundle,
                    String publicHost, Integer publishedVersion, String publishedAt, String deletedAt, Long trashRoot,
-                   String createdAt, String updatedAt, long version) {
+                   String createdAt, String updatedAt, long version, String githubSlug, String githubPublishedAt) {
         boolean rich() {
             return kind.equals("rich");
         }
@@ -84,7 +92,7 @@ public class DocsService {
     record BundleRow(long id, long pageId, int seq, String sha256, String manifestJson, long totalSize, String createdAt) {}
 
     private static final String PAGE_COLS = "id, parent_id, position, kind, title, draft_json, draft_bundle, public_host, "
-            + "published_version, published_at, deleted_at, trash_root, created_at, updated_at, version";
+            + "published_version, published_at, deleted_at, trash_root, created_at, updated_at, version, github_slug, github_published_at";
 
     List<PageRow> livePages() {
         return jdbc.sql("SELECT " + PAGE_COLS + " FROM doc_pages WHERE deleted_at IS NULL").query(PageRow.class).list();
@@ -192,18 +200,18 @@ public class DocsService {
 
     // ---------------------------------------------------------------- tree
 
-    public record TreeItem(long id, Long parentId, int position, String kind, String title, String publicHost, String state) {}
+    public record TreeItem(long id, Long parentId, int position, String kind, String title, String publicHost, String state, String githubSlug) {}
 
     public List<TreeItem> tree() {
         housekeeping();
         List<PageRow> live = livePages();
         return live.stream().sorted(Comparator.comparing((PageRow p) -> p.parentId() == null ? 0L : p.parentId()).thenComparingInt(PageRow::position))
-                .map(p -> new TreeItem(p.id(), p.parentId(), p.position(), p.kind(), p.title(), p.publicHost(), state(p))).toList();
+                .map(p -> new TreeItem(p.id(), p.parentId(), p.position(), p.kind(), p.title(), p.publicHost(), state(p), p.githubSlug())).toList();
     }
 
     /** internal | public | public-changed (the draft differs from the live version) */
     String state(PageRow p) {
-        if (p.publishedVersion() == null || p.publicHost() == null) {
+        if (p.publishedVersion() == null || (p.publicHost() == null && p.githubSlug() == null)) {
             return "internal";
         }
         Optional<VersionRow> live = versionRow(p.id(), p.publishedVersion());
@@ -266,6 +274,8 @@ public class DocsService {
         out.put("title", p.title());
         out.put("body", parse(p.draftJson()));
         out.put("publicHost", p.publicHost());
+        out.put("githubSlug", p.githubSlug());
+        out.put("githubUrl", p.publishedVersion() == null ? null : githubUrl(p.githubSlug()));
         out.put("publishedVersion", p.publishedVersion());
         out.put("publishedAt", p.publishedAt());
         out.put("updatedAt", p.updatedAt());
@@ -376,7 +386,7 @@ public class DocsService {
     public List<Map<String, Object>> trash() {
         housekeeping();
         return jdbc.sql("""
-                SELECT p.id, p.title, p.kind, p.deleted_at, p.public_host,
+                SELECT p.id, p.title, p.kind, p.deleted_at, p.public_host, p.github_slug,
                        (SELECT count(*) FROM doc_pages c WHERE c.trash_root = p.id AND c.id <> p.id AND c.deleted_at IS NOT NULL) AS children
                 FROM doc_pages p WHERE p.deleted_at IS NOT NULL AND p.trash_root = p.id ORDER BY p.deleted_at DESC
                 """).query((rs, i) -> {
@@ -388,6 +398,7 @@ public class DocsService {
                     m.put("purgeAt", Instant.parse(rs.getString("deleted_at")).plus(TRASH_DAYS).toString());
                     m.put("children", rs.getInt("children"));
                     m.put("publicHost", rs.getString("public_host"));
+                    m.put("githubSlug", rs.getString("github_slug"));
                     return m;
                 }).list();
     }
@@ -504,6 +515,7 @@ public class DocsService {
         out.put("publishedVersion", p.publishedVersion());
         out.put("publishedAt", p.publishedAt());
         out.put("publicHost", p.publicHost());
+        out.put("githubSlug", p.githubSlug());
         out.put("state", state(p));
         out.put("domains", hostRules.domains());
         JsonNode body = parse(p.draftJson());
@@ -515,9 +527,13 @@ public class DocsService {
             Map<String, Object> l = new LinkedHashMap<>();
             l.put("pageId", target);
             l.put("title", t == null ? null : t.title());
-            boolean isPublic = t != null && t.publishedVersion() != null && t.publicHost() != null;
-            l.put("public", isPublic);
-            l.put("href", isPublic ? "https://" + t.publicHost() + "/" : null);
+            boolean published = t != null && t.publishedVersion() != null;
+            String localHref = published && t.publicHost() != null ? "https://" + t.publicHost() + "/" : null;
+            String ghHref = published ? githubUrl(t.githubSlug()) : null;
+            l.put("public", published && (t.publicHost() != null || t.githubSlug() != null));
+            l.put("href", localHref != null ? localHref : ghHref); // where the local copy will point
+            l.put("githubHref", ghHref != null ? ghHref : localHref); // where the GitHub copy will point
+            l.put("githubLocalOnly", ghHref == null && localHref != null);
             l.put("missing", t == null);
             links.add(l);
         }
@@ -575,27 +591,107 @@ public class DocsService {
         return bundle(webapp.draftBundle());
     }
 
+    /** A requested change of one place: not mentioned ({@link #KEEP}, leave as it is), or a value (null or blank = none). */
+    public record Target(boolean given, String value) {
+        public static final Target KEEP = new Target(false, null);
+
+        public static Target of(String value) {
+            return new Target(true, value == null || value.isBlank() ? null : value);
+        }
+    }
+
+    public Map<String, Object> checkSlug(String slug, Long pageId) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        if (!ghProps.enabled()) {
+            m.put("slug", null);
+            m.put("ok", false);
+            m.put("message", "GitHub Pages publishing is not turned on.");
+            return m;
+        }
+        GitHubSlug.Result r = GitHubSlug.check(slug);
+        m.put("slug", r.slug());
+        if (!r.ok()) {
+            m.put("ok", false);
+            m.put("message", r.error());
+            return m;
+        }
+        Optional<PageRow> owner = jdbc.sql("SELECT " + PAGE_COLS + " FROM doc_pages WHERE github_slug = ?").param(r.slug()).query(PageRow.class).optional();
+        boolean taken = owner.isPresent() && !Objects.equals(owner.get().id(), pageId);
+        m.put("ok", !taken);
+        m.put("message", taken ? "The folder " + r.slug() + " is already used by “" + owner.get().title() + "”" + (owner.get().deletedAt() != null ? " (in the Trash)." : ".")
+                : githubUrl(r.slug()) + " is free.");
+        return m;
+    }
+
+    private String requireSlug(String requested, PageRow p) {
+        Map<String, Object> c = checkSlug(requested, p.id());
+        if (!Boolean.TRUE.equals(c.get("ok"))) {
+            throw DocsException.bad(String.valueOf(c.get("message")));
+        }
+        return (String) c.get("slug");
+    }
+
+    /** The address of a folder on the Pages site, or null when GitHub publishing is off or there is no folder. */
+    String githubUrl(String slug) {
+        return slug == null || !ghProps.enabled() ? null : ghProps.effectiveSiteUrl() + slug + "/";
+    }
+
+    /** Publishes to the local address only (the original behaviour); an empty address reuses the page's own. */
     public Map<String, Object> publish(long id, String requestedHost, Long expectedVersion, String ip, String ua) {
+        return publish(id, requestedHost == null || requestedHost.isBlank() ? Target.KEEP : Target.of(requestedHost), Target.KEEP, expectedVersion, ip, ua);
+    }
+
+    /** Publishes the draft as a new version and shows it in the places chosen. A place that is not mentioned stays as it is. */
+    public Map<String, Object> publish(long id, Target hostRequest, Target slugRequest, Long expectedVersion, String ip, String ua) {
         Map<String, Object> r = write(() -> {
             PageRow p = livePage(id);
             checkVersion(p, expectedVersion);
             if (!p.rich() && p.draftBundle() == null) {
                 throw DocsException.bad("Upload the app (index.html or a .zip) before publishing.");
             }
-            String host = requireHost(requestedHost, p);
-            String note = Objects.equals(host, p.publicHost()) ? null : "hostname " + host;
-            int v = addHistory(id, "published", p.title(), p.draftJson(), p.draftBundle(), note);
-            jdbc.sql("UPDATE doc_pages SET public_host = ?, published_version = ?, published_at = ? WHERE id = ?").params(host, v, now(), id).update();
+            String host = hostRequest.given() ? (hostRequest.value() == null ? null : requireHost(hostRequest.value(), p))
+                    : p.publicHost() == null ? null : requireHost(null, p);
+            String slug = slugRequest.given() ? (slugRequest.value() == null ? null : requireSlug(slugRequest.value(), p))
+                    : p.githubSlug() == null || !ghProps.enabled() ? p.githubSlug() : requireSlug(p.githubSlug(), p);
+            boolean onGithub = slug != null && ghProps.enabled();
+            if (host == null && !onGithub) {
+                throw DocsException.bad(slug != null ? "GitHub Pages publishing is not turned on. Choose a public address (hostname) instead."
+                        : "Choose where to publish: a public address (hostname), a GitHub Pages folder, or both.");
+            }
+            List<String> notes = new ArrayList<>();
+            if (host != null && !Objects.equals(host, p.publicHost())) {
+                notes.add("hostname " + host);
+            }
+            if (slug != null && !Objects.equals(slug, p.githubSlug())) {
+                notes.add("GitHub folder " + slug);
+            }
+            int v = addHistory(id, "published", p.title(), p.draftJson(), p.draftBundle(), notes.isEmpty() ? null : String.join(", ", notes));
+            jdbc.sql("UPDATE doc_pages SET public_host = ?, github_slug = ?, github_published_at = ?, published_version = ?, published_at = ? WHERE id = ?")
+                    .params(host, slug, onGithub ? now() : slug == null ? null : p.githubPublishedAt(), v, now(), id).update();
             bump(id);
-            return Map.<String, Object>of("version", p.version() + 1, "publishedVersion", v, "publicHost", host);
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("version", p.version() + 1);
+            m.put("publishedVersion", v);
+            m.put("publicHost", host);
+            m.put("githubSlug", slug);
+            return m;
         });
-        audit.record("publish", "page " + id + " " + r.get("publicHost"), "ok", "v" + r.get("publishedVersion"), ip, ua);
+        audit.record("publish", "page " + id + " " + describe(r), "ok", "v" + r.get("publishedVersion"), ip, ua);
         Map<String, Object> out = new LinkedHashMap<>(r);
         out.put("live", publisher.publish());
-        out.put("route", routes.routeInfo((String) r.get("publicHost")));
+        out.put("route", r.get("publicHost") == null ? null : routes.routeInfo((String) r.get("publicHost")));
+        out.put("githubUrl", githubUrl((String) r.get("githubSlug")));
+        out.put("github", github.summary());
         return out;
     }
 
+    private static String describe(Map<String, Object> r) {
+        String host = (String) r.get("publicHost");
+        String slug = (String) r.get("githubSlug");
+        return (host == null ? "" : host) + (host != null && slug != null ? " " : "") + (slug == null ? "" : "github:" + slug);
+    }
+
+    /** Takes the page off the local address and off GitHub. The hostname and the folder name stay reserved for the page. */
     public Map<String, Object> unpublish(long id, Long expectedVersion) {
         Map<String, Object> r = write(() -> {
             PageRow p = livePage(id);
@@ -603,13 +699,15 @@ public class DocsService {
             if (p.publishedVersion() == null) {
                 throw DocsException.bad("This page is not public.");
             }
-            jdbc.sql("UPDATE doc_pages SET published_version = NULL WHERE id = ?").param(id).update();
-            addHistory(id, "unpublished", p.title(), p.draftJson(), p.draftBundle(), p.publicHost() + " taken offline");
+            jdbc.sql("UPDATE doc_pages SET published_version = NULL, github_published_at = NULL WHERE id = ?").param(id).update();
+            addHistory(id, "unpublished", p.title(), p.draftJson(), p.draftBundle(), "taken offline" + (p.publicHost() == null ? "" : " (" + p.publicHost() + ")")
+                    + (p.githubSlug() == null ? "" : " (GitHub folder " + p.githubSlug() + ")"));
             bump(id);
             return Map.<String, Object>of("version", p.version() + 1);
         });
         Map<String, Object> out = new LinkedHashMap<>(r);
         out.put("live", publisher.publish());
+        out.put("github", github.summary());
         return out;
     }
 
@@ -624,7 +722,7 @@ public class DocsService {
                 return Map.<String, Object>of("version", p.version(), "publicHost", h == null ? "" : h);
             }
             live[0] = p.publishedVersion() != null;
-            jdbc.sql("UPDATE doc_pages SET public_host = ?, published_version = CASE WHEN ? IS NULL THEN NULL ELSE published_version END WHERE id = ?")
+            jdbc.sql("UPDATE doc_pages SET public_host = ?, published_version = CASE WHEN ? IS NULL AND github_slug IS NULL THEN NULL ELSE published_version END WHERE id = ?")
                     .params(h, h, id).update();
             addHistory(id, "host", p.title(), p.draftJson(), p.draftBundle(), h == null ? "hostname removed" : "hostname " + h);
             bump(id);
@@ -634,6 +732,50 @@ public class DocsService {
             publisher.publish();
         }
         return r;
+    }
+
+    /**
+     * "Save settings only" for both places: changes where the already published version is shown, without a new version. A place not
+     * mentioned stays as it is; a place set to nothing is cleared. A published page left with no place at all is unpublished.
+     */
+    public Map<String, Object> setTargets(long id, Target hostRequest, Target slugRequest, Long expectedVersion) {
+        boolean[] live = {false};
+        Map<String, Object> r = write(() -> {
+            PageRow p = livePage(id);
+            checkVersion(p, expectedVersion);
+            String host = hostRequest.given() ? (hostRequest.value() == null ? null : requireHost(hostRequest.value(), p)) : p.publicHost();
+            String slug = slugRequest.given() ? (slugRequest.value() == null ? null : requireSlug(slugRequest.value(), p)) : p.githubSlug();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("publicHost", host);
+            m.put("githubSlug", slug);
+            boolean published = p.publishedVersion() != null;
+            m.put("githubUrl", published ? githubUrl(slug) : null);
+            if (Objects.equals(host, p.publicHost()) && Objects.equals(slug, p.githubSlug())) {
+                m.put("version", p.version());
+                return m;
+            }
+            live[0] = published;
+            boolean offline = published && host == null && slug == null;
+            String at = !published || slug == null ? null : Objects.equals(slug, p.githubSlug()) && p.githubPublishedAt() != null ? p.githubPublishedAt() : now();
+            jdbc.sql("UPDATE doc_pages SET public_host = ?, github_slug = ?, github_published_at = ?, published_version = CASE WHEN ? THEN NULL ELSE published_version END WHERE id = ?")
+                    .params(host, slug, at, offline, id).update();
+            List<String> notes = new ArrayList<>();
+            notes.add(host == null ? "hostname removed" : "hostname " + host);
+            notes.add(slug == null ? "GitHub folder removed" : "GitHub folder " + slug);
+            if (offline) {
+                notes.add("taken offline");
+            }
+            addHistory(id, "host", p.title(), p.draftJson(), p.draftBundle(), String.join(", ", notes));
+            bump(id);
+            m.put("version", p.version() + 1);
+            return m;
+        });
+        if (live[0]) {
+            publisher.publish();
+        }
+        Map<String, Object> out = new LinkedHashMap<>(r);
+        out.put("github", github.summary());
+        return out;
     }
 
     // ---------------------------------------------------------------- assets
@@ -805,7 +947,7 @@ public class DocsService {
                 for (long id : ids) {
                     // Children that were lifted out stay; anything still pointing at a purged page moves to the top level.
                     jdbc.sql("UPDATE doc_pages SET parent_id = NULL WHERE parent_id = ? AND trash_root IS NOT ?").params(id, root).update();
-                    jdbc.sql("UPDATE doc_pages SET draft_bundle = NULL, parent_id = NULL, public_host = NULL WHERE id = ?").param(id).update();
+                    jdbc.sql("UPDATE doc_pages SET draft_bundle = NULL, parent_id = NULL, public_host = NULL, github_slug = NULL WHERE id = ?").param(id).update();
                 }
                 for (long id : ids) {
                     jdbc.sql("DELETE FROM doc_page_versions WHERE page_id = ?").param(id).update();

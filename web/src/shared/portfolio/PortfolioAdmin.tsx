@@ -4,6 +4,7 @@ import { useToast } from "../components/Toast";
 import type { Portfolio, ResourceSchema } from "../types";
 import { EditorDrawer, type OpenTarget } from "./EditorDrawer";
 import type { PaletteItem } from "../components/Palette";
+import { PortfolioGithubPanel } from "./PortfolioGithub";
 import { PortfolioShell } from "./PortfolioShell";
 
 const NOTE_KEY = "hub-edit-note";
@@ -50,6 +51,7 @@ export function PortfolioAdmin({ header, onUnauthorized, extraPalette }: { heade
   const edit = hooks;
   const ribbon = (
     <>
+    <PortfolioGithubPanel onUnauthorized={onUnauthorized} />
     <EditingNote />
     <div className="ribbon">
       <span><b>Editing view.</b> Every save is published to the public site within a moment.{" "}

@@ -70,6 +70,15 @@ docs:
     zone-name: ${DOCS_CF_ZONE_NAME:}
     # extra names that can never be claimed, comma separated (the built-in list covers www, mail, vpn, ...)
     reserved-labels: ${DOCS_CF_RESERVED_LABELS:}
+  # GitHub Pages publishing (a second place to show a page, and the portfolio). Off by default.
+  github:
+    enabled: ${DOCS_GH_ENABLED:false}
+    repo: ${DOCS_GH_REPO:}
+    branch: ${DOCS_GH_BRANCH:gh-pages}
+    token: ${DOCS_GH_TOKEN:}
+    site-url: ${DOCS_GH_SITE_URL:}
+    dry-run: ${DOCS_GH_DRY_RUN:false}
+    api-url: ${DOCS_GH_API_URL:https://api.github.com}
   publish-retry-millis: 30000
   gc-delay-seconds: 60
   backup:

@@ -55,6 +55,7 @@ export function PageView({ id, items, config, onChanged, fail, publish }: {
         {page.state === "internal" ? <span className="dx-pill">internal</span> : <span className="dx-pill pub">public</span>}
         {page.publicHost && <a className="mono" href={page.state === "internal" ? undefined : `https://${page.publicHost}/`} target="_blank" rel="noreferrer">{page.publicHost}</a>}
         {page.publicHost && page.state === "internal" && <span>(reserved, not published)</span>}
+        {page.githubUrl && page.state !== "internal" && <a className="mono" href={page.githubUrl} target="_blank" rel="noreferrer">{page.githubUrl.replace("https://", "")}</a>}
         <span>· Draft saved {ago(page.updatedAt)}</span>
         {page.publishedAt && page.state !== "internal" && <span>· Published {when(page.publishedAt)}</span>}
       </div>
@@ -76,6 +77,7 @@ export function PageView({ id, items, config, onChanged, fail, publish }: {
               </header>
               <dl className="stats one">
                 <div><dt>Address</dt><dd className="mono">{page.publicHost ? (page.state === "internal" ? `${page.publicHost} (reserved)` : <a href={`https://${page.publicHost}/`} target="_blank" rel="noreferrer">{page.publicHost}</a>) : "none"}</dd></div>
+                {page.githubUrl && page.state !== "internal" && <div><dt>GitHub</dt><dd className="mono"><a href={page.githubUrl} target="_blank" rel="noreferrer">{page.githubUrl.replace("https://", "")}</a></dd></div>}
                 <div><dt>Draft saved</dt><dd>{ago(page.updatedAt)}</dd></div>
                 {page.publishedAt && page.state !== "internal" && <div><dt>Published</dt><dd>{when(page.publishedAt)}</dd></div>}
               </dl>

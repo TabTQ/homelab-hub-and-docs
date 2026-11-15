@@ -7,7 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties({DocsProperties.class, com.homelabhub.docs.cloudflare.CloudflareProperties.class})
+@EnableConfigurationProperties({DocsProperties.class, com.homelabhub.docs.cloudflare.CloudflareProperties.class,
+        com.homelabhub.docs.github.GitHubProperties.class})
 class DocsBeans {
 
     @Bean

@@ -6,12 +6,19 @@ import "../shared/docs/docs.css";
 import { DocRenderer, type RenderContext } from "../shared/docs/DocRenderer";
 import { useCurrentTheme } from "../shared/docs/theme";
 import type { PublicPage } from "../shared/docs/types";
+import { assetHref, bundleBase, staticDataFile } from "../shared/docs/static";
 import { WebappFrame } from "../shared/docs/WebappFrame";
 import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "../shared/theme";
 import { Crest } from "../shared/components/Crest";
 
 // The public view of one shared page (docs plan 5.5, D5): exactly this page, read-only. No tree, no search, no other pages.
 // It only ever calls /api/public/page; files come from /a/<sha> and webapps from /app/<bundle>/ on this same hostname.
+// Static copy (GitHub Pages): a static-data tag in the shell names a JSON file next to the page. Then that file is read
+// instead of the API, files use the "file" path the JSON lists, and webapps are at app/<bundle>/ relative to the page.
+let STATIC_FILE: string | null = null;
+let STATIC_ERROR: string | null = null;
+try { STATIC_FILE = staticDataFile(); } catch (e) { STATIC_ERROR = (e as Error).message; }
+const STATIC = STATIC_FILE !== null;
 
 function formatDate(iso: string | null): string {
   if (!iso) return "";
@@ -27,7 +34,8 @@ function App() {
   const theme = useCurrentTheme();
 
   useEffect(() => {
-    fetch("/api/public/page", { headers: { Accept: "application/json" } })
+    if (STATIC_ERROR) { setError(STATIC_ERROR); return; }
+    fetch(STATIC_FILE ?? "/api/public/page", { headers: { Accept: "application/json" } })
       .then(async (r) => {
         if (!r.ok) throw new Error(r.status === 404 ? "Nothing here." : `This page could not be loaded (HTTP ${r.status}).`);
         return (await r.json()) as PublicPage;
@@ -37,7 +45,7 @@ function App() {
   }, []);
 
   const ctx: RenderContext | null = useMemo(() => page && {
-    assetUrl: (sha) => `/a/${sha}`,
+    assetUrl: (sha) => assetHref(sha, page.assets, STATIC),
     dark: theme === "dark",
     pageLink: (a) => ({ href: typeof a.href === "string" && a.href.startsWith("https://") ? a.href : null }),
     embed: (a, key) => {
@@ -45,7 +53,7 @@ function App() {
       if (!e) return null;
       return (
         <div key={key} className="dx-embed">
-          <WebappFrame base={`/app/${a.bundle}/`} settings={e.settings} theme={theme} title="Embedded app" heightOverride={a.height ?? null} />
+          <WebappFrame base={bundleBase(a.bundle, STATIC)} settings={e.settings} theme={theme} title="Embedded app" heightOverride={a.height ?? null} />
         </div>
       );
     },
@@ -55,7 +63,7 @@ function App() {
   if (!page || !ctx) return <div className="wrap"><p className="sub" style={{ marginTop: 40 }}>Loading…</p></div>;
 
   if (page.kind === "webapp" && page.settings?.display !== "framed" && page.bundle) {
-    return <div className="dx-full"><WebappFrame base={`/app/${page.bundle.sha}/`} settings={page.settings!} theme={theme} title={page.title} fill /></div>;
+    return <div className="dx-full"><WebappFrame base={bundleBase(page.bundle.sha, STATIC)} settings={page.settings!} theme={theme} title={page.title} fill /></div>;
   }
 
   const updated = formatDate(page.updatedAt);
@@ -74,7 +82,7 @@ function App() {
           {page.kind === "rich" ? <DocRenderer doc={page.body} ctx={ctx} /> : (
             <>
               <DocRenderer doc={page.intro} ctx={ctx} />
-              {page.bundle && <div className="dx-embed"><WebappFrame base={`/app/${page.bundle.sha}/`} settings={page.settings!} theme={theme} title={page.title} /></div>}
+              {page.bundle && <div className="dx-embed"><WebappFrame base={bundleBase(page.bundle.sha, STATIC)} settings={page.settings!} theme={theme} title={page.title} /></div>}
             </>
           )}
         </article>

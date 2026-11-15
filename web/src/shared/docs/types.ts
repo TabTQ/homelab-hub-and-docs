@@ -23,5 +23,5 @@ export interface PublicPage {
   intro?: PMNode | null;
   bundle?: BundleFiles;
   embeds: Record<string, { settings: WebappSettings; bundle: BundleFiles }>;
-  assets: Record<string, { mime: string; size: number; name: string }>;
+  assets: Record<string, { mime: string; size: number; name: string; /** Static copy only: path of the file next to the page, such as a/<sha>.png. */ file?: string }>;
 }

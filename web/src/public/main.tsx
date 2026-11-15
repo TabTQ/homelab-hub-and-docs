@@ -5,6 +5,7 @@ import "../shared/styles.css";
 import { ToastProvider } from "../shared/components/Toast";
 import { PortfolioShell } from "../shared/portfolio/PortfolioShell";
 import { applyTheme, loadTheme } from "../shared/theme";
+import { staticDataFile } from "../shared/docs/static";
 import type { Portfolio, SnapshotEnvelope } from "../shared/types";
 
 function App() {
@@ -15,7 +16,10 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/public/portfolio", { headers: { Accept: "application/json" } })
+    // Static copy (GitHub Pages): the shell names a JSON file next to the page. Otherwise the API, as before.
+    let file: string | null = null;
+    try { file = staticDataFile(); } catch (e) { setError((e as Error).message); return; }
+    fetch(file ?? "/api/public/portfolio", { headers: { Accept: "application/json" } })
       .then(async (r) => {
         if (r.status === 503) throw new Error("The portfolio is not published yet. Please check back soon.");
         if (!r.ok) throw new Error(`The portfolio could not be loaded (HTTP ${r.status}).`);
