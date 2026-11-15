@@ -6,7 +6,7 @@ import { ExpenseSheet } from "../budget/ExpenseSheet";
 import { formatRupees } from "../budget/money";
 import "../budget/ledger.css";
 import { FilterBar } from "../budget/FilterBar";
-import { cleanFilter, filterExpenses, filterLabel, isFiltered, loadFilter, saveFilter, type LedgerFilter } from "../budget/filter";
+import { cleanFilter, filterExpenses, filterLabel, isFiltered, loadFilter, saveFilter, viewMonthRow, viewRows, viewTransfers, type LedgerFilter, type ViewRow } from "../budget/filter";
 import { ExportDialog, RecurringPanel, SettleDialog } from "../budget/Panels";
 import { PeoplePanel } from "../budget/PeoplePanel";
 import { BUDGET, type Expense, type MemberInfo, type MonthView, type PersonRef, type Transfer } from "../budget/types";
@@ -97,6 +97,8 @@ export default function BudgetPage({ onUnauthorized, member }: { onUnauthorized:
   const shown = filterExpenses(view.expenses, active);
   const on = isFiltered(active);
   const name = (id: number) => people.find((p) => p.id === id)?.name ?? `#${id}`;
+  // With a filter on, these panels are worked out from the filtered entries only.
+  const rows = on ? viewRows(shown, view.statement.rows.map((r) => r.personId)) : undefined;
 
   return (
     <div className="bud">
@@ -105,7 +107,7 @@ export default function BudgetPage({ onUnauthorized, member }: { onUnauthorized:
       {people.length > 0 && <FilterBar filter={active} onChange={setFilter} people={people}
         summary={on ? `${shown.length} of ${view.expenses.length} entries · ${num(shown.reduce((a, e) => a + e.amountPaise, 0))}` : undefined} />}
       {people.length > 0 && <Summary view={view} shown={on ? shown : undefined} />}
-      {on && people.length > 0 && <p className="bud-hint bud-fnote" role="note">Filter on: {filterLabel(active, people)}. Spent, Expenses and the list follow it. Still to pay, Settled, who pays whom and balances always count everyone.</p>}
+      {on && people.length > 0 && <p className="bud-hint bud-fnote" role="note">Filter on: {filterLabel(active, people)}. Everything below is worked out from these entries only. Still to pay, Settled and the payments marked as paid are for the whole ledger.</p>}
       {people.length === 0 ? (
         <div className="panel hp bud-card">
           <h2>{member ? "Nothing here yet" : "Start with the people"}</h2>
@@ -115,10 +117,10 @@ export default function BudgetPage({ onUnauthorized, member }: { onUnauthorized:
       ) : (
         <div className="bud-cols">
           <div className="bud-stack">
-            <TransfersCard view={view} name={name} onMarkPaid={member ? undefined : (t) => setDialog({ kind: "settle", transfer: t })} />
-            <PeopleCard view={view} name={name} />
+            <TransfersCard view={view} rows={rows} name={name} onMarkPaid={member ? undefined : (t) => setDialog({ kind: "settle", transfer: t })} />
+            <PeopleCard view={view} rows={rows} name={name} />
             {view.settlements.length > 0 && <SettlementsCard view={view} name={name} readOnly={!!member} onUnauthorized={onUnauthorized} onChanged={saved} />}
-            <HistoryCard view={view} />
+            <HistoryCard view={view} shown={on ? shown : undefined} />
           </div>
           <ExpensesCard view={view} name={name} month={month} shown={shown} filtered={on} canEdit={canEdit} onEdit={(e) => setDialog({ kind: "expense", expense: e })} onAdd={canAdd ? () => setDialog({ kind: "expense" }) : undefined} />
         </div>
@@ -145,46 +147,55 @@ function Summary({ view, shown }: { view: MonthView; shown?: Expense[] }) {
     <div className="bud-sum" aria-label="Month summary">
       <div className="panel hp"><div className="eyebrow">Spent{shown && " · filtered"}</div><div className="num">{num(shown ? shown.reduce((a, e) => a + e.amountPaise, 0) : s.expenseTotalPaise)}</div></div>
       <div className="panel hp"><div className="eyebrow">Expenses{shown && " · filtered"}</div><div className="num">{shown ? shown.length : s.expenseCount}</div></div>
-      <div className="panel hp" style={owed > 0 ? { borderColor: "var(--accent)" } : undefined}><div className="eyebrow">Still to pay</div><div className="num" style={owed > 0 ? { color: "var(--accent)" } : undefined}>{num(owed)}</div></div>
-      <div className="panel hp"><div className="eyebrow">Settled</div><div className="num">{settledPct}<small>%</small></div>
+      <div className="panel hp" style={owed > 0 ? { borderColor: "var(--accent)" } : undefined}><div className="eyebrow">Still to pay{shown && " · whole ledger"}</div><div className="num" style={owed > 0 ? { color: "var(--accent)" } : undefined}>{num(owed)}</div></div>
+      <div className="panel hp"><div className="eyebrow">Settled{shown && " · whole ledger"}</div><div className="num">{settledPct}<small>%</small></div>
         <div className="seg accent" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < filled ? "f" : ""} />)}</div></div>
     </div>
   );
 }
 
-function TransfersCard({ view, name, onMarkPaid }: { view: MonthView; name: (id: number) => string; onMarkPaid?: (t: Transfer) => void }) {
+function TransfersCard({ view, rows, name, onMarkPaid }: { view: MonthView; rows?: ViewRow[]; name: (id: number) => string; onMarkPaid?: (t: Transfer) => void }) {
   const s = view.statement;
-  const n = s.transfers.length;
+  const transfers = rows ? viewTransfers(rows) : s.transfers;
+  const n = transfers.length;
   return (
     <section className="panel hp bud-card" aria-labelledby="bud-h-who">
-      <header><h3 id="bud-h-who">Who pays whom</h3>{n > 0 && <span className="bud-hint">{n} payment{n === 1 ? "" : "s"} settle{n === 1 ? "s" : ""} everything</span>}</header>
-      {n === 0 && <p className="none">Nobody owes anything.</p>}
-      {s.transfers.map((t) => (
+      <header><h3 id="bud-h-who">Who pays whom{rows && " · filtered"}</h3>{n > 0 && <span className="bud-hint">{n} payment{n === 1 ? "" : "s"} settle{n === 1 ? "s" : ""} {rows ? "these entries" : "everything"}</span>}</header>
+      {n === 0 && <p className="none">{rows ? "Nobody owes anything for these entries." : "Nobody owes anything."}</p>}
+      {transfers.map((t) => (
         <div className="bud-xfer" key={`${t.fromId}-${t.toId}`}>
           <div className="bud-grow"><b>{name(t.fromId)}</b> pays <b>{name(t.toId)}</b></div>
           <div className="bud-num bud-amt">{formatRupees(t.paise)}</div>
-          {onMarkPaid && <button className="btn sm pri" aria-label={`Mark paid: ${name(t.fromId)} pays ${name(t.toId)}`} onClick={() => onMarkPaid(t)}>Mark paid</button>}
+          {onMarkPaid && !rows && <button className="btn sm pri" aria-label={`Mark paid: ${name(t.fromId)} pays ${name(t.toId)}`} onClick={() => onMarkPaid(t)}>Mark paid</button>}
         </div>
       ))}
-      {s.openingTransfers.length > 0 && (
+      {!rows && s.openingTransfers.length > 0 && (
         <p className="bud-hint bud-carried">Carried in from before: {s.openingTransfers.map((t) => `${name(t.fromId)} owes ${name(t.toId)} ${formatRupees(t.paise)}`).join("; ")}. Already included above.</p>
       )}
     </section>
   );
 }
 
-function PeopleCard({ view, name }: { view: MonthView; name: (id: number) => string }) {
+function PeopleCard({ view, rows, name }: { view: MonthView; rows?: ViewRow[]; name: (id: number) => string }) {
   const s = view.statement;
   const settled = s.hasSettlements;
+  const sum = (k: "paidPaise" | "sharePaise" | "netPaise") => (rows ?? []).reduce((a, r) => a + r[k], 0);
   return (
     <section className="panel hp bud-card" aria-labelledby="bud-h-people">
-      <header><h3 id="bud-h-people">People</h3><span className="bud-hint">+ is owed money · − owes</span></header>
+      <header><h3 id="bud-h-people">People</h3><span className="bud-hint">{rows ? "From the filtered entries · " : ""}+ is owed money · − owes</span></header>
       <div className="bud-scrollx bud-wide">
         <table className="bud-table bud-compact">
           <thead><tr><th>Person</th><th className="bud-num">Paid</th><th className="bud-num">Share</th><th className="bud-num">This month</th>
-            <th className="bud-num">Carried in</th>{settled && <th className="bud-num">Settled</th>}<th className="bud-num">To settle</th></tr></thead>
+            {!rows && <><th className="bud-num">Carried in</th>{settled && <th className="bud-num">Settled</th>}<th className="bud-num">To settle</th></>}</tr></thead>
           <tbody>
-            {s.rows.map((r) => (
+            {rows ? rows.map((r) => (
+              <tr key={r.personId}>
+                <td>{name(r.personId)}</td>
+                <td className="bud-num">{num(r.paidPaise)}</td>
+                <td className="bud-num">{num(r.sharePaise)}</td>
+                <td className={`bud-num ${tone(r.netPaise)}`}>{num(r.netPaise, true)}</td>
+              </tr>
+            )) : s.rows.map((r) => (
               <tr key={r.personId}>
                 <td>{name(r.personId)}</td>
                 <td className="bud-num">{num(r.paidPaise)}</td>
@@ -196,14 +207,22 @@ function PeopleCard({ view, name }: { view: MonthView; name: (id: number) => str
               </tr>
             ))}
           </tbody>
-          <tfoot><tr><td>Total</td><td className="bud-num">{formatRupees(s.totals.paidPaise)}</td><td className="bud-num">{formatRupees(s.totals.sharePaise)}</td>
+          <tfoot>{rows
+            ? <tr><td>Total</td><td className="bud-num">{formatRupees(sum("paidPaise"))}</td><td className="bud-num">{formatRupees(sum("sharePaise"))}</td><td className="bud-num">{num(sum("netPaise"))}</td></tr>
+            : <tr><td>Total</td><td className="bud-num">{formatRupees(s.totals.paidPaise)}</td><td className="bud-num">{formatRupees(s.totals.sharePaise)}</td>
             <td className="bud-num">{num(s.totals.periodNetPaise)}</td><td className="bud-num">{num(s.totals.carriedInPaise)}</td>
-            {settled && <td className="bud-num">{num(s.totals.settledPaise)}</td>}<td className="bud-num">{num(s.totals.toSettlePaise)}</td></tr></tfoot>
+            {settled && <td className="bud-num">{num(s.totals.settledPaise)}</td>}<td className="bud-num">{num(s.totals.toSettlePaise)}</td></tr>}</tfoot>
         </table>
       </div>
       {/* phones: one compact row per person */}
       <ul className="bud-narrow bud-plist">
-        {s.rows.map((r) => (
+        {rows ? rows.map((r) => (
+          <li key={r.personId}>
+            <span className="bud-grow"><b>{name(r.personId)}</b>
+              <span className="bud-hint bud-mono">{num(r.paidPaise)} paid · {num(r.sharePaise)} share</span></span>
+            <b className={`bud-num ${tone(r.netPaise)}`}>{num(r.netPaise, true)}</b>
+          </li>
+        )) : s.rows.map((r) => (
           <li key={r.personId}>
             <span className="bud-grow"><b>{name(r.personId)}</b>
               <span className="bud-hint bud-mono">{num(r.paidPaise)} paid · {num(r.sharePaise)} share{r.carriedInPaise ? ` · ${num(r.carriedInPaise, true)} carried in` : ""}{r.settledPaise ? ` · ${num(r.settledPaise, true)} settled` : ""}</span></span>
@@ -222,7 +241,7 @@ function SettlementsCard({ view, name, readOnly, onChanged, onUnauthorized }: { 
     .catch((e) => { const d = describeError(e); if (d.unauthorized) onUnauthorized(); else setError(d.message); });
   return (
     <section className="panel hp bud-card" aria-labelledby="bud-h-settled">
-      <header><h3 id="bud-h-settled">Settlements</h3><span className="bud-hint">payments marked as paid in {monthLabel(view.month, true)}</span></header>
+      <header><h3 id="bud-h-settled">Settlements</h3><span className="bud-hint">payments marked as paid in {monthLabel(view.month, true)} · whole ledger</span></header>
       {error && <div className="err" role="alert">{error}</div>}
       <ul className="bud-list">
         {view.settlements.map((x) => (
@@ -240,15 +259,16 @@ function SettlementsCard({ view, name, readOnly, onChanged, onUnauthorized }: { 
   );
 }
 
-function HistoryCard({ view }: { view: MonthView }) {
-  const months = view.history;
+function HistoryCard({ view, shown }: { view: MonthView; shown?: Expense[] }) {
+  const cur = shown && viewMonthRow(shown);
+  const months = cur ? view.history.map((m) => (m.month === view.month ? { ...m, ...cur } : m)) : view.history;
   if (months.length === 0 || months.every((m) => m.totalPaise === 0)) return null;
   const ids = new Set<number>();
   months.forEach((m) => Object.keys(m.paidPaise).forEach((k) => ids.add(Number(k))));
   const cols: PersonRef[] = view.people.filter((p) => ids.has(p.id) || !p.archived);
   return (
     <section className="panel hp bud-card" aria-labelledby="bud-h-history">
-      <header><h3 id="bud-h-history">What everyone paid each month</h3></header>
+      <header><h3 id="bud-h-history">What everyone paid each month</h3>{cur && <span className="bud-hint">{monthLabel(view.month, true)} is filtered, other months are not</span>}</header>
       <div className="bud-scrollx">
         <table className="bud-table">
           <thead><tr><th>Month</th>{cols.map((p) => <th key={p.id} className="bud-num">{p.name}</th>)}<th className="bud-num">Total</th></tr></thead>
