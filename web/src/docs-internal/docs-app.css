@@ -154,17 +154,27 @@
 .dx-savebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 18px; }
 
 /* webapp page */
-.dx-cols2 { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.dx-cols2 { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.dx-cols2 > * { min-width: 0; }
+.dx-card { min-width: 0; }
 .dx-card { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--surface2) 80%, transparent), color-mix(in srgb, var(--surface) 92%, transparent)); border: 1px solid var(--line); padding: 14px 16px; }
 .dx-card::before { content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border: 1px solid var(--accent); border-right: 0; border-bottom: 0; opacity: .7; pointer-events: none; }
 .dx-card + .dx-card { margin-top: 14px; }
 .dx-card h4 { margin: 0 0 8px; font: 500 1.1rem var(--f-display); letter-spacing: .14em; text-transform: uppercase; }
 .dx-card .field > label { font-size: 14px; }
 .dx-card .help { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
-.dx-upload { border: 2px dashed var(--line); padding: 16px; text-align: center; font-size: 14px; color: var(--muted); background: rgba(0,0,0,.2); }
+.dx-upload { min-width: 0; overflow-wrap: anywhere; border: 2px dashed var(--line); padding: 16px; text-align: center; font-size: 14px; color: var(--muted); background: rgba(0,0,0,.2); }
 .dx-upload.over { border-color: var(--accent); background: var(--accent-soft); }
-.dx-bundles { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-.dx-bundles td, .dx-bundles th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+/* The global table rule sets min-width: 520px, which pushed the columns out of the panel. */
+.dx-tablewrap { overflow-x: auto; margin-top: 10px; max-width: 100%; }
+.dx-bundles { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13px; }
+.dx-bundles td:first-child, .dx-bundles td:nth-child(3), .dx-bundles td:last-child, .dx-bundles th { white-space: nowrap; }
+.dx-bundles td:nth-child(2) { overflow-wrap: anywhere; min-width: 5.5rem; }
+.dx-bundles td:last-child { text-align: right; }
+.dx-bundles .btn.sm { padding: 3px 10px; }
+.dx-cols2 p.hint, .dx-upload .hint { display: block; overflow-wrap: anywhere; font-size: 12.5px; color: var(--muted); }
+.dx-card .mono { overflow-wrap: anywhere; }
+.dx-bundles td, .dx-bundles th { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); text-align: left; }
 .dx-bundles th { font: 500 11px var(--f-body); text-transform: uppercase; color: var(--muted); letter-spacing: .14em; }
 .dx-files { margin-top: 10px; font-size: 13px; }
 .dx-files .mono { font-size: 12.5px; line-height: 1.7; color: var(--muted); }

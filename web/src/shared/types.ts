@@ -14,6 +14,8 @@ export interface Deliverable { key: string; title: string; tag: string; body: st
 export interface Project {
   id: string; dbId: number; kind: "flagship" | "small"; title: string; description: string; repo: string | null; live: string | null;
   type: string | null; skills: string[]; tags: string[]; t: string;
+  /** Icon key chosen in the editor (absent = picked automatically). */
+  icon?: string | null;
   case?: { client: string | null; role: string | null; duration: string | null; context: string | null; metrics: Metric[]; platform: string[] };
   deliverables?: Deliverable[];
 }
@@ -26,8 +28,10 @@ export interface Device {
   dbId: number; id: string; key: string; cat: string; name: string; ip: string | null; summary: string | null; url?: string | null; hw: HwRow[]; skills: string[]; t: string;
   containers: Container[]; services: Service[]; network: NetEntity[];
 }
-export interface SkillRef { id: number; l: string; n: number }
-export interface SkillGroup { id: number; name: string; icon: string; skills: SkillRef[] }
+/** A skill. `ic` is an icon key chosen in the editor (absent = picked automatically from the label). `core` pins it to the character screen. */
+export interface SkillRef { id: number; l: string; n: number; ic?: string | null; core?: boolean }
+/** A skill group. `constellation` is a constellation key chosen in the editor (absent = assigned automatically). */
+export interface SkillGroup { id: number; name: string; icon: string; constellation?: string | null; skills: SkillRef[] }
 export interface Portfolio {
   profile: Profile; experience: Experience[]; projects: Project[]; education: Education[]; homelab: Device[]; skills: SkillGroup[];
 }

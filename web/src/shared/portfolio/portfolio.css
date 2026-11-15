@@ -34,13 +34,16 @@ canvas.embers { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0
 .who .cta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .slots { display: grid; gap: 14px; justify-items: center; }
 .slots .eyebrow { margin-bottom: 2px; }
-.slot { overflow: hidden; padding: 6px 9px 6px 6px; }
-.slot .lbl { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 9.5px; letter-spacing: 0.03em; line-height: 1.15; overflow-wrap: break-word; }
-.pf-res { align-self: start; padding-top: 6vh; display: grid; gap: 8px; justify-items: end; }
-.pf-res .r { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: baseline; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); padding: 6px 12px; width: 100%; max-width: 270px; }
-.pf-res .r b { font: 600 1.5rem var(--f-display); font-variant-numeric: lining-nums; color: var(--ink); }
-.pf-res .r span { font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
-.pf-res .r small { grid-column: 2; font-size: 11px; color: var(--muted); opacity: 0.8; }
+.slots .slot { width: 112px; height: 96px; padding: 10px 8px 8px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; }
+.slot > svg { flex: none; color: var(--accent); }
+.slot .lbl { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; font-size: 10px; letter-spacing: 0.04em; line-height: 1.2; overflow-wrap: anywhere; text-wrap: balance; }
+.slots .slot .pips { top: 7px; right: 7px; bottom: auto; display: flex; gap: 3px; }
+.pf-res { align-self: start; padding-top: 6vh; display: grid; grid-auto-rows: 1fr; gap: 8px; width: min(100%, 300px); justify-self: end; }
+.pf-res .r { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 0 12px; align-items: center; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); padding: 10px 14px; }
+.pf-res .r b { font: 600 1.5rem/1 var(--f-display); font-variant-numeric: lining-nums; color: var(--ink); white-space: nowrap; text-align: left; }
+.pf-res .r .tx { display: grid; gap: 2px; min-width: 0; }
+.pf-res .r span { font-size: 12px; color: var(--muted); letter-spacing: 0.06em; line-height: 1.25; }
+.pf-res .r small { font-size: 11px; color: var(--muted); opacity: 0.8; line-height: 1.25; }
 
 /* ---- animated avatar ---- */
 .avatar { --px: 0; --py: 0; position: relative; aspect-ratio: 1 / 1.08; perspective: 900px; }
@@ -71,13 +74,15 @@ canvas.embers { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0
 @media (max-width: 1100px) {
   .stage { grid-template-columns: auto minmax(240px, 1fr) auto; }
   .who { grid-column: 1 / -1; padding-top: 0; text-align: center; } .who p { margin-inline: auto; } .who .cta { justify-content: center; }
-  .pf-res { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); justify-items: stretch; padding-top: 0; }
-  .pf-res .r { max-width: none; }
+  .pf-res { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); width: 100%; justify-self: stretch; padding-top: 0; }
 }
 @media (max-width: 620px) {
   .stage { grid-template-columns: 1fr; }
-  .slots { grid-template-columns: repeat(4, auto); justify-content: center; } .slots .eyebrow { grid-column: 1 / -1; text-align: center; }
-  .slot { width: 68px; height: 68px; }
+  .slots { grid-template-columns: repeat(4, auto); justify-content: center; gap: 8px; } .slots .eyebrow { grid-column: 1 / -1; text-align: center; }
+  .slots .slot { width: 76px; height: 84px; padding: 8px 4px 6px; gap: 5px; }
+  .slot .lbl { font-size: 9px; letter-spacing: 0.02em; }
+  .slots .slot .pips { top: 4px; right: 4px; }
+  .pf-res { grid-template-columns: 1fr; } .pf-res .r { grid-template-columns: 5rem minmax(0, 1fr); }
   .center { order: -1; } .who { order: -2; }
 }
 
@@ -103,7 +108,15 @@ canvas.embers { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0
 .pf .sec { margin-bottom: 34px; }
 .pf .sec-h .tape { background: none; color: var(--accent); padding: 0; font: 500 1.45rem var(--f-display); letter-spacing: 0.16em; }
 .pf .sec-h .ct { font: 500 11px var(--f-body); letter-spacing: 0.12em; }
-.pf .about.solo { grid-template-columns: 1fr; }
+/* Embedded summary: bio in a readable measure beside a facts panel, so the row has no dead area. */
+.pf .about.solo { grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 20px clamp(24px, 4vw, 64px); }
+.pf .about.solo .lede { max-width: 90ch; }
+.about-facts { margin: 6px 0 0; padding: 4px 18px; border: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in srgb, var(--surface2) 80%, transparent), color-mix(in srgb, var(--surface) 92%, transparent)); }
+.about-facts > div { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.about-facts > div:last-child { border-bottom: 0; }
+.about-facts dt { font: 500 11px var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+.about-facts dd { margin: 0; font: 600 1.1rem var(--f-display); overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .pf .about.solo { grid-template-columns: 1fr; } .about-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 18px; } .about-facts > div { border-bottom: 0; } }
 .pf .stat .v, .pf .stats dd { font-variant-numeric: lining-nums; }
 
 /* cards and the skill panel take the stone panel look */

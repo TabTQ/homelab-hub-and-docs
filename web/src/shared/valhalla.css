@@ -72,6 +72,10 @@
 .card.bronze { --tier: var(--t-bronze); } .card.steel { --tier: var(--t-steel); } .card.gold { --tier: var(--t-gold); }
 .card-head { padding: 26px 16px 12px; text-align: center; background: linear-gradient(180deg, color-mix(in srgb, var(--tier) 42%, var(--surface)), color-mix(in srgb, var(--tier) 8%, var(--surface))); border-bottom: 1px solid color-mix(in srgb, var(--tier) 45%, var(--line)); }
 .card-head h3 { font-weight: 500; font-size: 1.35rem; letter-spacing: 0.04em; }
+/* The older portfolio .card rule adds padding and a right gap for an edit button; the tiered card head must stay symmetric. */
+.card > .card-head { box-sizing: border-box; }
+.card .card-head h3 { padding: 0; margin: 0; text-indent: 0; text-wrap: pretty; overflow-wrap: anywhere; }
+.card .card-head p { padding: 0; text-indent: 0; letter-spacing: 0; }
 .card-head p { margin: 2px 0 0; font: italic 500 0.95rem var(--f-display); color: var(--muted); }
 .emblem { position: absolute; top: -20px; left: 50%; width: 40px; height: 40px; margin-left: -20px; transform: rotate(45deg); background: var(--surface); border: 1px solid var(--tier); display: grid; place-items: center; }
 .emblem > * { transform: rotate(-45deg); font: 600 15px var(--f-display); color: var(--tier); }

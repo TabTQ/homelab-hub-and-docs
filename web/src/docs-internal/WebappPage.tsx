@@ -64,7 +64,7 @@ export function WebappPage({ page, config, onChanged, fail, theme }: {
             <input ref={file} type="file" accept=".html,.htm,.zip" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) send(f); e.target.value = ""; }} />
           </div>
           {bundles && bundles.length > 0 && (
-            <table className="dx-bundles">
+            <div className="dx-tablewrap"><table className="dx-bundles">
               <thead><tr><th>Bundle</th><th>Uploaded</th><th>Size</th><th /></tr></thead>
               <tbody>{bundles.map((b) => (
                 <tr key={b.seq}>
@@ -73,7 +73,7 @@ export function WebappPage({ page, config, onChanged, fail, theme }: {
                   <td>{!b.draft && <button className="btn sm" onClick={() => use(b.seq)}>Use</button>}</td>
                 </tr>
               ))}</tbody>
-            </table>
+            </table></div>
           )}
           {draft && <details className="dx-files"><summary>Files in b{draft.seq} ({draft.files.length})</summary>
             <div className="mono">{draft.files.map((f) => <div key={f.path}>{f.path} · {fmtBytes(f.size)}</div>)}</div></details>}

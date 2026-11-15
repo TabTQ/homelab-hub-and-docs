@@ -55,6 +55,7 @@ public class PortfolioCrud {
     }
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Pattern KEY = Pattern.compile("[a-z0-9-]{1,40}");
     private static final Pattern SLUG = Pattern.compile("[a-z0-9][a-z0-9-]{0,63}");
     private static final Pattern UNSAFE_SCHEME = Pattern.compile("(?i)^\\s*(javascript|data|vbscript|file):");
     private static final int MAX_TAGS = 50;
@@ -136,6 +137,7 @@ public class PortfolioCrud {
                 case TEXT_LIST, JSON_LIST -> m.put(f.api(), PortfolioReader.jsonList(rs.getString(f.column())));
                 case JSON_OBJECT -> m.put(f.api(), PortfolioReader.jsonMap(rs.getString(f.column())));
                 case INT -> m.put(f.api(), rs.getInt(f.column()));
+                case BOOL -> m.put(f.api(), rs.getInt(f.column()) != 0);
                 default -> m.put(f.api(), rs.getString(f.column()));
             }
         }
@@ -319,6 +321,15 @@ public class PortfolioCrud {
                 }
                 return n.intValue();
             }
+            case BOOL -> {
+                if (raw == null) {
+                    return 0;
+                }
+                if (!(raw instanceof Boolean b)) {
+                    throw new IllegalArgumentException("Must be true or false.");
+                }
+                return b ? 1 : 0;
+            }
             case TEXT_LIST -> {
                 if (raw == null) {
                     return "[]";
@@ -385,6 +396,11 @@ public class PortfolioCrud {
                         }
                     }
                     case URL -> checkUrl(v);
+                    case KEY -> {
+                        if (!KEY.matcher(v).matches()) {
+                            throw new IllegalArgumentException("Use lower-case letters, digits and - only (at most 40 characters).");
+                        }
+                    }
                     default -> { }
                 }
                 return v;

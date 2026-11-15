@@ -1,12 +1,19 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { reducedMotion } from "../Embers";
 import { usePortfolio } from "../context";
+import { VhIcon, resolveProjectIcon, resolveSkillIcon } from "../icons";
 
 const AVATAR = `${import.meta.env.BASE_URL}avatar.webp`;
 
-/** The 4 skills with the most linked items, most linked first. */
-export function coreSkills(groups: { skills: { l: string; n: number }[] }[], count = 4): { l: string; n: number }[] {
-  return groups.flatMap((g) => g.skills).filter((s) => s.n > 0).sort((a, b) => b.n - a.n).slice(0, count);
+type CoreSkill = { l: string; n: number; ic?: string | null; core?: boolean };
+type CoreGroup<S> = { name?: string; skills: S[] };
+export type CoreEntry<S extends CoreSkill = CoreSkill> = S & { group: string };
+
+/** Skills flagged `core` (up to `count`, in data order), or else the ones with the most linked items. */
+export function coreSkills<S extends CoreSkill>(groups: CoreGroup<S>[], count = 4): CoreEntry<S>[] {
+  const all = groups.flatMap((g) => g.skills.map((s) => ({ ...s, group: g.name ?? "" })));
+  const flagged = all.filter((s) => s.core);
+  return flagged.length ? flagged.slice(0, count) : all.filter((s) => s.n > 0).sort((a, b) => b.n - a.n).slice(0, count);
 }
 
 const pips = (n: number, max: number) => Math.max(1, Math.min(3, Math.ceil((n / Math.max(1, max)) * 3)));
@@ -67,7 +74,16 @@ export function CharacterScreen() {
 
       <section className="slots" aria-label="Core skills">
         <div className="eyebrow">Core skills</div>
-        {core.map((s) => <a key={s.l} className="slot" href="#/skills" title={`${s.l}: ${s.n} linked`} onClick={() => pick(s.l)}><span className="lbl">{s.l}</span><Pips n={pips(s.n, maxN)} /></a>)}
+        {core.map((s) => {
+          const tip = `${s.l}: ${s.n} linked`;
+          return (
+            <a key={s.l} className="slot" href="#/skills" title={tip} aria-label={tip} onClick={() => pick(s.l)}>
+              <VhIcon name={resolveSkillIcon(s.l, s.group, s.ic)} size={32} />
+              <span className="lbl">{s.l}</span>
+              <Pips n={pips(s.n, maxN)} />
+            </a>
+          );
+        })}
       </section>
 
       <section className="center" aria-label="Avatar">
@@ -77,11 +93,17 @@ export function CharacterScreen() {
 
       <section className="slots" aria-label="Featured projects">
         <div className="eyebrow">Featured work</div>
-        {featured.map((x, i) => <a key={x.id} className="slot" href="#/inventory" title={x.title}><span className="lbl">{x.title.split(/[:(]/)[0].trim()}</span><Pips n={i === 0 ? 3 : 2} /></a>)}
+        {featured.map((x, i) => (
+          <a key={x.id} className="slot" href="#/inventory" title={x.title} aria-label={x.title}>
+            <VhIcon name={resolveProjectIcon(x.title, x.type, x.icon)} size={32} />
+            <span className="lbl">{x.title.split(/[:(]/)[0].trim()}</span>
+            <Pips n={i === 0 ? 3 : 2} />
+          </a>
+        ))}
       </section>
 
       <section className="pf-res" aria-label="Key numbers">
-        {p.stats.map((s, i) => <div className="r" key={i}><b>{s.value}</b><span>{s.label}</span>{s.sub && <small>{s.sub}</small>}</div>)}
+        {p.stats.map((s, i) => <div className="r" key={i}><b>{s.value}</b><div className="tx"><span>{s.label}</span>{s.sub && <small>{s.sub}</small>}</div></div>)}
       </section>
     </div>
   );

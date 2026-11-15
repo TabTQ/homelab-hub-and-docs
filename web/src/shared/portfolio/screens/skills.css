@@ -1,24 +1,38 @@
 /* Skills constellation. SVG only, themed with tokens. */
 .skills { display: flex; flex-direction: column; min-height: calc(100vh - 190px); }
-.skills .sky-bar { display: flex; justify-content: center; padding: 0 0 4px; position: relative; z-index: 2; }
+.skills .sky-bar { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 12px; padding: 0 0 4px; position: relative; z-index: 2; }
+.skills .zoom-ctl { display: flex; align-items: center; gap: 6px; }
+.skills .zoom-ctl .btn { min-width: 34px; justify-content: center; }
+.skills .zoom-ctl .btn:disabled { opacity: 0.45; cursor: default; }
+.skills .zoom-read { min-width: 3.2em; text-align: center; color: var(--muted); font: 500 12.5px var(--f-body); font-variant-numeric: tabular-nums; }
 .skills .sky-wrap { position: relative; flex: 1; min-height: min(70vh, 740px); }
-.skills svg.sky { position: absolute; inset: 0; width: 100%; height: 100%; }
-.skills .sky .link { stroke-width: 1.1; fill: none; opacity: 0.75; }
-.skills .sky .spoke { stroke: var(--muted); stroke-width: 0.6; opacity: 0.3; }
+.skills svg.sky { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; outline: none; }
+.skills svg.sky:active { cursor: grabbing; }
+.skills svg.sky:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.skills .sky .link { stroke-width: 1.2; fill: none; opacity: 0.8; vector-effect: non-scaling-stroke; }
+.skills .sky .link.faint { opacity: 0.3; stroke-dasharray: 3 4; }
+.skills .sky .link.sat { stroke-width: 0.8; opacity: 0.6; }
+.skills .sky .field { fill: currentColor; opacity: 0.45; }
+.skills .sky .spoke { stroke: var(--muted); stroke-width: 0.6; opacity: 0.3; vector-effect: non-scaling-stroke; }
 .skills .sky .grp { transition: opacity 0.2s; }
 .skills .sky .star { cursor: pointer; color: inherit; outline: none; }
-.skills .sky .star circle.c { fill: currentColor; stroke: currentColor; }
-.skills .sky .star.zero circle.c { fill: var(--bg); stroke-width: 1; opacity: 0.85; }
+.skills .sky .star circle.c { fill: currentColor; stroke: currentColor; vector-effect: non-scaling-stroke; }
+.skills .sky .star.zero circle.c { fill: var(--bg); stroke-width: 1.2; opacity: 0.9; }
 .skills .sky .star circle.hit { fill: transparent; }
 .skills .sky .star:hover circle.c, .skills .sky .star:focus-visible circle.c, .skills .sky .star.sel circle.c { filter: drop-shadow(0 0 6px currentColor); }
-.skills .sky circle.ring { fill: none; stroke: var(--ink); stroke-width: 1; opacity: 0; }
+.skills .sky circle.ring { fill: none; stroke: var(--ink); stroke-width: 1; opacity: 0; vector-effect: non-scaling-stroke; }
 .skills .sky .star.sel circle.ring, .skills .sky .star.picked circle.ring, .skills .sky .star:focus-visible circle.ring { opacity: 1; }
 .skills .sky .star.picked circle.ring { stroke: var(--accent); stroke-width: 1.6; }
 .skills .sky .star.rel circle.c { filter: drop-shadow(0 0 4px currentColor); }
-.skills .sky .star text { font: 500 11px var(--f-body); fill: var(--ink); opacity: 0; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
-.skills .sky .star:hover text, .skills .sky .star:focus-visible text, .skills .sky .star.sel text, .skills .sky .star.picked text { opacity: 1; }
-.skills .sky .gname { font: 500 12.5px var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; fill: var(--muted); text-anchor: middle; }
-.skills .sky .emb { fill: var(--bg); stroke-width: 1.2; }
+.skills .sky .star text { font-family: var(--f-body); font-weight: 500; fill: var(--ink); opacity: 0; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.skills .sky .star:hover text, .skills .sky .star:focus-visible text, .skills .sky .star.sel text, .skills .sky .star.picked text, .skills .sky .star.lbl text { opacity: 1; }
+.skills .sky .gname, .skills .sky .cname { text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-linejoin: round; pointer-events: none; }
+.skills .sky .gname { font-family: var(--f-display); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; fill: var(--ink); }
+.skills .sky .cname { font-family: var(--f-display); font-style: italic; font-weight: 500; letter-spacing: 0.06em; fill: var(--muted); }
+.skills .sky .node { cursor: pointer; outline: none; }
+.skills .sky .node .hit { fill: transparent; }
+.skills .sky .node:hover .emb, .skills .sky .node:focus-visible .emb, .skills .sky .grp.focus .emb { fill: currentColor; filter: drop-shadow(0 0 5px currentColor); }
+.skills .sky .emb { fill: var(--bg); vector-effect: non-scaling-stroke; }
 .skills .sky .dim { opacity: 0.16; }
 .skills .sky .bg-star { fill: var(--ink); }
 .skills .badge { position: absolute; bottom: 0; display: flex; align-items: center; gap: 10px; pointer-events: none; }
@@ -38,6 +52,7 @@
 .skills .legend span { display: flex; align-items: center; gap: 8px; }
 .skills .legend i { width: 18px; height: 2px; display: block; }
 .skills .legend i.hollow { height: 0; background: none; border-top: 1px dashed var(--muted); }
+.skills .legend i.dots { height: 0; background: none; border-top: 2px dotted var(--muted); }
 .skills .listview { display: none; padding-bottom: 20px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .skills.list .sky-wrap { display: none; }
 .skills.list .listview { display: grid; }
@@ -47,8 +62,11 @@
 .skills .listview .chip.on { color: var(--accent); }
 .skills .listview .chip .num { font-variant-numeric: lining-nums; }
 @media (max-width: 760px) {
-  .skills .sky-wrap, .skills .sky-bar { display: none; }
-  .skills .listview { display: grid; }
+  .skills .sky-wrap { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  .skills svg.sky { position: relative; inset: auto; height: 62vh; }
+  .skills .legend, .skills .detail, .skills .badge { position: static; width: auto; }
+  .skills .detail .card { margin-top: 0; }
+  .skills .badge { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .skills .sky .grp { transition: none; } }
 .skills .sk-panel { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--surface2) 80%, transparent), color-mix(in srgb, var(--surface) 92%, transparent)); border: 1px solid var(--line); padding: 14px 16px; align-self: start; }

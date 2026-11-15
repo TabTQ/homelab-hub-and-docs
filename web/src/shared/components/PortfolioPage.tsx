@@ -137,9 +137,16 @@ export function PortfolioPage({ data, hooks, header, ribbon, embedded = false, h
         <div>
           {!embedded && <h1>{p.name}</h1>}
           {!embedded && <div className="lede"><b>{p.title}</b>{p.tagline ? <> · {p.tagline}</> : null}</div>}
-          <div className="meta">{p.location && <span>{p.location}</span>}{p.status && <span>{p.status}</span>}{p.brand && <span>{p.brand}</span>}</div>
+          {!embedded && <div className="meta">{p.location && <span>{p.location}</span>}{p.status && <span>{p.status}</span>}{p.brand && <span>{p.brand}</span>}</div>}
           {p.bio.map((b, i) => <p className="lede" key={i}>{b}</p>)}
         </div>
+        {embedded && (p.location || p.status || p.brand) && (
+          <dl className="about-facts">
+            {p.location && <div><dt>Location</dt><dd>{p.location}</dd></div>}
+            {p.status && <div><dt>Status</dt><dd>{p.status}</dd></div>}
+            {p.brand && <div><dt>Brand</dt><dd>{p.brand}</dd></div>}
+          </dl>
+        )}
         {!embedded && <div className="stats">
           {p.stats.map((s, i) => <div className="stat" key={i}><div className="v">{s.value}</div><div className="l">{s.label}</div><div className="s">{s.sub}</div></div>)}
         </div>}

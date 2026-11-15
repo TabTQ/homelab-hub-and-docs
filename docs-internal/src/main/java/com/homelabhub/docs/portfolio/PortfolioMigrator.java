@@ -178,9 +178,14 @@ public final class PortfolioMigrator {
         return cols;
     }
 
+    /** Columns that only docs.db has. They are copied when the source has them and left at their defaults when not. */
+    static final java.util.Set<String> OPTIONAL_COLUMNS = java.util.Set.of("skills.icon", "skills.core", "skill_groups.constellation", "projects.icon");
+
     private static int copyTable(Connection src, Connection target, String table) throws SQLException {
-        List<String> cols = columns(target, table);
+        List<String> cols = new java.util.ArrayList<>(columns(target, table));
         List<String> have = columns(src, table);
+        // display options added after the hub's schema: a source without them is fine, the target defaults apply
+        cols.removeIf(c -> OPTIONAL_COLUMNS.contains(table + "." + c) && !have.contains(c));
         for (String c : cols) {
             if (!have.contains(c)) {
                 throw new MigrateException("The source table " + table + " has no column " + c + ": start the hub once on its latest version first.");

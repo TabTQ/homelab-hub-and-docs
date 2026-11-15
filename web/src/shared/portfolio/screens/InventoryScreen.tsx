@@ -97,13 +97,13 @@ export function InventoryScreen() {
             return (
               <article key={p.id} className={`card ${t === "grey" ? "" : t} ${dim ? "sc-dim" : ""}`.trim()} data-tier={t} data-dim={dim ? "true" : undefined} aria-label={p.title}>
                 <div className="emblem"><span>{p.title.trim().charAt(0).toUpperCase()}</span></div>
-                <div className="card-head"><h3>{p.title}</h3><p>{subtitle(p)}</p></div>
-                <div className="card-body">
-                  {fs.length > 0 && <dl className="stats one">{fs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+                <div className="card-head"><h3 title={p.title}><span className="sc-t">{p.title}</span></h3><p title={subtitle(p)}><span className="sc-s">{subtitle(p)}</span></p></div>
+                <div className="sc-cell sc-stats">{fs.length > 0 && <dl className="stats one">{fs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}</div>
+                <div className="sc-cell sc-perks">
                   {p.description && <div className="perk"><i /><span className="sc-clamp">{p.description}</span></div>}
                   {p.case?.metrics[0] && <div className="perk"><i /><span className="sc-clamp">{p.case.metrics[0].label}: {p.case.metrics[0].after}</span></div>}
-                  <SkillChips skills={p.skills.slice(0, 6)} />
                 </div>
+                <div className="sc-cell sc-skills"><SkillChips skills={p.skills.slice(0, 6)} /></div>
                 <div className="card-foot">
                   <button type="button" className="hint" aria-label={`Details of ${p.title}`} aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? null : p.id)}><span className="key">A</span>Details</button>
                   {links.map((l) => <a key={l.label} className="hint" href={l.href} target="_blank" rel="noopener noreferrer"><span className="key">↗</span>{l.label}</a>)}

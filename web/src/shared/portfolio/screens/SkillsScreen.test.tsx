@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Portfolio } from "../../types";
 import { PortfolioContext, type PortfolioContextValue } from "../context";
 import { linkedWork, SkillsScreen } from "./SkillsScreen";
@@ -17,6 +17,9 @@ function mount(picked: string[] = []) {
 }
 
 describe("skills screen", () => {
+  // Reduced motion jumps straight to the target view, so the zoom can be checked without waiting for frames.
+  beforeEach(() => { vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduced-motion"), media: q, addEventListener: () => {}, removeEventListener: () => {} })); });
+  afterEach(() => { vi.unstubAllGlobals(); });
   it("finds linked work from the skills arrays", () => {
     const w = linkedWork(data, "Py");
     expect(w.roles).toEqual(["Engineer · Acme"]);
@@ -55,5 +58,50 @@ describe("skills screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "List view" }));
     fireEvent.click(screen.getByTitle("0 linked items"));
     expect(ctx.pickSkill).toHaveBeenCalledWith("Go");
+  });
+  it("shows a new skill as a star in its group without any other change", () => {
+    const more = { ...data, skills: [{ ...data.skills[0], skills: [...data.skills[0].skills, { id: 9, l: "Rust", n: 2 }] }] } as unknown as Portfolio;
+    const ctx = { data: more, filter: { picked: new Set<string>(), mode: "all", q: "" }, setFilter: vi.fn(), pickSkill: vi.fn(), clear: vi.fn(), go: vi.fn() } as unknown as PortfolioContextValue;
+    render(<PortfolioContext.Provider value={ctx}><SkillsScreen /></PortfolioContext.Provider>);
+    expect(screen.getByRole("button", { name: "Rust, 2 linked items" })).toBeTruthy();
+    expect(document.querySelectorAll(".sky .star")).toHaveLength(4);
+  });
+  it("names the constellation under the centre node", () => {
+    mount();
+    expect(document.querySelector(".sky .gname")?.textContent).toBe("G");
+    expect(document.querySelector(".sky .cname")?.textContent).toBeTruthy();
+  });
+  it("zooms with the buttons and resets", () => {
+    mount();
+    const sky = () => document.querySelector("svg.sky") as SVGSVGElement;
+    expect(sky().getAttribute("data-zoom")).toBe("1.0");
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(Number(sky().getAttribute("data-zoom"))).toBeGreaterThan(1);
+    fireEvent.click(screen.getByRole("button", { name: "Reset zoom" }));
+    expect(sky().getAttribute("data-zoom")).toBe("1.0");
+  });
+  it("zooms with the keyboard and the wheel, and stops the page scrolling", () => {
+    mount();
+    const sky = document.querySelector("svg.sky") as SVGSVGElement;
+    fireEvent.keyDown(sky, { key: "+" });
+    expect(Number(sky.getAttribute("data-zoom"))).toBeGreaterThan(1);
+    fireEvent.keyDown(sky, { key: "0" });
+    expect(sky.getAttribute("data-zoom")).toBe("1.0");
+    const ev = new WheelEvent("wheel", { deltaY: -120, cancelable: true, bubbles: true });
+    act(() => { sky.dispatchEvent(ev); });
+    expect(ev.defaultPrevented).toBe(true);
+    expect(Number(sky.getAttribute("data-zoom"))).toBeGreaterThan(1);
+  });
+  it("zooms to a constellation from its centre node and back with Escape", () => {
+    mount();
+    const sky = document.querySelector("svg.sky") as SVGSVGElement;
+    const node = screen.getByRole("button", { name: /^G, .*Zoom to this constellation$/ });
+    fireEvent.keyDown(node, { key: "Enter" });
+    expect(Number(sky.getAttribute("data-zoom"))).toBeGreaterThan(1.5);
+    expect(screen.getByRole("button", { name: /Zoom back out$/ }).getAttribute("aria-pressed")).toBe("true");
+    // skill labels are visible once zoomed in
+    expect(document.querySelectorAll(".sky .star.lbl").length).toBeGreaterThan(0);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(sky.getAttribute("data-zoom")).toBe("1.0");
   });
 });

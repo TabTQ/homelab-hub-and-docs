@@ -107,6 +107,8 @@ serves nothing public. The **Docs LXC** runs `docs-internal` (the Docs editor an
 **Portfolio** (moved to the Docs LXC; the hub keeps a card with a link to the editor and to the public site)
 - One page: About, Experience, Projects, Education, Homelab, Contact, with a collapsible **skill filter panel** (match all/any, hide/dim, free-text search) that filters the whole page.
 - Edited in **Docs → Portfolio** (`#/portfolio`): create/update/delete with validation, skill linking, optimistic locking, and automatic publishing.
+- One portfolio dataset feeds every tab of the public site (Character, Skills, Quests, Inventory, World, Codex, Summary), so an edit is made once and shows up wherever it belongs.
+- Optional **display options**, all left on **Automatic** by default (empty means the site chooses, as before): a **skill icon**, a **core skill** tick (pins the skill to the Character screen), a skill **group constellation**, and a **project icon**. Icons and constellations are picked from a list in the editor. They are stored in `docs.db` (migration `V3__portfolio_display_options.sql`) and published as `ic`, `core`, `constellation` and `icon` in the snapshot, and left out when not set.
 - The public site is a **read-only snapshot**: `docs-internal` writes `snapshot.json`, the public container (`hub-public`, on the LXC) only reads it.
 
 **Docs** (a separate app on its own Proxmox LXC; the hub only links to it, see [Docs app](#docs-app))
